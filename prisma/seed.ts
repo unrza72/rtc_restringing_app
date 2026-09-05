@@ -16,7 +16,6 @@ const prisma = new PrismaClient({ adapter })
  * Bootstraps the first admin — without one, nobody could ever approve the
  * first member. Safe to re-run: it only fills in what is missing.
  */
-const ADMIN_USERNAME = process.env.SEED_ADMIN_USERNAME || 'admin'
 const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL || 'admin@rtc.local'
 const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD || 'changeme123'
 const ADMIN_NAME = process.env.SEED_ADMIN_NAME || 'Club Admin'
@@ -35,10 +34,10 @@ const CLUB_STRINGS = [
 
 async function seedAdmin() {
   const existing = await prisma.user.findFirst({
-    where: { username: ADMIN_USERNAME },
+    where: { email: ADMIN_EMAIL },
   })
   if (existing) {
-    console.log(`↷ admin "${ADMIN_USERNAME}" already exists`)
+    console.log(`↷ admin "${ADMIN_EMAIL}" already exists`)
     return
   }
 
@@ -51,8 +50,6 @@ async function seedAdmin() {
       name: ADMIN_NAME,
       email: ADMIN_EMAIL,
       emailVerified: true,
-      username: ADMIN_USERNAME.toLowerCase(),
-      displayUsername: ADMIN_USERNAME,
       role: 'admin',
       status: 'APPROVED',
       approvedAt: now,
@@ -75,7 +72,7 @@ async function seedAdmin() {
   })
 
   console.log(
-    `✅ admin "${ADMIN_USERNAME}" / "${ADMIN_PASSWORD}" — change this password`,
+    `✅ admin "${ADMIN_EMAIL}" / "${ADMIN_PASSWORD}" — change this password`,
   )
 }
 

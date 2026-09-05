@@ -15,8 +15,8 @@ import type { RequestAction } from '#/lib/status'
 const requestInclude = {
   racket: true,
   clubString: true,
-  requester: { select: { id: true, name: true, displayUsername: true } },
-  operator: { select: { id: true, name: true, displayUsername: true } },
+  requester: { select: { id: true, name: true } },
+  operator: { select: { id: true, name: true } },
 } as const
 
 // ---------------------------------------------------------------------------

@@ -17,8 +17,6 @@ export const listMembers = createServerFn({ method: 'GET' })
         id: true,
         name: true,
         email: true,
-        username: true,
-        displayUsername: true,
         role: true,
         status: true,
         banned: true,

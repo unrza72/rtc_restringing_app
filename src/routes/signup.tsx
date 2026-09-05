@@ -12,12 +12,6 @@ import { AuthShell, AuthTabs } from '#/components/auth-shell'
 
 const signupSchema = z.object({
   name: z.string().trim().min(1).max(80),
-  username: z
-    .string()
-    .trim()
-    .min(3)
-    .max(30)
-    .regex(/^[a-zA-Z0-9._-]+$/, m.auth_username_hint()),
   email: z.email(),
   password: z.string().min(8),
 })
@@ -34,25 +28,20 @@ function SignupPage() {
   const [formError, setFormError] = useState<string | null>(null)
 
   const form = useForm({
-    defaultValues: { name: '', username: '', email: '', password: '' },
+    defaultValues: { name: '', email: '', password: '' },
     validators: { onSubmit: signupSchema },
     onSubmit: async ({ value }) => {
       setFormError(null)
       const { error } = await authClient.signUp.email({
         name: value.name.trim(),
-        username: value.username.trim(),
         email: value.email.trim(),
         password: value.password,
       })
       if (error) {
-        // better-auth reports these as distinct codes; both are worth naming.
-        const code = error.code ?? ''
         setFormError(
-          code.includes('USERNAME')
-            ? m.auth_username_taken()
-            : code.includes('EMAIL')
-              ? m.auth_email_taken()
-              : (error.message ?? m.common_error_generic()),
+          error.code?.includes('EMAIL')
+            ? m.auth_email_taken()
+            : (error.message ?? m.common_error_generic()),
         )
         return
       }
@@ -84,26 +73,6 @@ function SignupPage() {
               <Input
                 id={field.name}
                 autoComplete="name"
-                value={field.state.value}
-                onBlur={field.handleBlur}
-                onChange={(e) => field.handleChange(e.target.value)}
-              />
-            </Field>
-          )}
-        </form.Field>
-
-        <form.Field name="username">
-          {(field) => (
-            <Field
-              id={field.name}
-              label={m.auth_username()}
-              hint={m.auth_username_hint()}
-              errors={fieldErrors(field.state.meta)}
-            >
-              <Input
-                id={field.name}
-                autoComplete="username"
-                autoCapitalize="none"
                 value={field.state.value}
                 onBlur={field.handleBlur}
                 onChange={(e) => field.handleChange(e.target.value)}

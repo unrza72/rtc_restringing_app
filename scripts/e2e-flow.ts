@@ -4,7 +4,12 @@
  */
 import { fromCrossJSON, toJSONAsync } from 'seroval'
 
-const BASE = 'http://localhost:3000'
+// Follows the app's own configured origin — better-auth checks the Origin
+// header against it, so a hardcoded port silently fails every request.
+const BASE =
+  process.env.E2E_BASE_URL ??
+  process.env.BETTER_AUTH_URL ??
+  'http://localhost:4000'
 
 function fnId(file: string, exportName: string) {
   return Buffer.from(
@@ -121,18 +126,17 @@ const admin = new Session('admin')
 const member = new Session('member')
 
 console.log('\n— auth —')
-const signIn = await admin.auth('sign-in/username', {
-  username: 'admin',
+const signIn = await admin.auth('sign-in/email', {
+  email: 'admin@rtc.local',
   password: 'changeme123',
 })
 check('admin signs in', signIn.status === 200, signIn.body)
 
 const uniq = Date.now().toString().slice(-6)
-const memberName = `player${uniq}`
+const memberEmail = `player${uniq}@example.com`
 const signUp = await member.auth('sign-up/email', {
   name: 'Test Player',
-  username: memberName,
-  email: `${memberName}@example.com`,
+  email: memberEmail,
   password: 'password1234',
 })
 check('new member signs up', signUp.status === 200, signUp.body)
@@ -153,9 +157,9 @@ check(
 const memberList = await admin.call(MEMBERS, 'listMembers', undefined, 'GET')
 check('admin lists members', memberList.ok, memberList.error)
 
-type MemberRow = { id: string; username: string | null; status: string | null }
+type MemberRow = { id: string; email: string; status: string | null }
 const rows = (memberList.result ?? []) as Array<MemberRow>
-const target = rows.find((r) => r.username === memberName)
+const target = rows.find((r) => r.email === memberEmail)
 check('new member is listed as PENDING', target?.status === 'PENDING', target)
 
 console.log('\n— admin approves —')
@@ -346,17 +350,16 @@ check(
 )
 
 console.log('\n— rejection revokes access —')
-const rejectName = `reject${uniq}`
+const rejectEmail = `reject${uniq}@example.com`
 const rejected = new Session('rejected')
 await rejected.auth('sign-up/email', {
   name: 'Rejected Player',
-  username: rejectName,
-  email: `${rejectName}@example.com`,
+  email: rejectEmail,
   password: 'password1234',
 })
 const list2 = await admin.call(MEMBERS, 'listMembers', undefined, 'GET')
 const rejectRow = ((list2.result ?? []) as Array<MemberRow>).find(
-  (r) => r.username === rejectName,
+  (r) => r.email === rejectEmail,
 )
 const doReject = await admin.call(MEMBERS, 'decideMember', {
   userId: rejectRow!.id,

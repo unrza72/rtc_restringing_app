@@ -10,7 +10,7 @@ New accounts are unusable until an admin approves them.
 | --------- | ---------------------------------------------------------------------------------- |
 | Framework | TanStack Start (file routes in `src/routes`, `createServerFn` for mutations/loads) |
 | DB        | Prisma 7 + SQLite (`@prisma/adapter-better-sqlite3`)                               |
-| Auth      | better-auth 1.7 — `username` + `admin` plugins, `prismaAdapter`                    |
+| Auth      | better-auth 1.7 — `admin` plugin, `prismaAdapter`; email + password                |
 | UI        | Tailwind 4 + shadcn/ui (new-york, zinc), lucide icons                              |
 | Forms     | TanStack Form + Zod schemas shared client/server                                   |
 | i18n      | Paraglide (`en` base, `de`) — all user-facing strings via messages                 |
@@ -28,7 +28,7 @@ An operator is always also a member (they can request their own restrings).
 
 ## 3. Approval flow
 
-1. Sign up with username, email and password.
+1. Sign up with name, email and password. Email is the login identifier.
 2. User row is created with `status = PENDING`.
 3. They are signed in but every app route guard bounces them to `/pending`
    ("waiting for approval") — they can only sign out.
@@ -45,7 +45,6 @@ The first user created by the seed script is `admin` + `APPROVED` (bootstrap).
 // ("local:credential" for password logins). The CLI lags the library, so
 // regenerate field lists from the installed package, not `@better-auth/cli`.
 // User extended with:
-//   username, displayUsername   (username plugin)
 //   role         String   @default("member")   (admin plugin)
 //   banned, banReason, banExpires             (admin plugin)
 //   status       String   @default("PENDING")  // PENDING | APPROVED | REJECTED
@@ -157,7 +156,7 @@ REQUESTED --accept(operator)--> ACCEPTED --complete(operator)--> DONE --collect-
 | Route                                         | Access          | Purpose                                            |
 | --------------------------------------------- | --------------- | -------------------------------------------------- |
 | `/`                                           | public          | Landing → redirects to `/dashboard` when signed in |
-| `/login`, `/signup`                           | public          | username + password                                |
+| `/login`, `/signup`                           | public          | email + password                                   |
 | `/pending`                                    | authed, PENDING | "waiting for approval"                             |
 | `/dashboard`                                  | member          | my open requests + quick "new request"             |
 | `/rackets`, `/rackets/new`, `/rackets/$id`    | member          | manage own rackets                                 |

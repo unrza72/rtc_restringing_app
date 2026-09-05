@@ -5,8 +5,6 @@ export type SessionUser = {
   id: string
   name: string
   email: string
-  username: string | null
-  displayUsername: string | null
   status: UserStatus
   roles: Array<Role>
   banned: boolean

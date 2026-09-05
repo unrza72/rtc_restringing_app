@@ -9,7 +9,7 @@ import {
 } from '#/lib/labels'
 import { m } from '#/paraglide/messages'
 
-type Person = { id: string; name: string; displayUsername?: string | null }
+type Person = { id: string; name: string }
 
 export type RequestDetailData = {
   id: string

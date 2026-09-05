@@ -30,17 +30,17 @@ function LoginPage() {
   const [formError, setFormError] = useState<string | null>(null)
 
   const form = useForm({
-    defaultValues: { username: '', password: '' },
+    defaultValues: { email: '', password: '' },
     validators: {
       onSubmit: z.object({
-        username: z.string().trim().min(1),
+        email: z.email(),
         password: z.string().min(1),
       }),
     },
     onSubmit: async ({ value }) => {
       setFormError(null)
-      const { error } = await authClient.signIn.username({
-        username: value.username.trim(),
+      const { error } = await authClient.signIn.email({
+        email: value.email.trim(),
         password: value.password,
       })
       if (error) {
@@ -65,17 +65,18 @@ function LoginPage() {
       >
         <FormError>{formError}</FormError>
 
-        <form.Field name="username">
+        <form.Field name="email">
           {(field) => (
             <Field
               id={field.name}
-              label={m.auth_username()}
+              label={m.auth_email()}
               errors={fieldErrors(field.state.meta)}
             >
               <Input
                 id={field.name}
                 name={field.name}
-                autoComplete="username"
+                type="email"
+                autoComplete="email"
                 autoCapitalize="none"
                 value={field.state.value}
                 onBlur={field.handleBlur}

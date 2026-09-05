@@ -22,9 +22,7 @@ function PendingPage() {
   return (
     <AuthShell
       title={rejected ? m.pending_rejected_title() : m.pending_title()}
-      subtitle={m.pending_signed_in_as({
-        username: user?.displayUsername ?? user?.username ?? '',
-      })}
+      subtitle={m.pending_signed_in_as({ email: user?.email ?? '' })}
     >
       <div className="grid gap-4 p-6">
         <span

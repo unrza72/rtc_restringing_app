@@ -25,8 +25,6 @@ model User {
   image           String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
-  username        String?
-  displayUsername String?
   // "member" | "operator" | "admin", comma-separated for multiple (admin plugin)
   role            String?
   banned          Boolean?  @default(false)
@@ -46,7 +44,6 @@ model User {
   events        RequestEvent[]
 
   @@unique([email])
-  @@unique([username])
   @@map("user")
 }
 
@@ -70,7 +67,7 @@ model Session {
 model Account {
   id                    String    @id
   // better-auth 1.7 scopes account identity by issuer ("local:credential" for
-  // username/password logins).
+  // email/password logins).
   issuer                String
   accountId             String
   providerId            String

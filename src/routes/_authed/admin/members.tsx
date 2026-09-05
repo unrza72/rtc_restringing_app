@@ -72,7 +72,6 @@ function MembersPage() {
                   <div>
                     <p className="font-medium">{member.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {member.displayUsername ?? member.username} ·{' '}
                       {member.email}
                     </p>
                   </div>
@@ -122,7 +121,7 @@ function MembersPage() {
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                   <span className="font-medium">{member.name}</span>
                   <span className="text-xs text-muted-foreground">
-                    {member.displayUsername ?? member.username}
+                    {member.email}
                   </span>
                   <Badge
                     variant={

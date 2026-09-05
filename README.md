@@ -16,11 +16,11 @@ pnpm db:seed          # bootstrap the admin + a starter string catalogue
 pnpm dev              # http://localhost:3000
 ```
 
-The seed creates `admin` / `changeme123` — **change that password**, or set
-`SEED_ADMIN_USERNAME`, `SEED_ADMIN_PASSWORD`, `SEED_ADMIN_EMAIL`, `SEED_ADMIN_NAME`
-before seeding. Without this admin nobody can ever approve the first member.
+The seed creates `admin@rtc.local` / `changeme123` — **change that password**, or
+set `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_ADMIN_NAME` before seeding.
+Members sign in with their email address; there are no usernames. Without this admin nobody can ever approve the first member.
 
-Environment lives in `.env.local`: `DATABASE_URL`, `BETTER_AUTH_URL`,
+Environment lives in `.env`: `DATABASE_URL`, `BETTER_AUTH_URL`,
 `BETTER_AUTH_SECRET`.
 
 ## Roles
@@ -127,7 +127,7 @@ This add-on wires up ParaglideJS for localized routing and message formatting.
 
 ## Setting up Better Auth
 
-1. Generate and set the `BETTER_AUTH_SECRET` environment variable in your `.env.local`:
+1. Generate and set the `BETTER_AUTH_SECRET` environment variable in your `.env`:
 
    ```bash
    pnpm dlx @better-auth/cli secret

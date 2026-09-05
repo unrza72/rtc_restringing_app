@@ -14,8 +14,6 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   if (!session) return null
 
   const user = session.user as typeof session.user & {
-    username?: string | null
-    displayUsername?: string | null
     status?: string | null
     role?: string | null
     banned?: boolean | null
@@ -25,8 +23,6 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     id: user.id,
     name: user.name,
     email: user.email,
-    username: user.username ?? null,
-    displayUsername: user.displayUsername ?? null,
     status: (user.status ?? 'PENDING') as SessionUser['status'],
     roles: parseRoles(user.role),
     banned: user.banned ?? false,

@@ -1,4 +1,8 @@
-import { createMiddleware, createStart, createCsrfMiddleware } from '@tanstack/react-start'
+import {
+  createMiddleware,
+  createStart,
+  createCsrfMiddleware,
+} from '@tanstack/react-start'
 
 /**
  * Paraglide resolves the locale from the URL prefix ("/de/..."). On the server
@@ -30,8 +34,9 @@ const localeMiddleware = createMiddleware().server(
 // Scoped to serverFn like Start's own default. Router requests are ordinary
 // document navigations, which a cross-site check would break, and the API routes
 // (Better Auth, assets, c15t) are not server functions and keep their own rules.
-const csrf = createCsrfMiddleware({ filter: (ctx) => ctx.handlerType === 'serverFn' })
-
+const csrf = createCsrfMiddleware({
+  filter: (ctx) => ctx.handlerType === 'serverFn',
+})
 
 export const startInstance = createStart(() => ({
   requestMiddleware: [csrf, localeMiddleware],
