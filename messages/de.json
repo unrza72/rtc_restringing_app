@@ -4,6 +4,7 @@
   "app_tagline": "Schläger verwalten & Besaitung anfragen",
   "app_badge": "Mitglieder für Mitglieder",
   "language_label": "Sprache",
+  "language_switch_to": "Zu {locale} wechseln",
   "current_locale": "Aktuelle Sprache: {locale}",
   "nav_dashboard": "Übersicht",
   "nav_rackets": "Meine Schläger",

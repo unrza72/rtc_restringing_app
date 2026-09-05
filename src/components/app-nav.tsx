@@ -1,11 +1,13 @@
 import { Link, useRouteContext, useRouter } from '@tanstack/react-router'
 import {
+  Clock,
+  Languages,
   Layers,
   LogOut,
   Menu,
   Plus,
-  Settings,
-  Clock,
+  Spool,
+  Users,
   Wrench,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -17,13 +19,14 @@ import { getLocale, locales, setLocale } from '#/paraglide/runtime'
 import { cn } from '#/lib/utils'
 
 /**
- * Sticky workshop header from the prototype: the tennis-ball tile on the left,
- * a pill rail of tabs in the middle, the lime call-to-action and the member
- * chip on the right. Tabs are tinted by side of the house — emerald for the
- * member's own things, amber for the stringer's bench, slate for admin.
+ * Sticky header: mark on the left, tabs in the middle, actions on the right.
+ *
+ * Kept deliberately quiet. The tabs share one neutral active state rather than
+ * a colour per role — colour earns its place on the status badges and the one
+ * call to action, and spending it here as well made the bar read as noise.
  */
 
-type NavItem = { to: string; label: string; icon: LucideIcon; accent: string }
+type NavItem = { to: string; label: string; icon: LucideIcon }
 
 export function AppNav() {
   const { user } = useRouteContext({ from: '__root__' })
@@ -33,41 +36,22 @@ export function AppNav() {
   const approved = user?.status === 'APPROVED'
   const items: Array<NavItem> = approved
     ? [
-        {
-          to: '/rackets',
-          label: m.nav_rackets(),
-          icon: Layers,
-          accent: 'bg-emerald-600',
-        },
-        {
-          to: '/requests',
-          label: m.nav_requests(),
-          icon: Clock,
-          accent: 'bg-emerald-600',
-        },
+        { to: '/rackets', label: m.nav_rackets(), icon: Layers },
+        { to: '/requests', label: m.nav_requests(), icon: Clock },
         ...(user.roles.includes('operator')
-          ? [
-              {
-                to: '/queue',
-                label: m.nav_queue(),
-                icon: Wrench,
-                accent: 'bg-amber-600',
-              },
-            ]
+          ? [{ to: '/queue', label: m.nav_queue(), icon: Wrench }]
           : []),
         ...(user.roles.includes('admin')
           ? [
               {
                 to: '/admin/members',
                 label: m.nav_admin_members(),
-                icon: Settings,
-                accent: 'bg-slate-600',
+                icon: Users,
               },
               {
                 to: '/admin/strings',
                 label: m.nav_admin_strings(),
-                icon: Settings,
-                accent: 'bg-slate-600',
+                icon: Spool,
               },
             ]
           : []),
@@ -81,51 +65,41 @@ export function AppNav() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-800 bg-slate-950/90 backdrop-blur-md">
+    <header className="sticky top-0 z-40 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md">
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
-        <div className="flex h-16 items-center justify-between gap-4">
+        <div className="flex h-14 items-center gap-3">
           <Link
             to={approved ? '/dashboard' : '/'}
-            className="flex select-none items-center gap-3"
+            className="flex shrink-0 items-center gap-2.5 select-none"
           >
-            <span className="ball-tile flex size-10 items-center justify-center rounded-xl text-xl">
+            <span className="ball-tile flex size-8 items-center justify-center rounded-lg text-base">
               🎾
             </span>
-            <span className="hidden sm:block">
-              <span className="flex items-center gap-1.5">
-                <span className="text-lg font-extrabold tracking-tight text-white">
-                  {m.app_name()}
-                </span>
-                <span className="rounded border border-lime-400/30 bg-lime-400/20 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-lime-300 uppercase">
-                  {m.app_badge()}
-                </span>
-              </span>
-              <span className="block text-[11px] leading-none text-slate-400">
-                {m.app_tagline()}
-              </span>
+            <span className="text-base font-bold tracking-tight text-white">
+              {m.app_name()}
             </span>
           </Link>
 
           {items.length > 0 && (
-            <nav className="hidden items-center gap-1 rounded-xl border border-slate-800 bg-slate-900/80 p-1 lg:flex">
+            <nav className="ml-4 hidden items-center gap-0.5 lg:flex">
               {items.map((item) => (
                 <NavTab key={item.to} {...item} />
               ))}
             </nav>
           )}
 
-          <div className="flex items-center gap-2.5">
+          <div className="ml-auto flex items-center gap-1.5">
             {approved && (
               <Link
                 to="/requests/new"
+                title={m.dash_new_request()}
                 className={cn(
-                  'hidden items-center gap-1.5 rounded-xl px-3.5 py-2 sm:flex',
-                  'bg-lime-400 text-xs font-bold text-slate-950 shadow-md shadow-lime-400/10',
-                  'transition-all hover:bg-lime-300 active:scale-95',
+                  'flex items-center gap-1.5 rounded-lg bg-lime-400 px-3 py-1.5',
+                  'text-xs font-bold text-slate-950 transition-colors hover:bg-lime-300',
                 )}
               >
                 <Plus className="size-3.5 stroke-[3]" />
-                {m.dash_new_request()}
+                <span className="hidden sm:inline">{m.dash_new_request()}</span>
               </Link>
             )}
 
@@ -133,59 +107,45 @@ export function AppNav() {
 
             {user ? (
               <>
-                <span className="hidden items-center gap-2 rounded-xl border border-slate-800 bg-slate-900 py-1.5 pr-3 pl-2 md:flex">
-                  <span className="flex size-7 items-center justify-center rounded-lg bg-slate-800 text-xs font-bold text-lime-300">
+                <span className="hidden items-center gap-2 pr-1 pl-2 md:flex">
+                  <span className="flex size-7 items-center justify-center rounded-full bg-slate-800 text-[11px] font-bold text-slate-300">
                     {user.name.charAt(0).toUpperCase()}
                   </span>
-                  <span>
-                    <span className="block text-xs leading-tight font-bold text-white">
-                      {user.name}
-                    </span>
-                    <span className="block text-[10px] leading-tight text-slate-400">
-                      {user.roles.includes('admin')
-                        ? `🔧 ${m.role_admin()}`
-                        : user.roles.includes('operator')
-                          ? `🔧 ${m.role_operator()}`
-                          : `🎾 ${m.role_member()}`}
-                    </span>
+                  <span className="text-xs font-medium text-slate-300">
+                    {user.name}
                   </span>
                 </span>
-                <button
-                  type="button"
+                <IconButton
+                  label={m.nav_sign_out()}
+                  icon={LogOut}
                   onClick={handleSignOut}
-                  title={m.nav_sign_out()}
-                  aria-label={m.nav_sign_out()}
-                  className="rounded-xl border border-transparent p-2 text-slate-400 transition hover:border-slate-800 hover:bg-slate-900 hover:text-slate-200"
-                >
-                  <LogOut className="size-4" />
-                </button>
+                />
               </>
             ) : (
               <Link
                 to="/login"
                 search={{ redirect: undefined }}
-                className="rounded-xl px-3.5 py-2 text-xs font-bold text-slate-300 transition hover:bg-slate-900 hover:text-white"
+                className="rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-300 transition-colors hover:bg-slate-900 hover:text-white"
               >
                 {m.nav_sign_in()}
               </Link>
             )}
 
             {items.length > 0 && (
-              <button
-                type="button"
-                className="rounded-xl border border-transparent p-2 text-slate-400 transition hover:border-slate-800 hover:bg-slate-900 hover:text-slate-200 lg:hidden"
-                aria-label={m.nav_menu()}
-                aria-expanded={open}
-                onClick={() => setOpen((v) => !v)}
-              >
-                <Menu className="size-4" />
-              </button>
+              <span className="lg:hidden">
+                <IconButton
+                  label={m.nav_menu()}
+                  icon={Menu}
+                  expanded={open}
+                  onClick={() => setOpen((v) => !v)}
+                />
+              </span>
             )}
           </div>
         </div>
 
         {open && items.length > 0 && (
-          <nav className="flex flex-col gap-1 border-t border-slate-800 py-2 lg:hidden">
+          <nav className="flex flex-col gap-0.5 border-t border-slate-800/80 py-2 lg:hidden">
             {items.map((item) => (
               <NavTab
                 key={item.to}
@@ -204,7 +164,6 @@ function NavTab({
   to,
   label,
   icon: Icon,
-  accent,
   onNavigate,
 }: NavItem & { onNavigate?: () => void }) {
   return (
@@ -212,11 +171,11 @@ function NavTab({
       to={to}
       onClick={onNavigate}
       className={cn(
-        'flex items-center gap-2 rounded-lg px-3.5 py-2',
-        'text-xs font-semibold text-slate-300 transition-all',
-        'hover:bg-slate-800 hover:text-white',
+        'flex items-center gap-2 rounded-lg px-3 py-1.5',
+        'text-xs font-medium text-slate-400 transition-colors',
+        'hover:bg-slate-900 hover:text-slate-100',
       )}
-      activeProps={{ className: cn(accent, 'text-white shadow-md') }}
+      activeProps={{ className: 'bg-slate-800 text-white font-semibold' }}
     >
       <Icon className="size-3.5" />
       {label}
@@ -224,29 +183,47 @@ function NavTab({
   )
 }
 
+function IconButton({
+  label,
+  icon: Icon,
+  expanded,
+  onClick,
+}: {
+  label: string
+  icon: LucideIcon
+  expanded?: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={label}
+      aria-label={label}
+      aria-expanded={expanded}
+      className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-900 hover:text-slate-100"
+    >
+      <Icon className="size-4" />
+    </button>
+  )
+}
+
 function LocaleToggle() {
   const current = getLocale()
+  const next = locales.find((l) => l !== current) ?? current
+
+  // Two locales only, so a single toggle showing the other one beats a
+  // segmented control that always has half its pixels switched off.
   return (
-    <span
-      className="flex items-center rounded-xl border border-slate-800 bg-slate-900 p-0.5"
-      aria-label={m.language_label()}
+    <button
+      type="button"
+      onClick={() => setLocale(next)}
+      title={m.language_switch_to({ locale: next.toUpperCase() })}
+      aria-label={m.language_switch_to({ locale: next.toUpperCase() })}
+      className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-bold tracking-wider text-slate-400 transition-colors hover:bg-slate-900 hover:text-slate-100"
     >
-      {locales.map((locale) => (
-        <button
-          key={locale}
-          type="button"
-          onClick={() => setLocale(locale)}
-          aria-pressed={locale === current}
-          className={cn(
-            'rounded-lg px-2 py-1 text-[10px] font-bold tracking-wider transition-colors',
-            locale === current
-              ? 'bg-lime-400 text-slate-950'
-              : 'text-slate-400 hover:text-slate-200',
-          )}
-        >
-          {locale.toUpperCase()}
-        </button>
-      ))}
-    </span>
+      <Languages className="size-3.5" />
+      {next.toUpperCase()}
+    </button>
   )
 }

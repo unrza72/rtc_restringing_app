@@ -4,6 +4,7 @@
   "app_tagline": "Manage rackets & request restringing",
   "app_badge": "Members for members",
   "language_label": "Language",
+  "language_switch_to": "Switch to {locale}",
   "current_locale": "Current locale: {locale}",
   "nav_dashboard": "Dashboard",
   "nav_rackets": "My rackets",
