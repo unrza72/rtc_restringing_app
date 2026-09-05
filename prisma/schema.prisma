@@ -1,0 +1,201 @@
+// Schema for the RTC restringing app.
+//
+// The auth models (User/Session/Account/Verification) are owned by better-auth —
+// regenerate them with `pnpm dlx @better-auth/cli generate` after changing
+// src/lib/auth.ts, and re-apply the app relations marked below by hand.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ---------------------------------------------------------------------------
+// better-auth
+// ---------------------------------------------------------------------------
+
+model User {
+  id              String    @id
+  name            String
+  email           String
+  emailVerified   Boolean   @default(false)
+  image           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  username        String?
+  displayUsername String?
+  // "member" | "operator" | "admin", comma-separated for multiple (admin plugin)
+  role            String?
+  banned          Boolean?  @default(false)
+  banReason       String?
+  banExpires      DateTime?
+  // PENDING | APPROVED | REJECTED — an admin must approve before the app opens up
+  status          String?   @default("PENDING")
+  approvedAt      DateTime?
+  approvedById    String?
+  sessions        Session[]
+  accounts        Account[]
+
+  // app relations
+  rackets       Racket[]
+  requests      StringingRequest[] @relation("requester")
+  stringingJobs StringingRequest[] @relation("operator")
+  events        RequestEvent[]
+
+  @@unique([email])
+  @@unique([username])
+  @@map("user")
+}
+
+model Session {
+  id             String   @id
+  expiresAt      DateTime
+  token          String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  ipAddress      String?
+  userAgent      String?
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  impersonatedBy String?
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  // better-auth 1.7 scopes account identity by issuer ("local:credential" for
+  // username/password logins).
+  issuer                String
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([issuer, accountId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+// ---------------------------------------------------------------------------
+// app
+// ---------------------------------------------------------------------------
+
+model Racket {
+  id            String   @id @default(cuid())
+  ownerId       String
+  owner         User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  label         String
+  brand         String?
+  model         String?
+  headSizeCm2   Int?
+  stringPattern String?
+  gripSize      String?
+  notes         String?
+  archived      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  requests StringingRequest[]
+
+  @@index([ownerId])
+}
+
+/// Strings the club stocks. Deactivated rather than deleted so finished jobs
+/// keep showing what was strung.
+model ClubString {
+  id         String   @id @default(cuid())
+  name       String
+  gauge      String?
+  priceCents Int?
+  active     Boolean  @default(true)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  requests StringingRequest[]
+
+  @@index([active, sortOrder])
+}
+
+model StringingRequest {
+  id          String @id @default(cuid())
+  racketId    String
+  racket      Racket @relation(fields: [racketId], references: [id])
+  requesterId String
+  requester   User   @relation("requester", fields: [requesterId], references: [id])
+
+  /// REQUESTED | ACCEPTED | DONE | COLLECTED | CANCELLED
+  status String @default("REQUESTED")
+
+  /// MEMBER (own string, see ownStringName) | CLUB (see clubStringId)
+  stringSource  String
+  clubStringId  String?
+  clubString    ClubString? @relation(fields: [clubStringId], references: [id])
+  ownStringName String?
+  tensionMain   Float
+  tensionCross  Float?
+  neededBy      DateTime?
+  memberNotes   String?
+
+  operatorId     String?
+  operator       User?     @relation("operator", fields: [operatorId], references: [id])
+  acceptedAt     DateTime?
+  completedAt    DateTime?
+  collectedAt    DateTime?
+  operatorNotes  String?
+  usedStringName String?
+  usedTensionMain  Float?
+  usedTensionCross Float?
+  priceCents     Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events RequestEvent[]
+
+  @@index([status, createdAt])
+  @@index([requesterId])
+  @@index([operatorId])
+  @@index([racketId])
+}
+
+model RequestEvent {
+  id         String           @id @default(cuid())
+  requestId  String
+  request    StringingRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  actorId    String
+  actor      User             @relation(fields: [actorId], references: [id])
+  fromStatus String?
+  toStatus   String
+  note       String?
+  createdAt  DateTime         @default(now())
+
+  @@index([requestId, createdAt])
+}
