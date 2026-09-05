@@ -17,6 +17,7 @@ todos.json
 *.db-journal
 *.db-wal
 *.db-shm
+*.sqlite
 
 # generated Prisma client (recreate with `pnpm db:generate`)
 src/generated/
