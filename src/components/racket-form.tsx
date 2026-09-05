@@ -1,4 +1,5 @@
 import { useForm } from '@tanstack/react-form'
+import { ChevronDown } from 'lucide-react'
 import { useState } from 'react'
 
 import { racketInputSchema } from '#/lib/schemas'
@@ -9,6 +10,7 @@ import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { Textarea } from '#/components/ui/textarea'
 import { Field, FormError, fieldErrors } from '#/components/form-field'
+import { cn } from '#/lib/utils'
 
 export type RacketFormValues = {
   label: string
@@ -30,6 +32,18 @@ export const emptyRacket: RacketFormValues = {
   notes: '',
 }
 
+/** Whether any of the optional fields already carry a value. */
+function hasDetails(value: RacketFormValues) {
+  return (
+    value.brand !== '' ||
+    value.model !== '' ||
+    value.headSizeCm2 !== '' ||
+    value.stringPattern !== '' ||
+    value.gripSize !== '' ||
+    value.notes !== ''
+  )
+}
+
 export function RacketForm({
   defaultValues = emptyRacket,
   submitLabel,
@@ -42,6 +56,11 @@ export function RacketForm({
   onCancel?: () => void
 }) {
   const [formError, setFormError] = useState<string | null>(null)
+  // Editing an existing racket shows its details right away; adding a new one
+  // starts with just the name and lets the rest stay out of the way.
+  const [detailsOpen, setDetailsOpen] = useState(() =>
+    hasDetails(defaultValues),
+  )
 
   const form = useForm({
     defaultValues,
@@ -86,116 +105,134 @@ export function RacketForm({
         )}
       </form.Field>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <form.Field name="brand">
-          {(field) => (
-            <Field
-              id={field.name}
-              label={m.racket_brand()}
-              errors={fieldErrors(field.state.meta)}
-            >
-              <Input
-                id={field.name}
-                value={field.state.value}
-                onBlur={field.handleBlur}
-                onChange={(e) => field.handleChange(e.target.value)}
-              />
-            </Field>
+      <button
+        type="button"
+        onClick={() => setDetailsOpen((v) => !v)}
+        className="flex items-center gap-1.5 self-start text-sm font-medium text-muted-foreground hover:text-foreground"
+      >
+        <ChevronDown
+          className={cn(
+            'size-4 transition-transform',
+            detailsOpen && 'rotate-180',
           )}
-        </form.Field>
+        />
+        {detailsOpen ? m.racket_hide_details() : m.racket_add_details()}
+      </button>
 
-        <form.Field name="model">
-          {(field) => (
-            <Field
-              id={field.name}
-              label={m.racket_model()}
-              errors={fieldErrors(field.state.meta)}
-            >
-              <Input
+      {detailsOpen && (
+        <div className="grid gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <form.Field name="brand">
+              {(field) => (
+                <Field
+                  id={field.name}
+                  label={m.racket_brand()}
+                  errors={fieldErrors(field.state.meta)}
+                >
+                  <Input
+                    id={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                  />
+                </Field>
+              )}
+            </form.Field>
+
+            <form.Field name="model">
+              {(field) => (
+                <Field
+                  id={field.name}
+                  label={m.racket_model()}
+                  errors={fieldErrors(field.state.meta)}
+                >
+                  <Input
+                    id={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                  />
+                </Field>
+              )}
+            </form.Field>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            <form.Field name="headSizeCm2">
+              {(field) => (
+                <Field
+                  id={field.name}
+                  label={m.racket_head_size()}
+                  errors={fieldErrors(field.state.meta)}
+                >
+                  <Input
+                    id={field.name}
+                    type="number"
+                    inputMode="numeric"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                  />
+                </Field>
+              )}
+            </form.Field>
+
+            <form.Field name="stringPattern">
+              {(field) => (
+                <Field
+                  id={field.name}
+                  label={m.racket_string_pattern()}
+                  errors={fieldErrors(field.state.meta)}
+                >
+                  <Input
+                    id={field.name}
+                    placeholder="16x19"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                  />
+                </Field>
+              )}
+            </form.Field>
+
+            <form.Field name="gripSize">
+              {(field) => (
+                <Field
+                  id={field.name}
+                  label={m.racket_grip_size()}
+                  errors={fieldErrors(field.state.meta)}
+                >
+                  <Input
+                    id={field.name}
+                    placeholder="L2"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                  />
+                </Field>
+              )}
+            </form.Field>
+          </div>
+
+          <form.Field name="notes">
+            {(field) => (
+              <Field
                 id={field.name}
-                value={field.state.value}
-                onBlur={field.handleBlur}
-                onChange={(e) => field.handleChange(e.target.value)}
-              />
-            </Field>
-          )}
-        </form.Field>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-3">
-        <form.Field name="headSizeCm2">
-          {(field) => (
-            <Field
-              id={field.name}
-              label={m.racket_head_size()}
-              errors={fieldErrors(field.state.meta)}
-            >
-              <Input
-                id={field.name}
-                type="number"
-                inputMode="numeric"
-                value={field.state.value}
-                onBlur={field.handleBlur}
-                onChange={(e) => field.handleChange(e.target.value)}
-              />
-            </Field>
-          )}
-        </form.Field>
-
-        <form.Field name="stringPattern">
-          {(field) => (
-            <Field
-              id={field.name}
-              label={m.racket_string_pattern()}
-              errors={fieldErrors(field.state.meta)}
-            >
-              <Input
-                id={field.name}
-                placeholder="16x19"
-                value={field.state.value}
-                onBlur={field.handleBlur}
-                onChange={(e) => field.handleChange(e.target.value)}
-              />
-            </Field>
-          )}
-        </form.Field>
-
-        <form.Field name="gripSize">
-          {(field) => (
-            <Field
-              id={field.name}
-              label={m.racket_grip_size()}
-              errors={fieldErrors(field.state.meta)}
-            >
-              <Input
-                id={field.name}
-                placeholder="L2"
-                value={field.state.value}
-                onBlur={field.handleBlur}
-                onChange={(e) => field.handleChange(e.target.value)}
-              />
-            </Field>
-          )}
-        </form.Field>
-      </div>
-
-      <form.Field name="notes">
-        {(field) => (
-          <Field
-            id={field.name}
-            label={m.racket_notes()}
-            errors={fieldErrors(field.state.meta)}
-          >
-            <Textarea
-              id={field.name}
-              rows={3}
-              value={field.state.value}
-              onBlur={field.handleBlur}
-              onChange={(e) => field.handleChange(e.target.value)}
-            />
-          </Field>
-        )}
-      </form.Field>
+                label={m.racket_notes()}
+                errors={fieldErrors(field.state.meta)}
+              >
+                <Textarea
+                  id={field.name}
+                  rows={3}
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                />
+              </Field>
+            )}
+          </form.Field>
+        </div>
+      )}
 
       <div className="flex gap-2">
         <form.Subscribe selector={(s) => s.isSubmitting}>

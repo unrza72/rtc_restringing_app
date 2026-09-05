@@ -66,6 +66,8 @@
   "racket_add": "Add racket",
   "racket_label": "Name",
   "racket_label_hint": "How you tell it apart, e.g. \"blue Pure Drive\".",
+  "racket_add_details": "Add more details",
+  "racket_hide_details": "Hide details",
   "racket_brand": "Brand",
   "racket_model": "Model",
   "racket_head_size": "Head size (cm²)",

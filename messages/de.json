@@ -66,6 +66,8 @@
   "racket_add": "Schläger anlegen",
   "racket_label": "Bezeichnung",
   "racket_label_hint": "Woran du ihn erkennst, z. B. „blauer Pure Drive“.",
+  "racket_add_details": "Weitere Details hinzufügen",
+  "racket_hide_details": "Details ausblenden",
   "racket_brand": "Marke",
   "racket_model": "Modell",
   "racket_head_size": "Kopfgröße (cm²)",
