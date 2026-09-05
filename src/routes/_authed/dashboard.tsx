@@ -1,11 +1,11 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Plus } from 'lucide-react'
 
 import { listMyRequests } from '#/server/requests.functions'
 import { isOpen } from '#/lib/status'
 import { m } from '#/paraglide/messages'
-import { Button } from '#/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
+import { cn } from '#/lib/utils'
 import { RequestList } from '#/components/request-list'
 
 export const Route = createFileRoute('/_authed/dashboard')({
@@ -21,12 +21,16 @@ function Dashboard() {
   return (
     <div className="grid gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="text-2xl font-extrabold tracking-tight text-white">
           {m.dash_title({ name: user.name })}
         </h1>
-        <Button asChild>
-          <Link to="/requests/new">{m.dash_new_request()}</Link>
-        </Button>
+        <Link
+          to="/requests/new"
+          className="flex items-center gap-1.5 rounded-xl bg-lime-400 px-3.5 py-2 text-xs font-bold text-slate-950 shadow-md shadow-lime-400/10 transition-all hover:bg-lime-300 active:scale-95"
+        >
+          <Plus className="size-3.5 stroke-[3]" />
+          {m.dash_new_request()}
+        </Link>
       </div>
 
       <Card>
@@ -51,6 +55,7 @@ function Dashboard() {
               title={m.dash_operator_panel()}
               action={m.dash_open_queue()}
               to="/queue"
+              accent="amber"
             />
           )}
           {user.roles.includes('admin') && (
@@ -58,6 +63,7 @@ function Dashboard() {
               title={m.dash_admin_panel()}
               action={m.dash_review_members()}
               to="/admin/members"
+              accent="emerald"
             />
           )}
         </div>
@@ -70,24 +76,35 @@ function ShortcutCard({
   title,
   action,
   to,
+  accent,
 }: {
   title: string
   action: string
   to: string
+  accent: 'amber' | 'emerald'
 }) {
+  const tone =
+    accent === 'amber'
+      ? 'hover:border-amber-600/60 text-amber-300'
+      : 'hover:border-emerald-500/60 text-emerald-300'
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Button asChild variant="outline" size="sm">
-          <Link to={to}>
-            {action}
-            <ArrowRight className="size-4" />
-          </Link>
-        </Button>
-      </CardContent>
-    </Card>
+    <Link
+      to={to}
+      className={cn(
+        'group flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-900 p-5 transition-colors',
+        tone,
+      )}
+    >
+      <span>
+        <span className="block text-[10px] font-bold tracking-wider uppercase">
+          {title}
+        </span>
+        <span className="mt-1 block text-sm font-semibold text-white">
+          {action}
+        </span>
+      </span>
+      <ArrowRight className="size-4 text-slate-500 transition-transform group-hover:translate-x-0.5" />
+    </Link>
   )
 }

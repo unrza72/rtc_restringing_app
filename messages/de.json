@@ -1,7 +1,8 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
   "app_name": "RTC Besaitung",
-  "app_tagline": "Schlägerbesaitung für den Verein",
+  "app_tagline": "Schläger verwalten & Besaitung anfragen",
+  "app_badge": "Mitglieder für Mitglieder",
   "language_label": "Sprache",
   "current_locale": "Aktuelle Sprache: {locale}",
   "nav_dashboard": "Übersicht",

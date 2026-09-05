@@ -31,7 +31,7 @@ function RacketsPage() {
   return (
     <div className="grid gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="text-2xl font-extrabold tracking-tight text-white">
           {m.racket_list_title()}
         </h1>
         <div className="flex items-center gap-2">

@@ -1,7 +1,8 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
   "app_name": "RTC Restringing",
-  "app_tagline": "Racket restringing for the club",
+  "app_tagline": "Manage rackets & request restringing",
+  "app_badge": "Members for members",
   "language_label": "Language",
   "current_locale": "Current locale: {locale}",
   "nav_dashboard": "Dashboard",

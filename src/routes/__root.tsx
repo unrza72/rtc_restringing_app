@@ -36,9 +36,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body className="bg-background text-foreground min-h-screen antialiased">
+      <body className="min-h-screen bg-slate-950 text-slate-100 antialiased">
         <AppNav />
-        <main className="mx-auto w-full max-w-5xl px-4 py-6 md:py-10">
+        <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 md:py-10">
           {children}
         </main>
         <TanStackDevtools

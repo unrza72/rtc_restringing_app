@@ -31,7 +31,7 @@ function QueuePage() {
 
   return (
     <div className="grid gap-6">
-      <h1 className="text-2xl font-semibold tracking-tight">
+      <h1 className="text-2xl font-extrabold tracking-tight text-white">
         {m.queue_title()}
       </h1>
 
@@ -87,10 +87,11 @@ function FilterTab({
       to="/queue"
       search={to}
       className={cn(
-        'rounded-full border px-3 py-1 text-sm transition-colors',
+        'rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors',
         active
-          ? 'bg-foreground text-background'
-          : 'text-muted-foreground hover:bg-accent',
+          ? // The workshop is amber territory throughout the prototype.
+            'border-amber-600 bg-amber-600 text-white shadow-md'
+          : 'border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-slate-200',
       )}
     >
       {label}

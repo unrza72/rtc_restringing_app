@@ -49,14 +49,15 @@ export function isOpen(status: string) {
   return OPEN_STATUSES.includes(status as RequestStatus)
 }
 
-/** Badge colouring, shared by every list and detail view. */
-export const STATUS_VARIANT: Record<
-  RequestStatus,
-  'default' | 'secondary' | 'destructive' | 'outline'
-> = {
-  REQUESTED: 'secondary',
-  ACCEPTED: 'default',
-  DONE: 'outline',
-  COLLECTED: 'outline',
-  CANCELLED: 'destructive',
+/**
+ * Badge colouring, shared by every list and detail view. Carried over from the
+ * prototype: slate for "nothing is happening yet", amber while it is on the
+ * machine, emerald once it can be picked up, rose for cancelled.
+ */
+export const STATUS_BADGE: Record<RequestStatus, string> = {
+  REQUESTED: 'bg-slate-800 text-slate-300 border-slate-700',
+  ACCEPTED: 'bg-amber-950 text-amber-200 border-amber-600',
+  DONE: 'bg-emerald-950 text-emerald-200 border-emerald-500',
+  COLLECTED: 'bg-slate-800/60 text-slate-400 border-slate-700',
+  CANCELLED: 'bg-rose-950 text-rose-300 border-rose-800',
 }

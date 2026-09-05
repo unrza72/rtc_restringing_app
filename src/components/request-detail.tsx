@@ -1,14 +1,11 @@
-import { Badge } from '#/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
-import { STATUS_VARIANT } from '#/lib/status'
-import type { RequestStatus } from '#/lib/status'
+import { StatusBadge } from '#/components/status-badge'
 import {
   describeString,
   formatDate,
   formatDateTime,
   formatPrice,
   formatTension,
-  requestStatusLabel,
 } from '#/lib/labels'
 import { m } from '#/paraglide/messages'
 
@@ -51,9 +48,7 @@ export function RequestSummary({
     <Card>
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
         <CardTitle>{request.racket.label}</CardTitle>
-        <Badge variant={STATUS_VARIANT[request.status as RequestStatus]}>
-          {requestStatusLabel(request.status)}
-        </Badge>
+        <StatusBadge status={request.status} />
       </CardHeader>
       <CardContent>
         <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
@@ -142,10 +137,10 @@ function Row({
 }) {
   return (
     <div className={full ? 'sm:col-span-2' : undefined}>
-      <dt className="text-xs tracking-wide text-muted-foreground uppercase">
+      <dt className="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
         {label}
       </dt>
-      <dd className="mt-0.5 text-sm">{children}</dd>
+      <dd className="mt-0.5 text-sm text-slate-200">{children}</dd>
     </div>
   )
 }
@@ -173,14 +168,11 @@ export function RequestTimeline({
               key={event.id}
               className="flex flex-wrap items-baseline gap-x-2"
             >
-              <Badge
-                variant={STATUS_VARIANT[event.toStatus as RequestStatus]}
-                className="shrink-0"
-              >
-                {requestStatusLabel(event.toStatus)}
-              </Badge>
-              <span className="text-sm">{event.actor.name}</span>
-              <span className="text-xs text-muted-foreground">
+              <StatusBadge status={event.toStatus} />
+              <span className="text-sm font-semibold text-white">
+                {event.actor.name}
+              </span>
+              <span className="text-xs text-slate-500">
                 {formatDateTime(event.createdAt)}
               </span>
               {event.note && (
