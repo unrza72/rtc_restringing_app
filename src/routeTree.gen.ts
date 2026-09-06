@@ -20,6 +20,8 @@ import { Route as AuthedDashboardRouteImport } from './routes/_authed/dashboard'
 import { Route as AuthedQueueRouteImport } from './routes/_authed/queue'
 import { Route as AuthedAdminMembersRouteImport } from './routes/_authed/admin/members'
 import { Route as AuthedAdminStringsRouteImport } from './routes/_authed/admin/strings'
+import { Route as AuthedBillingIndexRouteImport } from './routes/_authed/billing/index'
+import { Route as AuthedBillingPayoutsRouteImport } from './routes/_authed/billing/payouts'
 import { Route as AuthedQueueIndexRouteImport } from './routes/_authed/queue/index'
 import { Route as AuthedQueueIdRouteImport } from './routes/_authed/queue/$id'
 import { Route as AuthedRacketsIndexRouteImport } from './routes/_authed/rackets/index'
@@ -84,6 +86,16 @@ const AuthedAdminStringsRoute = AuthedAdminStringsRouteImport.update({
   path: '/strings',
   getParentRoute: () => AuthedAdminRoute,
 } as any)
+const AuthedBillingIndexRoute = AuthedBillingIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthedBillingRoute,
+} as any)
+const AuthedBillingPayoutsRoute = AuthedBillingPayoutsRouteImport.update({
+  id: '/payouts',
+  path: '/payouts',
+  getParentRoute: () => AuthedBillingRoute,
+} as any)
 const AuthedQueueIndexRoute = AuthedQueueIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -136,17 +148,19 @@ export interface FileRoutesByFullPath {
   '/pending': typeof PendingRoute
   '/signup': typeof SignupRoute
   '/admin': typeof AuthedAdminRouteWithChildren
-  '/billing': typeof AuthedBillingRoute
+  '/billing': typeof AuthedBillingRouteWithChildren
   '/dashboard': typeof AuthedDashboardRoute
   '/queue': typeof AuthedQueueRouteWithChildren
   '/admin/members': typeof AuthedAdminMembersRoute
   '/admin/strings': typeof AuthedAdminStringsRoute
+  '/billing/payouts': typeof AuthedBillingPayoutsRoute
   '/queue/$id': typeof AuthedQueueIdRoute
   '/rackets/$id': typeof AuthedRacketsIdRoute
   '/rackets/new': typeof AuthedRacketsNewRoute
   '/requests/$id': typeof AuthedRequestsIdRoute
   '/requests/new': typeof AuthedRequestsNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/billing/': typeof AuthedBillingIndexRoute
   '/queue/': typeof AuthedQueueIndexRoute
   '/rackets/': typeof AuthedRacketsIndexRoute
   '/requests/': typeof AuthedRequestsIndexRoute
@@ -157,16 +171,17 @@ export interface FileRoutesByTo {
   '/pending': typeof PendingRoute
   '/signup': typeof SignupRoute
   '/admin': typeof AuthedAdminRouteWithChildren
-  '/billing': typeof AuthedBillingRoute
   '/dashboard': typeof AuthedDashboardRoute
   '/admin/members': typeof AuthedAdminMembersRoute
   '/admin/strings': typeof AuthedAdminStringsRoute
+  '/billing/payouts': typeof AuthedBillingPayoutsRoute
   '/queue/$id': typeof AuthedQueueIdRoute
   '/rackets/$id': typeof AuthedRacketsIdRoute
   '/rackets/new': typeof AuthedRacketsNewRoute
   '/requests/$id': typeof AuthedRequestsIdRoute
   '/requests/new': typeof AuthedRequestsNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/billing': typeof AuthedBillingIndexRoute
   '/queue': typeof AuthedQueueIndexRoute
   '/rackets': typeof AuthedRacketsIndexRoute
   '/requests': typeof AuthedRequestsIndexRoute
@@ -179,17 +194,19 @@ export interface FileRoutesById {
   '/pending': typeof PendingRoute
   '/signup': typeof SignupRoute
   '/_authed/admin': typeof AuthedAdminRouteWithChildren
-  '/_authed/billing': typeof AuthedBillingRoute
+  '/_authed/billing': typeof AuthedBillingRouteWithChildren
   '/_authed/dashboard': typeof AuthedDashboardRoute
   '/_authed/queue': typeof AuthedQueueRouteWithChildren
   '/_authed/admin/members': typeof AuthedAdminMembersRoute
   '/_authed/admin/strings': typeof AuthedAdminStringsRoute
+  '/_authed/billing/payouts': typeof AuthedBillingPayoutsRoute
   '/_authed/queue/$id': typeof AuthedQueueIdRoute
   '/_authed/rackets/$id': typeof AuthedRacketsIdRoute
   '/_authed/rackets/new': typeof AuthedRacketsNewRoute
   '/_authed/requests/$id': typeof AuthedRequestsIdRoute
   '/_authed/requests/new': typeof AuthedRequestsNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/_authed/billing/': typeof AuthedBillingIndexRoute
   '/_authed/queue/': typeof AuthedQueueIndexRoute
   '/_authed/rackets/': typeof AuthedRacketsIndexRoute
   '/_authed/requests/': typeof AuthedRequestsIndexRoute
@@ -207,12 +224,14 @@ export interface FileRouteTypes {
     | '/queue'
     | '/admin/members'
     | '/admin/strings'
+    | '/billing/payouts'
     | '/queue/$id'
     | '/rackets/$id'
     | '/rackets/new'
     | '/requests/$id'
     | '/requests/new'
     | '/api/auth/$'
+    | '/billing/'
     | '/queue/'
     | '/rackets/'
     | '/requests/'
@@ -223,16 +242,17 @@ export interface FileRouteTypes {
     | '/pending'
     | '/signup'
     | '/admin'
-    | '/billing'
     | '/dashboard'
     | '/admin/members'
     | '/admin/strings'
+    | '/billing/payouts'
     | '/queue/$id'
     | '/rackets/$id'
     | '/rackets/new'
     | '/requests/$id'
     | '/requests/new'
     | '/api/auth/$'
+    | '/billing'
     | '/queue'
     | '/rackets'
     | '/requests'
@@ -249,12 +269,14 @@ export interface FileRouteTypes {
     | '/_authed/queue'
     | '/_authed/admin/members'
     | '/_authed/admin/strings'
+    | '/_authed/billing/payouts'
     | '/_authed/queue/$id'
     | '/_authed/rackets/$id'
     | '/_authed/rackets/new'
     | '/_authed/requests/$id'
     | '/_authed/requests/new'
     | '/api/auth/$'
+    | '/_authed/billing/'
     | '/_authed/queue/'
     | '/_authed/rackets/'
     | '/_authed/requests/'
@@ -348,6 +370,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedAdminStringsRouteImport
       parentRoute: typeof AuthedAdminRoute
     }
+    '/_authed/billing/': {
+      id: '/_authed/billing/'
+      path: '/'
+      fullPath: '/billing/'
+      preLoaderRoute: typeof AuthedBillingIndexRouteImport
+      parentRoute: typeof AuthedBillingRoute
+    }
+    '/_authed/billing/payouts': {
+      id: '/_authed/billing/payouts'
+      path: '/payouts'
+      fullPath: '/billing/payouts'
+      preLoaderRoute: typeof AuthedBillingPayoutsRouteImport
+      parentRoute: typeof AuthedBillingRoute
+    }
     '/_authed/queue/': {
       id: '/_authed/queue/'
       path: '/'
@@ -428,6 +464,20 @@ const AuthedAdminRouteWithChildren = AuthedAdminRoute._addFileChildren(
   AuthedAdminRouteChildren,
 )
 
+interface AuthedBillingRouteChildren {
+  AuthedBillingPayoutsRoute: typeof AuthedBillingPayoutsRoute
+  AuthedBillingIndexRoute: typeof AuthedBillingIndexRoute
+}
+
+const AuthedBillingRouteChildren: AuthedBillingRouteChildren = {
+  AuthedBillingPayoutsRoute: AuthedBillingPayoutsRoute,
+  AuthedBillingIndexRoute: AuthedBillingIndexRoute,
+}
+
+const AuthedBillingRouteWithChildren = AuthedBillingRoute._addFileChildren(
+  AuthedBillingRouteChildren,
+)
+
 interface AuthedQueueRouteChildren {
   AuthedQueueIdRoute: typeof AuthedQueueIdRoute
   AuthedQueueIndexRoute: typeof AuthedQueueIndexRoute
@@ -444,7 +494,7 @@ const AuthedQueueRouteWithChildren = AuthedQueueRoute._addFileChildren(
 
 interface AuthedRouteChildren {
   AuthedAdminRoute: typeof AuthedAdminRouteWithChildren
-  AuthedBillingRoute: typeof AuthedBillingRoute
+  AuthedBillingRoute: typeof AuthedBillingRouteWithChildren
   AuthedDashboardRoute: typeof AuthedDashboardRoute
   AuthedQueueRoute: typeof AuthedQueueRouteWithChildren
   AuthedRacketsIdRoute: typeof AuthedRacketsIdRoute
@@ -457,7 +507,7 @@ interface AuthedRouteChildren {
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAdminRoute: AuthedAdminRouteWithChildren,
-  AuthedBillingRoute: AuthedBillingRoute,
+  AuthedBillingRoute: AuthedBillingRouteWithChildren,
   AuthedDashboardRoute: AuthedDashboardRoute,
   AuthedQueueRoute: AuthedQueueRouteWithChildren,
   AuthedRacketsIdRoute: AuthedRacketsIdRoute,

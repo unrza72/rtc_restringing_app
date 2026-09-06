@@ -111,6 +111,7 @@ const RACKETS = '/src/server/rackets.functions.ts'
 const REQUESTS = '/src/server/requests.functions.ts'
 const STRINGS = '/src/server/strings.functions.ts'
 const MEMBERS = '/src/server/members.functions.ts'
+const PAYOUTS = '/src/server/payouts.functions.ts'
 
 let failures = 0
 function check(name: string, ok: boolean, detail?: unknown) {
@@ -495,6 +496,110 @@ check(
   'a controller is not also an admin',
   !controllerAsAdmin.ok,
   controllerAsAdmin.error,
+)
+
+console.log('\n— controller: the labour payout ledger —')
+
+type Balance = {
+  operatorId: string
+  earnedCents: number
+  reimbursedCents: number
+  outstandingCents: number
+}
+
+const memberBalances = await member.call(
+  PAYOUTS,
+  'listLabourBalances',
+  undefined,
+  'GET',
+)
+check(
+  'a plain member cannot see labour balances',
+  !memberBalances.ok,
+  memberBalances.error,
+)
+
+const adminId = ((list3.result ?? []) as Array<MemberRow>).find(
+  (r) => r.email === 'admin@rtc.local',
+)?.id
+
+const balances = await controller.call(
+  PAYOUTS,
+  'listLabourBalances',
+  undefined,
+  'GET',
+)
+const adminBalance = ((balances.result ?? []) as Array<Balance>).find(
+  (b) => b.operatorId === adminId,
+)
+check(
+  'the admin stringer earned the labour price of the completed job',
+  adminBalance?.earnedCents === 1000 && adminBalance.outstandingCents === 1000,
+  { balances: balances.result, adminBalance },
+)
+
+const overReimburse = await controller.call(PAYOUTS, 'recordReimbursement', {
+  operatorId: adminBalance?.operatorId,
+  amountCents: 100000,
+})
+check(
+  'cannot reimburse more than the outstanding balance',
+  !overReimburse.ok,
+  overReimburse.error,
+)
+
+const memberReimburse = await member.call(PAYOUTS, 'recordReimbursement', {
+  operatorId: adminBalance?.operatorId,
+  amountCents: 500,
+})
+check(
+  'a plain member cannot record a reimbursement',
+  !memberReimburse.ok,
+  memberReimburse.error,
+)
+
+const reimburse = await controller.call(PAYOUTS, 'recordReimbursement', {
+  operatorId: adminBalance?.operatorId,
+  amountCents: 500,
+  note: 'Partial payout',
+})
+check('controller records a reimbursement', reimburse.ok, reimburse.error)
+
+const balancesAfter = await controller.call(
+  PAYOUTS,
+  'listLabourBalances',
+  undefined,
+  'GET',
+)
+const adminBalanceAfter = ((balancesAfter.result ?? []) as Array<Balance>).find(
+  (b) => b.operatorId === adminBalance?.operatorId,
+)
+check(
+  'the outstanding balance dropped by the reimbursed amount',
+  adminBalanceAfter?.reimbursedCents === 500 &&
+    adminBalanceAfter.outstandingCents === 500,
+  adminBalanceAfter,
+)
+
+const history = await controller.call(
+  PAYOUTS,
+  'listReimbursements',
+  undefined,
+  'GET',
+)
+type Ledger = {
+  amountCents: number
+  note: string | null
+  operator: { name: string }
+}
+const historyEntry = ((history.result ?? []) as Array<Ledger>).find(
+  (e) => e.amountCents === 500,
+)
+check(
+  'the reimbursement was logged with its note and stringer name',
+  historyEntry?.note === 'Partial payout' &&
+    historyEntry.operator.name === 'Club Admin',
+  history.result,
 )
 
 console.log('\n— rejection revokes access —')

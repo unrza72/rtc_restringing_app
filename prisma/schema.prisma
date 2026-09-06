@@ -43,6 +43,8 @@ model User {
   stringingJobs StringingRequest[] @relation("operator")
   paidRequests  StringingRequest[] @relation("paidBy")
   events        RequestEvent[]
+  labourEarned  Reimbursement[]    @relation("labourReimbursement")
+  reimbursementsRecorded Reimbursement[] @relation("reimbursementRecordedBy")
 
   @@unique([email])
   @@map("user")
@@ -203,4 +205,21 @@ model RequestEvent {
   createdAt  DateTime         @default(now())
 
   @@index([requestId, createdAt])
+}
+
+/// A payout to a stringer for accumulated labour: outstanding balance =
+/// SUM(StringingRequest.labourPriceCents where paidAt is set and operatorId
+/// matches) minus SUM(Reimbursement.amountCents for that operator). Append-only
+/// ledger — a mistaken entry is corrected with a new entry, not edited in place.
+model Reimbursement {
+  id          String   @id @default(cuid())
+  operatorId  String
+  operator    User     @relation("labourReimbursement", fields: [operatorId], references: [id])
+  amountCents Int
+  note        String?
+  createdById String
+  createdBy   User     @relation("reimbursementRecordedBy", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@index([operatorId, createdAt])
 }

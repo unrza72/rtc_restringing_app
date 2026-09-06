@@ -22,8 +22,9 @@ multi-role). Roles cascade — each one implies everything to its left:
 
 - **member** — own rackets, own requests. Everyone gets this.
 - **operator** ("stringer") — member + sees the full queue, claims and completes jobs.
-- **controller** — member + views the billing overview, sets/resets a job's paid state.
-  Independent of operator — a controller need not string rackets.
+- **controller** — member + views the billing overview, sets/resets a job's paid state,
+  and reconciles the labour payout ledger. Independent of operator — a controller
+  need not string rackets.
 - **admin** — implies operator, controller and member. Approves members, assigns roles,
   edits the string catalogue, and can do anything a controller or operator can.
 
@@ -134,6 +135,20 @@ model RequestEvent {
   note      String?
   createdAt DateTime @default(now())
 }
+
+/// Append-only: a payout to a stringer for accumulated labour. Outstanding balance
+/// is never stored — always SUM(StringingRequest.labourPriceCents where paidAt is
+/// set) minus SUM(Reimbursement.amountCents), computed fresh on every read.
+model Reimbursement {
+  id          String   @id @default(cuid())
+  operatorId  String
+  operator    User     @relation("labourReimbursement", fields: [operatorId], references: [id])
+  amountCents Int
+  note        String?
+  createdById String
+  createdBy   User     @relation("reimbursementRecordedBy", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+}
 ```
 
 Deleting a racket that has requests is blocked → archive instead, so history stays intact.
@@ -163,20 +178,21 @@ REQUESTED --accept(operator)--> ACCEPTED --complete(operator)--> DONE --collect-
 
 ## 6. Routes
 
-| Route                                         | Access          | Purpose                                            |
-| --------------------------------------------- | --------------- | -------------------------------------------------- |
-| `/`                                           | public          | Landing → redirects to `/dashboard` when signed in |
-| `/login`, `/signup`                           | public          | email + password                                   |
-| `/pending`                                    | authed, PENDING | "waiting for approval"                             |
-| `/dashboard`                                  | member          | my open requests + quick "new request"             |
-| `/rackets`, `/rackets/new`, `/rackets/$id`    | member          | manage own rackets                                 |
-| `/requests`, `/requests/new`, `/requests/$id` | member          | own requests + detail/timeline                     |
-| `/queue`                                      | operator        | open + own claimed jobs, filter by status          |
-| `/queue/$id`                                  | operator        | accept / complete / collect                        |
-| `/billing`                                    | operator OR controller | every restrung racket: string/labour/total price, paid state |
-| `/admin/members`                              | admin           | approve, reject, set roles                         |
-| `/admin/strings`                              | admin           | club string catalogue: add, edit price, deactivate |
-| `/api/auth/$`                                 | public          | better-auth handler (exists)                       |
+| Route                                         | Access                 | Purpose                                                                 |
+| --------------------------------------------- | ---------------------- | ----------------------------------------------------------------------- |
+| `/`                                           | public                 | Landing → redirects to `/dashboard` when signed in                      |
+| `/login`, `/signup`                           | public                 | email + password                                                        |
+| `/pending`                                    | authed, PENDING        | "waiting for approval"                                                  |
+| `/dashboard`                                  | member                 | my open requests + quick "new request"                                  |
+| `/rackets`, `/rackets/new`, `/rackets/$id`    | member                 | manage own rackets                                                      |
+| `/requests`, `/requests/new`, `/requests/$id` | member                 | own requests + detail/timeline                                          |
+| `/queue`                                      | operator               | open + own claimed jobs, filter by status                               |
+| `/queue/$id`                                  | operator               | accept / complete / collect                                             |
+| `/billing`                                    | operator OR controller | every restrung racket: string/labour/total price, paid state            |
+| `/billing/payouts`                            | controller             | labour earned/reimbursed/outstanding per stringer, reimbursement ledger |
+| `/admin/members`                              | admin                  | approve, reject, set roles                                              |
+| `/admin/strings`                              | admin                  | club string catalogue: add, edit price, deactivate                      |
+| `/api/auth/$`                                 | public                 | better-auth handler (exists)                                            |
 
 Guards live in one place: `beforeLoad` on a `_authed` pathless layout route that loads
 the session, checks `status === APPROVED`, and a `requireRole()` helper for

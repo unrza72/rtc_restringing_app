@@ -1,6 +1,7 @@
 import { Link, useRouteContext, useRouter } from '@tanstack/react-router'
 import {
   Clock,
+  HandCoins,
   Languages,
   Layers,
   LogOut,
@@ -44,6 +45,15 @@ export function AppNav() {
           : []),
         ...(user.roles.includes('operator') || user.roles.includes('controller')
           ? [{ to: '/billing', label: m.nav_billing(), icon: Receipt }]
+          : []),
+        ...(user.roles.includes('controller')
+          ? [
+              {
+                to: '/billing/payouts',
+                label: m.nav_payouts(),
+                icon: HandCoins,
+              },
+            ]
           : []),
         ...(user.roles.includes('admin')
           ? [

@@ -112,3 +112,9 @@ export const memberRolesSchema = z.object({
 export const idSchema = z.object({ id: z.string().min(1) })
 
 export const setPaidSchema = idSchema.extend({ paid: z.boolean() })
+
+export const recordReimbursementSchema = z.object({
+  operatorId: z.string().min(1),
+  amountCents: z.coerce.number().int().min(1).max(1000000),
+  note: optionalText(300),
+})
