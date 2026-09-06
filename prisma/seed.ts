@@ -5,6 +5,11 @@ import { hashPassword } from 'better-auth/crypto'
 import { createLocalAccountIssuer } from 'better-auth/db'
 
 import { PrismaClient } from '../src/generated/prisma/client.js'
+import { DEV_LOGIN_ROSTER } from '../src/lib/dev-quick-login.js'
+import {
+  devQuickLoginPassword,
+  isDevQuickLoginEnabled,
+} from '../src/lib/dev-quick-login.server.js'
 
 const adapter = new PrismaBetterSqlite3({
   url: process.env.DATABASE_URL || 'file:./dev.db',
@@ -32,14 +37,24 @@ const CLUB_STRINGS = [
   },
 ]
 
-async function seedAdmin() {
-  const existing = await prisma.user.findFirst({
-    where: { email: ADMIN_EMAIL },
-  })
-  if (existing) {
-    console.log(`↷ admin "${ADMIN_EMAIL}" already exists`)
-    return
-  }
+/**
+ * Creates an approved user with a working password login, unless one with
+ * this email already exists. Shared by the admin bootstrap and the dev
+ * quick-login roster below — both need the same User + Account shape.
+ */
+async function createApprovedUser({
+  email,
+  password,
+  name,
+  role,
+}: {
+  email: string
+  password: string
+  name: string
+  role: string
+}) {
+  const existing = await prisma.user.findFirst({ where: { email } })
+  if (existing) return false
 
   const userId = randomUUID()
   const now = new Date()
@@ -47,10 +62,10 @@ async function seedAdmin() {
   await prisma.user.create({
     data: {
       id: userId,
-      name: ADMIN_NAME,
-      email: ADMIN_EMAIL,
+      name,
+      email,
       emailVerified: true,
-      role: 'admin',
+      role,
       status: 'APPROVED',
       approvedAt: now,
       createdAt: now,
@@ -63,7 +78,7 @@ async function seedAdmin() {
           issuer: createLocalAccountIssuer('credential'),
           accountId: userId,
           providerId: 'credential',
-          password: await hashPassword(ADMIN_PASSWORD),
+          password: await hashPassword(password),
           createdAt: now,
           updatedAt: now,
         },
@@ -71,8 +86,50 @@ async function seedAdmin() {
     },
   })
 
+  return true
+}
+
+async function seedAdmin() {
+  const created = await createApprovedUser({
+    email: ADMIN_EMAIL,
+    password: ADMIN_PASSWORD,
+    name: ADMIN_NAME,
+    role: 'admin',
+  })
   console.log(
-    `✅ admin "${ADMIN_EMAIL}" / "${ADMIN_PASSWORD}" — change this password`,
+    created
+      ? `✅ admin "${ADMIN_EMAIL}" / "${ADMIN_PASSWORD}" — change this password`
+      : `↷ admin "${ADMIN_EMAIL}" already exists`,
+  )
+}
+
+/**
+ * Spike devtools only — six fixed, known-password accounts (1 admin, 2
+ * stringers, 3 members) so the login page's quick-login buttons have someone
+ * to sign in as. Off unless DEV_QUICK_LOGIN_ENABLED=true; never run this
+ * against a real deployment.
+ */
+async function seedDevQuickLoginUsers() {
+  if (!isDevQuickLoginEnabled()) {
+    console.log(
+      '↷ dev quick-login roster skipped (DEV_QUICK_LOGIN_ENABLED not set)',
+    )
+    return
+  }
+
+  const password = devQuickLoginPassword()
+  let created = 0
+  for (const entry of DEV_LOGIN_ROSTER) {
+    const wasCreated = await createApprovedUser({
+      email: entry.email,
+      password,
+      name: entry.name,
+      role: entry.role,
+    })
+    if (wasCreated) created += 1
+  }
+  console.log(
+    `✅ dev quick-login roster: ${created} account(s) created, password "${password}"`,
   )
 }
 
@@ -93,6 +150,7 @@ async function main() {
   console.log('🌱 Seeding database…')
   await seedAdmin()
   await seedStrings()
+  await seedDevQuickLoginUsers()
 }
 
 main()

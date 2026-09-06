@@ -40,6 +40,7 @@
   "auth_sign_up_action": "Create account",
   "auth_to_sign_up": "No account yet? Sign up",
   "auth_to_sign_in": "Already have an account? Sign in",
+  "devlogin_title": "Quick sign in (spike devtools)",
   "auth_invalid_credentials": "That username and password do not match.",
   "auth_email_taken": "That email address is already registered.",
   "pending_title": "Waiting for approval",

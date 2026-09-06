@@ -23,6 +23,31 @@ Members sign in with their email address; there are no usernames. Without this a
 Environment lives in `.env`: `DATABASE_URL`, `BETTER_AUTH_URL`,
 `BETTER_AUTH_SECRET`.
 
+## Spike devtools: quick sign-in
+
+`DEV_QUICK_LOGIN_ENABLED=true` (plus, optionally, `DEV_QUICK_LOGIN_PASSWORD`)
+seeds six fixed accounts — 1 admin, 2 stringers, 3 members — and adds a
+"Quick sign in" section to `/login` with one button per account, so you can
+switch roles while testing without remembering six passwords.
+
+```bash
+# .env
+DEV_QUICK_LOGIN_ENABLED=true
+DEV_QUICK_LOGIN_PASSWORD=devpassword123   # optional, this is the default
+```
+
+Then reseed so the accounts actually exist:
+
+```bash
+pnpm db:seed
+```
+
+Both halves of the flag are checked independently — the seed only creates the
+roster when the flag is set, and `devQuickSignIn` re-checks it on every call
+rather than trusting that the buttons were hidden. Leave the flag unset (the
+default) anywhere real: it hands out working sessions for six accounts with a
+fixed, published password to anyone who can reach the login page.
+
 ## Roles
 
 `member` (own rackets and requests) → `operator` (also works the queue) →

@@ -40,6 +40,7 @@
   "auth_sign_up_action": "Konto erstellen",
   "auth_to_sign_up": "Noch kein Konto? Jetzt registrieren",
   "auth_to_sign_in": "Schon ein Konto? Anmelden",
+  "devlogin_title": "Schnellanmeldung (Spike-Devtools)",
   "auth_invalid_credentials": "Benutzername und Passwort passen nicht zusammen.",
   "auth_email_taken": "Diese E-Mail-Adresse ist bereits registriert.",
   "pending_title": "Warten auf Freigabe",
