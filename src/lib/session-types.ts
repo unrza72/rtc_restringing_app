@@ -1,3 +1,5 @@
+import type { Locale } from '#/paraglide/runtime'
+
 import type { Role, UserStatus } from './roles'
 
 /** The session shape the whole app works with. Client-safe. */
@@ -8,6 +10,8 @@ export type SessionUser = {
   status: UserStatus
   roles: Array<Role>
   banned: boolean
+  /** null if never recorded — see recordInitialLocale. */
+  locale: Locale | null
 }
 
 export class AuthError extends Error {

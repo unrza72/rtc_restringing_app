@@ -1,10 +1,13 @@
 import { createFileRoute, redirect, useRouter } from '@tanstack/react-router'
 import { useForm } from '@tanstack/react-form'
+import { useServerFn } from '@tanstack/react-start'
 import { useState } from 'react'
 import { z } from 'zod'
 
 import { authClient } from '#/lib/auth-client'
+import { recordInitialLocale } from '#/server/locale.functions'
 import { m } from '#/paraglide/messages'
+import { getLocale } from '#/paraglide/runtime'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { Field, FormError, fieldErrors } from '#/components/form-field'
@@ -26,6 +29,7 @@ export const Route = createFileRoute('/signup')({
 function SignupPage() {
   const router = useRouter()
   const [formError, setFormError] = useState<string | null>(null)
+  const recordLocale = useServerFn(recordInitialLocale)
 
   const form = useForm({
     defaultValues: { name: '', email: '', password: '' },
@@ -45,6 +49,9 @@ function SignupPage() {
         )
         return
       }
+      // Records today's ambient locale as this brand-new account's starting
+      // preference, so it carries over even if they never touch the toggle.
+      await recordLocale({ data: { locale: getLocale() } })
       // New accounts start as PENDING — the guard routes them to /pending.
       await router.invalidate()
       await router.navigate({ to: '/pending' })

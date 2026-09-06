@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { locales } from '#/paraglide/runtime'
+
 import { ROLES, USER_STATUSES } from './roles'
 import { STRING_SOURCES } from './status'
 
@@ -118,3 +120,5 @@ export const recordReimbursementSchema = z.object({
   amountCents: z.coerce.number().int().min(1).max(1000000),
   note: optionalText(300),
 })
+
+export const localeInputSchema = z.object({ locale: z.enum(locales) })

@@ -9,10 +9,12 @@ import {
   getDevQuickLoginUsers,
   devQuickSignIn,
 } from '#/server/dev-login.functions'
+import { recordInitialLocale } from '#/server/locale.functions'
 import { roleLabel } from '#/lib/labels'
 import type { DevLoginSlot } from '#/lib/dev-quick-login'
 import type { Role } from '#/lib/roles'
 import { m } from '#/paraglide/messages'
+import { getLocale } from '#/paraglide/runtime'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { Field, FormError, fieldErrors } from '#/components/form-field'
@@ -40,6 +42,7 @@ function LoginPage() {
   const search = Route.useSearch()
   const { devUsers } = Route.useLoaderData()
   const [formError, setFormError] = useState<string | null>(null)
+  const recordLocale = useServerFn(recordInitialLocale)
 
   const form = useForm({
     defaultValues: { email: '', password: '' },
@@ -59,6 +62,11 @@ function LoginPage() {
         setFormError(m.auth_invalid_credentials())
         return
       }
+      // First login ever records today's ambient locale as their preference;
+      // a returning user with one already set is a no-op (see
+      // recordInitialLocale). Awaited before invalidate() so root's
+      // beforeLoad sees it on the very next check, not a navigation later.
+      await recordLocale({ data: { locale: getLocale() } })
       // Re-run the root beforeLoad so the nav and guards see the new session.
       await router.invalidate()
       await router.navigate({ to: search.redirect ?? '/dashboard' })

@@ -1,5 +1,7 @@
 import { getRequest } from '@tanstack/react-start/server'
 
+import { isLocale } from '#/paraglide/runtime'
+
 import { auth } from './auth'
 import { parseRoles } from './roles'
 import type { SessionUser } from './session-types'
@@ -17,6 +19,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     status?: string | null
     role?: string | null
     banned?: boolean | null
+    locale?: string | null
   }
 
   return {
@@ -26,5 +29,6 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     status: (user.status ?? 'PENDING') as SessionUser['status'],
     roles: parseRoles(user.role),
     banned: user.banned ?? false,
+    locale: isLocale(user.locale) ? user.locale : null,
   }
 }

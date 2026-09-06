@@ -34,6 +34,8 @@ model User {
   status          String?   @default("PENDING")
   approvedAt      DateTime?
   approvedById    String?
+  // "en" | "de" — null until recorded by a login/signup or an explicit switch
+  locale          String?
   sessions        Session[]
   accounts        Account[]
 

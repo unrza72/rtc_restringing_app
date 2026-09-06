@@ -1,4 +1,5 @@
 import { Link, useRouteContext, useRouter } from '@tanstack/react-router'
+import { useServerFn } from '@tanstack/react-start'
 import {
   Clock,
   HandCoins,
@@ -16,6 +17,7 @@ import type { LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 
 import { authClient } from '#/lib/auth-client'
+import { setMyLocale } from '#/server/locale.functions'
 import { m } from '#/paraglide/messages'
 import { getLocale, locales, setLocale } from '#/paraglide/runtime'
 import { cn } from '#/lib/utils'
@@ -131,7 +133,7 @@ export function AppNav() {
               </Link>
             )}
 
-            <LocaleToggle />
+            <LocaleToggle signedIn={!!user} />
 
             {user ? (
               <>
@@ -238,16 +240,34 @@ function IconButton({
   )
 }
 
-function LocaleToggle() {
+function LocaleToggle({ signedIn }: { signedIn: boolean }) {
   const current = getLocale()
   const next = locales.find((l) => l !== current) ?? current
+  const setMyLocaleFn = useServerFn(setMyLocale)
+
+  async function handleClick() {
+    // Persisted first, awaited: setLocale() below reloads the page, and that
+    // reload's own request is what root's beforeLoad uses to decide whether
+    // to redirect for a saved preference — the write has to land first, or a
+    // slow save could lose the race and the reload would look like it undid
+    // the switch.
+    if (signedIn) {
+      try {
+        await setMyLocaleFn({ data: { locale: next } })
+      } catch {
+        // Not fatal — the locale still switches for this browser via the
+        // cookie/URL below, it just won't follow to another device this time.
+      }
+    }
+    setLocale(next)
+  }
 
   // Two locales only, so a single toggle showing the other one beats a
   // segmented control that always has half its pixels switched off.
   return (
     <button
       type="button"
-      onClick={() => setLocale(next)}
+      onClick={() => void handleClick()}
       title={m.language_switch_to({ locale: next.toUpperCase() })}
       aria-label={m.language_switch_to({ locale: next.toUpperCase() })}
       className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-bold tracking-wider text-slate-400 transition-colors hover:bg-slate-900 hover:text-slate-100"

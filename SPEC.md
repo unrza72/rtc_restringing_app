@@ -13,7 +13,7 @@ New accounts are unusable until an admin approves them.
 | Auth      | better-auth 1.7 — `admin` plugin, `prismaAdapter`; email + password                |
 | UI        | Tailwind 4 + shadcn/ui (new-york, zinc), lucide icons                              |
 | Forms     | TanStack Form + Zod schemas shared client/server                                   |
-| i18n      | Paraglide (`en` base, `de`) — all user-facing strings via messages                 |
+| i18n      | Paraglide (`de` base, `en`) — all user-facing strings via messages                 |
 
 ## 2. Roles
 
@@ -55,6 +55,7 @@ The first user created by the seed script is `admin` + `APPROVED` (bootstrap).
 //   status       String   @default("PENDING")  // PENDING | APPROVED | REJECTED
 //   approvedAt   DateTime?
 //   approvedById String?
+//   locale       String?  // "en" | "de" — see §8, Locale routing
 
 model Racket {
   id            String   @id @default(cuid())
@@ -209,17 +210,33 @@ by email, tracking physical drop-off/handover of the racket, multi-club/tenant s
 
 ## 8. Locale routing
 
-Paraglide's `url` strategy prefixes non-base locales (`/de/rackets`, English stays
-at `/rackets`). Two pieces make that work with the route tree, which only knows the
-plain paths:
+German (`de`) is the base locale — plain paths (`/rackets`) are German, English gets
+the prefix (`/en/rackets`). Paraglide's `url` strategy drives this; two pieces make it
+work with the route tree, which only knows the plain paths:
 
 - `src/router.tsx` sets `rewrite.input` = `deLocalizeUrl` and `rewrite.output` =
-  `localizeUrl`, so `/de/rackets` matches the `/rackets` route and every `<Link>`
+  `localizeUrl`, so `/en/rackets` matches the `/rackets` route and every `<Link>`
   renders back with the prefix.
 - `src/start.ts` registers a global request middleware running `paraglideMiddleware`,
   which establishes the per-request locale on the server. Without it `getLocale()`
-  falls back to `en` during SSR and the output rewrite strips the prefix — turning
-  every German URL into a redirect to its English twin.
+  falls back to the base locale during SSR and the output rewrite strips the prefix —
+  turning every English URL into a redirect to its German twin.
+
+**Per-account language.** `User.locale` (`en` | `de` | `null`) follows a signed-in
+member across devices:
+
+- The header's toggle calls `setMyLocale` — an unconditional overwrite, since
+  clicking it is a deliberate choice.
+- Login and signup both call `recordInitialLocale` with whatever locale the page
+  happened to be in — but that write only takes if `locale` is still `null`
+  (`updateMany({ where: { id, locale: null } })`), so it can never clobber a
+  preference set explicitly on another device.
+- Root's `beforeLoad` compares `user.locale` against the current request's
+  resolved locale on every navigation; a mismatch throws a `redirect()` to the
+  localized equivalent of the current path. This is what makes a saved preference
+  "follow" a member to a new browser or device — the first page they land on
+  redirects once, to the locale they last chose, then nothing further happens
+  since the two now match.
 
 ## 9. Decisions
 
@@ -228,7 +245,7 @@ plain paths:
 | Status set      | `REQUESTED → ACCEPTED → DONE → COLLECTED` (+ `CANCELLED`), no separate in-progress step |
 | String choice   | Club catalogue (`ClubString`, admin-maintained) **or** own string as free text          |
 | Email at signup | Required — real address, enables notifications/reset later                              |
-| Language        | Keep `en` + `de` switchable, `en` stays base locale                                     |
+| Language        | Keep `en` + `de` switchable; `de` is the base locale, per-account preference persists   |
 | Price           | Tracked per job (`priceCents`), prefilled from the catalogue                            |
 | Racket handover | Not tracked in the app                                                                  |
 

@@ -105,6 +105,16 @@ class Session {
     }
     return { status: res.status, ok: error === null, result, error, raw: text }
   }
+
+  /** A real page GET, redirects left unfollowed so 307s are inspectable. */
+  async page(path: string) {
+    const res = await fetch(`${BASE}${path}`, {
+      redirect: 'manual',
+      headers: { cookie: this.header() },
+    })
+    this.absorb(res)
+    return { status: res.status, location: res.headers.get('location') }
+  }
 }
 
 const RACKETS = '/src/server/rackets.functions.ts'
@@ -112,6 +122,8 @@ const REQUESTS = '/src/server/requests.functions.ts'
 const STRINGS = '/src/server/strings.functions.ts'
 const MEMBERS = '/src/server/members.functions.ts'
 const PAYOUTS = '/src/server/payouts.functions.ts'
+const LOCALE = '/src/server/locale.functions.ts'
+const SESSION = '/src/lib/session.functions.ts'
 
 let failures = 0
 function check(name: string, ok: boolean, detail?: unknown) {
@@ -600,6 +612,104 @@ check(
   historyEntry?.note === 'Partial payout' &&
     historyEntry.operator.name === 'Club Admin',
   history.result,
+)
+
+console.log('\n— locale: recorded per account, restored per device —')
+
+type LocaleUser = { locale?: string | null }
+
+const freshSession = await member.call(
+  SESSION,
+  'fetchSession',
+  undefined,
+  'GET',
+)
+check(
+  'a member who never touched the toggle has no recorded locale',
+  (freshSession.result as LocaleUser | undefined)?.locale == null,
+  freshSession.result,
+)
+
+const firstCapture = await member.call(LOCALE, 'recordInitialLocale', {
+  locale: 'de',
+})
+check(
+  'signup/login records the ambient locale once',
+  firstCapture.ok,
+  firstCapture.error,
+)
+
+const afterFirstCapture = await member.call(
+  SESSION,
+  'fetchSession',
+  undefined,
+  'GET',
+)
+check(
+  'the recorded locale is de',
+  (afterFirstCapture.result as LocaleUser | undefined)?.locale === 'de',
+  afterFirstCapture.result,
+)
+
+const secondCapture = await member.call(LOCALE, 'recordInitialLocale', {
+  locale: 'en',
+})
+check(
+  'a second ambient capture does not overwrite it',
+  secondCapture.ok,
+  secondCapture.error,
+)
+
+const afterSecondCapture = await member.call(
+  SESSION,
+  'fetchSession',
+  undefined,
+  'GET',
+)
+check(
+  'the recorded locale is still de, not clobbered',
+  (afterSecondCapture.result as LocaleUser | undefined)?.locale === 'de',
+  afterSecondCapture.result,
+)
+
+const explicitSwitch = await member.call(LOCALE, 'setMyLocale', {
+  locale: 'en',
+})
+check(
+  'an explicit switch overwrites the recorded locale',
+  explicitSwitch.ok,
+  explicitSwitch.error,
+)
+
+const afterExplicitSwitch = await member.call(
+  SESSION,
+  'fetchSession',
+  undefined,
+  'GET',
+)
+check(
+  'the recorded locale is now en',
+  (afterExplicitSwitch.result as LocaleUser | undefined)?.locale === 'en',
+  afterExplicitSwitch.result,
+)
+
+// The account's preference (en) no longer matches the base URL (de, since
+// this app's default locale) — a "new device" landing on the base URL should
+// be redirected to the one that does. Uses /dashboard rather than /pending:
+// this member was approved earlier in the script, and /pending has its own,
+// unrelated "already approved" redirect that would confound the result.
+const baseUrlHit = await member.page('/dashboard')
+check(
+  "the base URL redirects to the account's preferred locale",
+  baseUrlHit.status === 307 && baseUrlHit.location === '/en/dashboard',
+  baseUrlHit,
+)
+
+const matchingUrlHit = await member.page('/en/dashboard')
+check(
+  'the matching locale URL does not redirect again',
+  matchingUrlHit.status === 200,
+  matchingUrlHit,
 )
 
 console.log('\n— rejection revokes access —')

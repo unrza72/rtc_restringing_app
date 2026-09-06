@@ -32,6 +32,13 @@ export const auth = betterAuth({
         required: false,
         input: false,
       },
+      // "en" | "de" — set only via our own server functions (setMyLocale /
+      // recordInitialLocale), never through better-auth's own update-user route.
+      locale: {
+        type: 'string',
+        required: false,
+        input: false,
+      },
     },
   },
   plugins: [
