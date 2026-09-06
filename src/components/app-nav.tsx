@@ -6,6 +6,7 @@ import {
   LogOut,
   Menu,
   Plus,
+  Receipt,
   Spool,
   Users,
   Wrench,
@@ -40,6 +41,9 @@ export function AppNav() {
         { to: '/requests', label: m.nav_requests(), icon: Clock },
         ...(user.roles.includes('operator')
           ? [{ to: '/queue', label: m.nav_queue(), icon: Wrench }]
+          : []),
+        ...(user.roles.includes('operator') || user.roles.includes('controller')
+          ? [{ to: '/billing', label: m.nav_billing(), icon: Receipt }]
           : []),
         ...(user.roles.includes('admin')
           ? [

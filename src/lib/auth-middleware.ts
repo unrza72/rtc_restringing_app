@@ -44,5 +44,25 @@ function requireRole(role: Role) {
     })
 }
 
+/** Any one of these roles is enough — used where two specialties overlap. */
+function requireAnyRole(...roles: Array<Role>) {
+  return createMiddleware({ type: 'function' })
+    .middleware([memberMiddleware])
+    .server(async ({ next, context }) => {
+      if (!roles.some((role) => context.user.roles.includes(role))) {
+        throw new AuthError(`Requires one of: ${roles.join(', ')}`, 'FORBIDDEN')
+      }
+      return next({ context: { user: context.user } })
+    })
+}
+
 export const operatorMiddleware = requireRole('operator')
+export const controllerMiddleware = requireRole('controller')
 export const adminMiddleware = requireRole('admin')
+
+/**
+ * The billing view: a stringer needs to see prices to know what to charge,
+ * a controller needs to see them to reconcile payments. Admin gets in either
+ * way, via the role cascade.
+ */
+export const billingViewMiddleware = requireAnyRole('operator', 'controller')

@@ -15,6 +15,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as PendingRouteImport } from './routes/pending'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as AuthedAdminRouteImport } from './routes/_authed/admin'
+import { Route as AuthedBillingRouteImport } from './routes/_authed/billing'
 import { Route as AuthedDashboardRouteImport } from './routes/_authed/dashboard'
 import { Route as AuthedQueueRouteImport } from './routes/_authed/queue'
 import { Route as AuthedAdminMembersRouteImport } from './routes/_authed/admin/members'
@@ -56,6 +57,11 @@ const SignupRoute = SignupRouteImport.update({
 const AuthedAdminRoute = AuthedAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedBillingRoute = AuthedBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedDashboardRoute = AuthedDashboardRouteImport.update({
@@ -130,6 +136,7 @@ export interface FileRoutesByFullPath {
   '/pending': typeof PendingRoute
   '/signup': typeof SignupRoute
   '/admin': typeof AuthedAdminRouteWithChildren
+  '/billing': typeof AuthedBillingRoute
   '/dashboard': typeof AuthedDashboardRoute
   '/queue': typeof AuthedQueueRouteWithChildren
   '/admin/members': typeof AuthedAdminMembersRoute
@@ -150,6 +157,7 @@ export interface FileRoutesByTo {
   '/pending': typeof PendingRoute
   '/signup': typeof SignupRoute
   '/admin': typeof AuthedAdminRouteWithChildren
+  '/billing': typeof AuthedBillingRoute
   '/dashboard': typeof AuthedDashboardRoute
   '/admin/members': typeof AuthedAdminMembersRoute
   '/admin/strings': typeof AuthedAdminStringsRoute
@@ -171,6 +179,7 @@ export interface FileRoutesById {
   '/pending': typeof PendingRoute
   '/signup': typeof SignupRoute
   '/_authed/admin': typeof AuthedAdminRouteWithChildren
+  '/_authed/billing': typeof AuthedBillingRoute
   '/_authed/dashboard': typeof AuthedDashboardRoute
   '/_authed/queue': typeof AuthedQueueRouteWithChildren
   '/_authed/admin/members': typeof AuthedAdminMembersRoute
@@ -193,6 +202,7 @@ export interface FileRouteTypes {
     | '/pending'
     | '/signup'
     | '/admin'
+    | '/billing'
     | '/dashboard'
     | '/queue'
     | '/admin/members'
@@ -213,6 +223,7 @@ export interface FileRouteTypes {
     | '/pending'
     | '/signup'
     | '/admin'
+    | '/billing'
     | '/dashboard'
     | '/admin/members'
     | '/admin/strings'
@@ -233,6 +244,7 @@ export interface FileRouteTypes {
     | '/pending'
     | '/signup'
     | '/_authed/admin'
+    | '/_authed/billing'
     | '/_authed/dashboard'
     | '/_authed/queue'
     | '/_authed/admin/members'
@@ -299,6 +311,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AuthedAdminRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/billing': {
+      id: '/_authed/billing'
+      path: '/billing'
+      fullPath: '/billing'
+      preLoaderRoute: typeof AuthedBillingRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/dashboard': {
@@ -425,6 +444,7 @@ const AuthedQueueRouteWithChildren = AuthedQueueRoute._addFileChildren(
 
 interface AuthedRouteChildren {
   AuthedAdminRoute: typeof AuthedAdminRouteWithChildren
+  AuthedBillingRoute: typeof AuthedBillingRoute
   AuthedDashboardRoute: typeof AuthedDashboardRoute
   AuthedQueueRoute: typeof AuthedQueueRouteWithChildren
   AuthedRacketsIdRoute: typeof AuthedRacketsIdRoute
@@ -437,6 +457,7 @@ interface AuthedRouteChildren {
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAdminRoute: AuthedAdminRouteWithChildren,
+  AuthedBillingRoute: AuthedBillingRoute,
   AuthedDashboardRoute: AuthedDashboardRoute,
   AuthedQueueRoute: AuthedQueueRouteWithChildren,
   AuthedRacketsIdRoute: AuthedRacketsIdRoute,

@@ -3,11 +3,17 @@ import { notFound } from '@tanstack/react-router'
 import { z } from 'zod'
 
 import { prisma } from '#/db'
-import { memberMiddleware, operatorMiddleware } from '#/lib/auth-middleware'
+import {
+  billingViewMiddleware,
+  controllerMiddleware,
+  memberMiddleware,
+  operatorMiddleware,
+} from '#/lib/auth-middleware'
 import {
   completeInputSchema,
   idSchema,
   requestInputSchema,
+  setPaidSchema,
 } from '#/lib/schemas'
 import { REQUEST_STATUSES, canTransition, nextStatus } from '#/lib/status'
 import type { RequestAction } from '#/lib/status'
@@ -17,6 +23,7 @@ const requestInclude = {
   clubString: true,
   requester: { select: { id: true, name: true } },
   operator: { select: { id: true, name: true } },
+  paidBy: { select: { id: true, name: true } },
 } as const
 
 // ---------------------------------------------------------------------------
@@ -75,6 +82,21 @@ export const listQueue = createServerFn({ method: 'GET' })
       },
       // Jobs with a deadline first, then oldest request first.
       orderBy: [{ neededBy: 'asc' }, { createdAt: 'asc' }],
+      include: requestInclude,
+    })
+  })
+
+/**
+ * Every restrung racket — the billing view. A stringer needs it to see what
+ * to charge; a controller needs it to reconcile payments; admins get in
+ * either way via the role cascade.
+ */
+export const listBillableRequests = createServerFn({ method: 'GET' })
+  .middleware([billingViewMiddleware])
+  .handler(async () => {
+    return prisma.stringingRequest.findMany({
+      where: { status: { in: ['DONE', 'COLLECTED'] } },
+      orderBy: [{ completedAt: 'desc' }, { createdAt: 'desc' }],
       include: requestInclude,
     })
   })
@@ -271,4 +293,32 @@ export const cancelRequest = createServerFn({ method: 'POST' })
       action: 'cancel',
       note: data.reason ?? null,
     })
+  })
+
+/**
+ * Controllers (and admins, who imply the role) settle a finished job's bill.
+ * "Reset" just clears it back to unpaid — nothing here is a status transition,
+ * so it bypasses the REQUESTED→…→COLLECTED machine in `transition()` entirely.
+ */
+export const setRequestPaid = createServerFn({ method: 'POST' })
+  .middleware([controllerMiddleware])
+  .validator(setPaidSchema)
+  .handler(async ({ context, data }) => {
+    const request = await prisma.stringingRequest.findUnique({
+      where: { id: data.id },
+      select: { status: true },
+    })
+    if (!request) throw notFound()
+    if (!['DONE', 'COLLECTED'].includes(request.status)) {
+      throw new Error('Only a finished job can be marked paid')
+    }
+
+    await prisma.stringingRequest.update({
+      where: { id: data.id },
+      data: data.paid
+        ? { paidAt: new Date(), paidById: context.user.id }
+        : { paidAt: null, paidById: null },
+    })
+
+    return { id: data.id, paid: data.paid }
   })

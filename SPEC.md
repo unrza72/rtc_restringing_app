@@ -18,13 +18,17 @@ New accounts are unusable until an admin approves them.
 ## 2. Roles
 
 Single `role` column on the better-auth user (admin plugin, comma-separated for
-multi-role):
+multi-role). Roles cascade — each one implies everything to its left:
 
 - **member** — own rackets, own requests. Everyone gets this.
-- **operator** — member + sees the full queue, claims and completes jobs.
-- **admin** — operator + approves/rejects members, assigns roles.
+- **operator** ("stringer") — member + sees the full queue, claims and completes jobs.
+- **controller** — member + views the billing overview, sets/resets a job's paid state.
+  Independent of operator — a controller need not string rackets.
+- **admin** — implies operator, controller and member. Approves members, assigns roles,
+  edits the string catalogue, and can do anything a controller or operator can.
 
-An operator is always also a member (they can request their own restrings).
+`operator` and `controller` are parallel specialties, not a ladder — a club can have
+someone who only reconciles payments and never touches a stringing machine.
 
 ## 3. Approval flow
 
@@ -107,7 +111,13 @@ model StringingRequest {
   collectedAt   DateTime?
   operatorNotes String?
   usedStringName String? // what was actually used, prefilled on complete
-  priceCents    Int?     // prefilled from ClubString.priceCents, operator can override
+  stringPriceCents Int?  // materials, prefilled from ClubString.priceCents
+  labourPriceCents Int?  // the stringing fee, entered by the operator
+
+  // controller side — orthogonal to the status machine below, not a transition
+  paidAt   DateTime? // null = unpaid
+  paidById String?
+  paidBy   User?     @relation("paidBy", fields: [paidById], references: [id])
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -163,14 +173,17 @@ REQUESTED --accept(operator)--> ACCEPTED --complete(operator)--> DONE --collect-
 | `/requests`, `/requests/new`, `/requests/$id` | member          | own requests + detail/timeline                     |
 | `/queue`                                      | operator        | open + own claimed jobs, filter by status          |
 | `/queue/$id`                                  | operator        | accept / complete / collect                        |
+| `/billing`                                    | operator OR controller | every restrung racket: string/labour/total price, paid state |
 | `/admin/members`                              | admin           | approve, reject, set roles                         |
 | `/admin/strings`                              | admin           | club string catalogue: add, edit price, deactivate |
 | `/api/auth/$`                                 | public          | better-auth handler (exists)                       |
 
 Guards live in one place: `beforeLoad` on a `_authed` pathless layout route that loads
 the session, checks `status === APPROVED`, and a `requireRole()` helper for
-`/queue` and `/admin`. Every server function re-checks — the route guard is UX, the
-server function is the security boundary.
+`/queue` and `/admin`. `/billing` uses `requireAnyRole()` instead, since operator
+and controller are independent specialties rather than one ranked above the other.
+Every server function re-checks — the route guard is UX, the server function is
+the security boundary.
 
 ## 7. Out of scope for v1
 

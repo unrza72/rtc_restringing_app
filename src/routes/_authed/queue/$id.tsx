@@ -143,10 +143,11 @@ function CompleteForm({
       usedTensionMain: String(request.tensionMain),
       usedTensionCross:
         request.tensionCross == null ? '' : String(request.tensionCross),
-      priceCents:
+      stringPriceCents:
         request.clubString?.priceCents == null
           ? ''
           : (request.clubString.priceCents / 100).toFixed(2),
+      labourPriceCents: '',
       operatorNotes: '',
     },
     onSubmit: async ({ value }) => {
@@ -159,10 +160,14 @@ function CompleteForm({
             usedTensionMain: value.usedTensionMain,
             usedTensionCross:
               value.usedTensionCross === '' ? null : value.usedTensionCross,
-            priceCents:
-              value.priceCents === ''
+            stringPriceCents:
+              value.stringPriceCents === ''
                 ? null
-                : Math.round(Number(value.priceCents) * 100),
+                : Math.round(Number(value.stringPriceCents) * 100),
+            labourPriceCents:
+              value.labourPriceCents === ''
+                ? null
+                : Math.round(Number(value.labourPriceCents) * 100),
             operatorNotes: value.operatorNotes || null,
           }),
         })
@@ -244,11 +249,30 @@ function CompleteForm({
               )}
             </form.Field>
 
-            <form.Field name="priceCents">
+            <form.Field name="stringPriceCents">
               {(field) => (
                 <Field
                   id={field.name}
-                  label={m.queue_price()}
+                  label={m.queue_string_price()}
+                  errors={fieldErrors(field.state.meta)}
+                >
+                  <Input
+                    id={field.name}
+                    type="number"
+                    step="0.01"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                  />
+                </Field>
+              )}
+            </form.Field>
+
+            <form.Field name="labourPriceCents">
+              {(field) => (
+                <Field
+                  id={field.name}
+                  label={m.queue_labour_price()}
                   errors={fieldErrors(field.state.meta)}
                 >
                   <Input

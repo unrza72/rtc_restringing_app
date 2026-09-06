@@ -63,6 +63,14 @@ export const requestInputSchema = z
   }))
 export type RequestInput = z.infer<typeof requestInputSchema>
 
+const priceInput = z.coerce
+  .number()
+  .int()
+  .min(0)
+  .max(100000)
+  .nullable()
+  .default(null)
+
 export const completeInputSchema = z.object({
   id: z.string().min(1),
   usedStringName: z
@@ -72,13 +80,8 @@ export const completeInputSchema = z.object({
     .max(120),
   usedTensionMain: tension,
   usedTensionCross: tension.nullable().default(null),
-  priceCents: z.coerce
-    .number()
-    .int()
-    .min(0)
-    .max(100000)
-    .nullable()
-    .default(null),
+  stringPriceCents: priceInput,
+  labourPriceCents: priceInput,
   operatorNotes: optionalText(500),
 })
 
@@ -107,3 +110,5 @@ export const memberRolesSchema = z.object({
 })
 
 export const idSchema = z.object({ id: z.string().min(1) })
+
+export const setPaidSchema = idSchema.extend({ paid: z.boolean() })

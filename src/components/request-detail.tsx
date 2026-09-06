@@ -1,3 +1,4 @@
+import { Badge } from '#/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
 import { StatusBadge } from '#/components/status-badge'
 import {
@@ -6,6 +7,7 @@ import {
   formatDateTime,
   formatPrice,
   formatTension,
+  totalPriceCents,
 } from '#/lib/labels'
 import { m } from '#/paraglide/messages'
 
@@ -24,7 +26,9 @@ export type RequestDetailData = {
   usedStringName: string | null
   usedTensionMain: number | null
   usedTensionCross: number | null
-  priceCents: number | null
+  stringPriceCents: number | null
+  labourPriceCents: number | null
+  paidAt: Date | string | null
   operatorNotes: string | null
   racket: {
     label: string
@@ -109,8 +113,22 @@ export function RequestSummary({
                 {request.usedTensionMain != null &&
                   ` · ${formatTension(request.usedTensionMain, request.usedTensionCross)}`}
               </Row>
-              <Row label={m.request_price()}>
-                {formatPrice(request.priceCents)}
+              <Row label={m.request_string_price()}>
+                {formatPrice(request.stringPriceCents)}
+              </Row>
+              <Row label={m.request_labour_price()}>
+                {formatPrice(request.labourPriceCents)}
+              </Row>
+              <Row label={m.request_total_price()}>
+                {formatPrice(
+                  totalPriceCents(
+                    request.stringPriceCents,
+                    request.labourPriceCents,
+                  ),
+                )}{' '}
+                <Badge variant={request.paidAt ? 'secondary' : 'outline'}>
+                  {request.paidAt ? m.billing_paid() : m.billing_unpaid()}
+                </Badge>
               </Row>
             </>
           )}

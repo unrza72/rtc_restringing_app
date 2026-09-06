@@ -28,3 +28,16 @@ export function requireRole(
   if (!approved.roles.includes(role)) throw redirect({ to: '/dashboard' })
   return approved
 }
+
+/** Any one of `roles` is enough — used where two specialties overlap. */
+export function requireAnyRole(
+  user: SessionUser | null,
+  roles: Array<Role>,
+  href: string,
+): SessionUser {
+  const approved = requireApproved(user, href)
+  if (!roles.some((role) => approved.roles.includes(role))) {
+    throw redirect({ to: '/dashboard' })
+  }
+  return approved
+}

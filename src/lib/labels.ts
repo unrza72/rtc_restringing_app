@@ -39,6 +39,7 @@ export function userStatusLabel(status: string) {
 const ROLE_LABELS: Record<Role, () => string> = {
   member: m.role_member,
   operator: m.role_operator,
+  controller: m.role_controller,
   admin: m.role_admin,
 }
 
@@ -74,6 +75,15 @@ export function formatPrice(cents: number | null | undefined) {
     style: 'currency',
     currency: 'EUR',
   }).format(cents / 100)
+}
+
+/** String + labour, or null when neither was ever entered. */
+export function totalPriceCents(
+  stringPriceCents: number | null,
+  labourPriceCents: number | null,
+) {
+  if (stringPriceCents == null && labourPriceCents == null) return null
+  return (stringPriceCents ?? 0) + (labourPriceCents ?? 0)
 }
 
 /** "24 / 23 kg", or just "24 kg" when the crosses match the mains. */

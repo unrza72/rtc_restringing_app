@@ -298,7 +298,8 @@ const complete = await admin.call(REQUESTS, 'completeRequest', {
   usedStringName: 'Babolat RPM Blast 1.25',
   usedTensionMain: 24,
   usedTensionCross: 23,
-  priceCents: 2200,
+  stringPriceCents: 1200,
+  labourPriceCents: 1000,
   operatorNotes: 'Strung on the Wise',
 })
 check(
@@ -341,12 +342,159 @@ check(
 )
 
 const priced = detail.result as
-  { priceCents?: number; usedStringName?: string } | undefined
+  | {
+      stringPriceCents?: number
+      labourPriceCents?: number
+      usedStringName?: string
+      paidAt?: string | null
+    }
+  | undefined
 check(
-  'price and used string were stored',
-  priced?.priceCents === 2200 &&
+  'string price, labour price and used string were stored',
+  priced?.stringPriceCents === 1200 &&
+    priced.labourPriceCents === 1000 &&
     priced.usedStringName === 'Babolat RPM Blast 1.25',
   priced,
+)
+check('a freshly completed job starts unpaid', priced?.paidAt == null, priced)
+
+console.log('\n— controller: the paid state —')
+
+const memberBilling = await member.call(
+  REQUESTS,
+  'listBillableRequests',
+  undefined,
+  'GET',
+)
+check(
+  'a plain member cannot open the billing view',
+  !memberBilling.ok,
+  memberBilling.error,
+)
+
+const billing = await admin.call(
+  REQUESTS,
+  'listBillableRequests',
+  undefined,
+  'GET',
+)
+const billingRow = ((billing.result ?? []) as Array<{ id: string }>).find(
+  (r) => r.id === requestId,
+)
+check(
+  'admin (implies operator) sees the job in the billing view',
+  !!billingRow,
+  billing.error ?? billing.result,
+)
+
+const memberSetPaid = await member.call(REQUESTS, 'setRequestPaid', {
+  id: requestId,
+  paid: true,
+})
+check(
+  'a plain member cannot mark a job paid',
+  !memberSetPaid.ok && /controller/i.test(memberSetPaid.error ?? ''),
+  memberSetPaid.error,
+)
+
+// Admin implies controller, so this should work without ever granting the
+// role explicitly — the same cascade the role hierarchy promises everywhere
+// else in the app.
+const markPaid = await admin.call(REQUESTS, 'setRequestPaid', {
+  id: requestId,
+  paid: true,
+})
+check('admin marks the job paid', markPaid.ok, markPaid.error)
+
+const afterPaid = await member.call(
+  REQUESTS,
+  'getRequest',
+  { id: requestId },
+  'GET',
+)
+check(
+  'paidAt is now set',
+  !!(afterPaid.result as { paidAt?: string | null } | undefined)?.paidAt,
+  afterPaid.result,
+)
+
+const resetPaid = await admin.call(REQUESTS, 'setRequestPaid', {
+  id: requestId,
+  paid: false,
+})
+check('admin resets the job back to unpaid', resetPaid.ok, resetPaid.error)
+
+const afterReset = await member.call(
+  REQUESTS,
+  'getRequest',
+  { id: requestId },
+  'GET',
+)
+check(
+  'paidAt is cleared again',
+  (afterReset.result as { paidAt?: string | null } | undefined)?.paidAt == null,
+  afterReset.result,
+)
+
+// A dedicated controller — not an admin, no operator role — should be able to
+// toggle paid but nothing else admin-only.
+const controllerEmail = `controller${uniq}@example.com`
+const controller = new Session('controller')
+await controller.auth('sign-up/email', {
+  name: 'Test Controller',
+  email: controllerEmail,
+  password: 'password1234',
+})
+const list3 = await admin.call(MEMBERS, 'listMembers', undefined, 'GET')
+const controllerRow = ((list3.result ?? []) as Array<MemberRow>).find(
+  (r) => r.email === controllerEmail,
+)
+await admin.call(MEMBERS, 'decideMember', {
+  userId: controllerRow!.id,
+  status: 'APPROVED',
+})
+const grantControllerRole = await admin.call(MEMBERS, 'setMemberRoles', {
+  userId: controllerRow!.id,
+  roles: ['controller'],
+})
+check(
+  'admin grants the controller role',
+  grantControllerRole.ok,
+  grantControllerRole.error,
+)
+
+const controllerViewsBilling = await controller.call(
+  REQUESTS,
+  'listBillableRequests',
+  undefined,
+  'GET',
+)
+check(
+  'a controller (not an operator) can still open the billing view',
+  controllerViewsBilling.ok,
+  controllerViewsBilling.error,
+)
+
+const controllerMarksPaid = await controller.call(REQUESTS, 'setRequestPaid', {
+  id: requestId,
+  paid: true,
+})
+check(
+  'a dedicated controller can mark a job paid',
+  controllerMarksPaid.ok,
+  controllerMarksPaid.error,
+)
+
+const controllerAsAdmin = await controller.call(
+  MEMBERS,
+  'listMembers',
+  undefined,
+  'GET',
+)
+check(
+  'a controller is not also an admin',
+  !controllerAsAdmin.ok,
+  controllerAsAdmin.error,
 )
 
 console.log('\n— rejection revokes access —')

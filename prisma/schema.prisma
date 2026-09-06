@@ -25,7 +25,7 @@ model User {
   image           String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
-  // "member" | "operator" | "admin", comma-separated for multiple (admin plugin)
+  // "member" | "operator" | "controller" | "admin", comma-separated for multiple (admin plugin)
   role            String?
   banned          Boolean?  @default(false)
   banReason       String?
@@ -41,6 +41,7 @@ model User {
   rackets       Racket[]
   requests      StringingRequest[] @relation("requester")
   stringingJobs StringingRequest[] @relation("operator")
+  paidRequests  StringingRequest[] @relation("paidBy")
   events        RequestEvent[]
 
   @@unique([email])
@@ -170,7 +171,14 @@ model StringingRequest {
   usedStringName String?
   usedTensionMain  Float?
   usedTensionCross Float?
-  priceCents     Int?
+  /// Split so the billing view can show what was materials vs. labour.
+  stringPriceCents Int?
+  labourPriceCents Int?
+
+  /// Set by a controller (or admin) once the member has paid; null = unpaid.
+  paidAt   DateTime?
+  paidById String?
+  paidBy   User?     @relation("paidBy", fields: [paidById], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
