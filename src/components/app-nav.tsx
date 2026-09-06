@@ -28,7 +28,14 @@ import { cn } from '#/lib/utils'
  * call to action, and spending it here as well made the bar read as noise.
  */
 
-type NavItem = { to: string; label: string; icon: LucideIcon }
+type NavItem = {
+  to: string
+  label: string
+  icon: LucideIcon
+  // /billing has its own child route (/billing/payouts) with its own tab, so
+  // it must not also light up while that child route is active.
+  exact?: boolean
+}
 
 export function AppNav() {
   const { user } = useRouteContext({ from: '__root__' })
@@ -44,7 +51,14 @@ export function AppNav() {
           ? [{ to: '/queue', label: m.nav_queue(), icon: Wrench }]
           : []),
         ...(user.roles.includes('operator') || user.roles.includes('controller')
-          ? [{ to: '/billing', label: m.nav_billing(), icon: Receipt }]
+          ? [
+              {
+                to: '/billing',
+                label: m.nav_billing(),
+                icon: Receipt,
+                exact: true,
+              },
+            ]
           : []),
         ...(user.roles.includes('controller')
           ? [
@@ -178,12 +192,14 @@ function NavTab({
   to,
   label,
   icon: Icon,
+  exact,
   onNavigate,
 }: NavItem & { onNavigate?: () => void }) {
   return (
     <Link
       to={to}
       onClick={onNavigate}
+      activeOptions={{ exact }}
       className={cn(
         'flex items-center gap-2 rounded-lg px-3 py-1.5',
         'text-xs font-medium text-slate-400 transition-colors',
