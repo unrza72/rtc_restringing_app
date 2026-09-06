@@ -25,6 +25,8 @@ const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL || 'admin@rtc.local'
 const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD || 'changeme123'
 const ADMIN_NAME = process.env.SEED_ADMIN_NAME || 'Club Admin'
 
+const DAY_MS = 24 * 60 * 60 * 1000
+
 const CLUB_STRINGS = [
   { name: 'Babolat RPM Blast', gauge: '1.25', priceCents: 2200, sortOrder: 10 },
   { name: 'Luxilon ALU Power', gauge: '1.25', priceCents: 2500, sortOrder: 20 },
@@ -146,11 +148,294 @@ async function seedStrings() {
   console.log(`✅ ${added} club string(s) added`)
 }
 
+/** Days before now, for readable-relative-timestamp seed data. */
+function daysAgo(n: number) {
+  return new Date(Date.now() - n * 24 * 60 * 60 * 1000)
+}
+
+type DemoRequestSpec = {
+  racketId: string
+  requesterId: string
+  clubStringId: string
+  tensionMain: number
+  tensionCross?: number | null
+  memberNotes?: string | null
+  status: 'REQUESTED' | 'ACCEPTED' | 'DONE' | 'COLLECTED'
+  operatorId?: string | null
+  usedStringName?: string | null
+  usedTensionMain?: number | null
+  stringPriceCents?: number | null
+  labourPriceCents?: number | null
+  paidById?: string | null
+  createdAt: Date
+}
+
+/**
+ * One request plus the RequestEvent trail that would have produced it —
+ * built by hand here since this bypasses the real transition() state machine,
+ * but the request detail page's timeline expects that trail to exist.
+ */
+async function seedDemoRequest(spec: DemoRequestSpec) {
+  const { status, operatorId = null, paidById = null, createdAt } = spec
+  const acceptedAt =
+    status === 'REQUESTED' ? null : new Date(createdAt.getTime() + DAY_MS)
+  const completedAt =
+    status === 'DONE' || status === 'COLLECTED'
+      ? new Date((acceptedAt ?? createdAt).getTime() + DAY_MS)
+      : null
+  const collectedAt =
+    status === 'COLLECTED'
+      ? new Date((completedAt ?? createdAt).getTime() + DAY_MS)
+      : null
+
+  const request = await prisma.stringingRequest.create({
+    data: {
+      racketId: spec.racketId,
+      requesterId: spec.requesterId,
+      status,
+      stringSource: 'CLUB',
+      clubStringId: spec.clubStringId,
+      tensionMain: spec.tensionMain,
+      tensionCross: spec.tensionCross ?? null,
+      memberNotes: spec.memberNotes ?? null,
+      operatorId,
+      acceptedAt,
+      completedAt,
+      collectedAt,
+      usedStringName: spec.usedStringName ?? null,
+      usedTensionMain: spec.usedTensionMain ?? null,
+      stringPriceCents: spec.stringPriceCents ?? null,
+      labourPriceCents: spec.labourPriceCents ?? null,
+      paidAt: paidById ? completedAt : null,
+      paidById,
+      createdAt,
+      updatedAt: collectedAt ?? completedAt ?? acceptedAt ?? createdAt,
+    },
+  })
+
+  const events: Array<{
+    actorId: string
+    fromStatus: string | null
+    toStatus: string
+    createdAt: Date
+  }> = [
+    {
+      actorId: spec.requesterId,
+      fromStatus: null,
+      toStatus: 'REQUESTED',
+      createdAt,
+    },
+  ]
+  if (acceptedAt) {
+    events.push({
+      actorId: operatorId!,
+      fromStatus: 'REQUESTED',
+      toStatus: 'ACCEPTED',
+      createdAt: acceptedAt,
+    })
+  }
+  if (completedAt) {
+    events.push({
+      actorId: operatorId!,
+      fromStatus: 'ACCEPTED',
+      toStatus: 'DONE',
+      createdAt: completedAt,
+    })
+  }
+  if (collectedAt) {
+    events.push({
+      actorId: spec.requesterId,
+      fromStatus: 'DONE',
+      toStatus: 'COLLECTED',
+      createdAt: collectedAt,
+    })
+  }
+  await prisma.requestEvent.createMany({
+    data: events.map((e) => ({ ...e, requestId: request.id })),
+  })
+}
+
+/**
+ * A handful of rackets and requests spanning every status, so the dashboard,
+ * queue and billing pages have something to show. Tied to the dev quick-login
+ * roster — there is no realistic member account to own these without it.
+ */
+async function seedSampleRacketsAndRequests() {
+  if (!isDevQuickLoginEnabled()) {
+    console.log(
+      '↷ sample rackets/requests skipped (needs DEV_QUICK_LOGIN_ENABLED)',
+    )
+    return
+  }
+
+  const emailOf = (slot: string) =>
+    DEV_LOGIN_ROSTER.find((u) => u.slot === slot)!.email
+  const [member1, member2, member3, stringer1, stringer2, admin] =
+    await Promise.all([
+      prisma.user.findFirst({ where: { email: emailOf('member-1') } }),
+      prisma.user.findFirst({ where: { email: emailOf('member-2') } }),
+      prisma.user.findFirst({ where: { email: emailOf('member-3') } }),
+      prisma.user.findFirst({ where: { email: emailOf('stringer-1') } }),
+      prisma.user.findFirst({ where: { email: emailOf('stringer-2') } }),
+      prisma.user.findFirst({ where: { email: ADMIN_EMAIL } }),
+    ])
+  if (!member1 || !member2 || !member3 || !stringer1 || !stringer2 || !admin) {
+    console.log('↷ sample rackets/requests skipped (roster not fully seeded)')
+    return
+  }
+
+  const existing = await prisma.racket.findFirst({
+    where: { ownerId: member1.id, label: 'Blue Pure Drive' },
+  })
+  if (existing) {
+    console.log('↷ sample rackets/requests already seeded')
+    return
+  }
+
+  const rpmBlast = await prisma.clubString.findFirst({
+    where: { name: 'Babolat RPM Blast' },
+  })
+  const aluPower = await prisma.clubString.findFirst({
+    where: { name: 'Luxilon ALU Power' },
+  })
+  const velocityMlt = await prisma.clubString.findFirst({
+    where: { name: 'Head Velocity MLT' },
+  })
+  if (!rpmBlast || !aluPower || !velocityMlt) {
+    console.log('↷ sample rackets/requests skipped (string catalogue missing)')
+    return
+  }
+
+  const [r1, r2, r3, r4] = await Promise.all([
+    prisma.racket.create({
+      data: {
+        ownerId: member1.id,
+        label: 'Blue Pure Drive',
+        brand: 'Babolat',
+        model: 'Pure Drive 100',
+        headSizeCm2: 645,
+        stringPattern: '16x19',
+        gripSize: 'L2',
+      },
+    }),
+    prisma.racket.create({
+      data: {
+        ownerId: member2.id,
+        label: 'Pure Aero',
+        brand: 'Babolat',
+        model: 'Pure Aero 2023',
+        headSizeCm2: 630,
+        stringPattern: '16x19',
+        gripSize: 'L3',
+      },
+    }),
+    prisma.racket.create({
+      data: {
+        ownerId: member3.id,
+        label: 'Blade 98',
+        brand: 'Wilson',
+        model: 'Blade 98 v8',
+        headSizeCm2: 630,
+        stringPattern: '16x19',
+        gripSize: 'L2',
+      },
+    }),
+    prisma.racket.create({
+      data: {
+        ownerId: member1.id,
+        label: 'Backup racket',
+        brand: 'Head',
+        model: 'Speed MP',
+        headSizeCm2: 630,
+        stringPattern: '16x19',
+        gripSize: 'L2',
+      },
+    }),
+  ])
+
+  // Fresh, unclaimed — shows up as "open" on the dashboard and in the queue.
+  await seedDemoRequest({
+    racketId: r1.id,
+    requesterId: member1.id,
+    clubStringId: rpmBlast.id,
+    tensionMain: 24,
+    tensionCross: 23,
+    memberNotes: 'Same as always, thanks!',
+    status: 'REQUESTED',
+    createdAt: daysAgo(1),
+  })
+
+  // Claimed, on the machine — shows up in the queue as "being strung".
+  await seedDemoRequest({
+    racketId: r2.id,
+    requesterId: member2.id,
+    clubStringId: aluPower.id,
+    tensionMain: 25,
+    status: 'ACCEPTED',
+    operatorId: stringer1.id,
+    createdAt: daysAgo(3),
+  })
+
+  // Finished but the member hasn't paid yet — shows "Unpaid" in /billing and
+  // counts toward stringer1's outstanding balance in /billing/payouts.
+  await seedDemoRequest({
+    racketId: r3.id,
+    requesterId: member3.id,
+    clubStringId: velocityMlt.id,
+    tensionMain: 23,
+    tensionCross: 22,
+    status: 'DONE',
+    operatorId: stringer1.id,
+    usedStringName: 'Head Velocity MLT 1.30',
+    usedTensionMain: 23,
+    stringPriceCents: velocityMlt.priceCents,
+    labourPriceCents: 1000,
+    createdAt: daysAgo(6),
+  })
+
+  // Finished and paid — shows "Paid" in /billing and is real, reimbursable
+  // earnings for stringer2 in /billing/payouts.
+  await seedDemoRequest({
+    racketId: r4.id,
+    requesterId: member1.id,
+    clubStringId: aluPower.id,
+    tensionMain: 24,
+    status: 'DONE',
+    operatorId: stringer2.id,
+    usedStringName: 'Luxilon ALU Power 1.25',
+    usedTensionMain: 24,
+    stringPriceCents: aluPower.priceCents,
+    labourPriceCents: 1200,
+    paidById: admin.id,
+    createdAt: daysAgo(10),
+  })
+
+  // Fully wrapped up — a second, older request on r1 so its history isn't
+  // just the open one above.
+  await seedDemoRequest({
+    racketId: r1.id,
+    requesterId: member1.id,
+    clubStringId: rpmBlast.id,
+    tensionMain: 24,
+    status: 'COLLECTED',
+    operatorId: stringer1.id,
+    usedStringName: 'Babolat RPM Blast 1.25',
+    usedTensionMain: 24,
+    stringPriceCents: rpmBlast.priceCents,
+    labourPriceCents: 1000,
+    paidById: admin.id,
+    createdAt: daysAgo(20),
+  })
+
+  console.log('✅ sample rackets and requests seeded')
+}
+
 async function main() {
   console.log('🌱 Seeding database…')
   await seedAdmin()
   await seedStrings()
   await seedDevQuickLoginUsers()
+  await seedSampleRacketsAndRequests()
 }
 
 main()
