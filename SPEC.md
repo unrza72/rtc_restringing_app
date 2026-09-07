@@ -187,7 +187,7 @@ REQUESTED --accept(operator)--> ACCEPTED --complete(operator)--> DONE --collect-
 | `/dashboard`                                  | member                 | my open requests + quick "new request"                                  |
 | `/rackets`, `/rackets/new`, `/rackets/$id`    | member                 | manage own rackets                                                      |
 | `/requests`, `/requests/new`, `/requests/$id` | member                 | own requests + detail/timeline                                          |
-| `/queue`                                      | operator               | open + own claimed jobs, filter by status                               |
+| `/queue`                                      | operator               | open + own claimed jobs, filter by status, sortable/searchable table    |
 | `/queue/$id`                                  | operator               | accept / complete / collect                                             |
 | `/billing`                                    | operator OR controller | every restrung racket: string/labour/total price, paid state            |
 | `/billing/payouts`                            | controller             | labour earned/reimbursed/outstanding per stringer, reimbursement ledger |
