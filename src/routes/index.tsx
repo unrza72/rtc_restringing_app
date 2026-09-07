@@ -27,19 +27,15 @@ function Landing() {
       </span>
       <p className="mt-3 text-sm text-slate-400">{m.app_tagline()}</p>
 
-      <div className="mt-8 flex justify-center gap-3">
+      {/* No "create account" here — signup only exists behind an invite link
+          a member/admin sent directly, so there's nothing to discover. */}
+      <div className="mt-8 flex justify-center">
         <Link
           to="/login"
           search={{ redirect: undefined }}
           className="rounded-xl bg-lime-400 px-5 py-2.5 text-sm font-bold text-slate-950 shadow-md shadow-lime-400/10 transition-all hover:bg-lime-300 active:scale-95"
         >
           {m.auth_sign_in_action()}
-        </Link>
-        <Link
-          to="/signup"
-          className="rounded-xl border border-slate-800 bg-slate-900 px-5 py-2.5 text-sm font-bold text-slate-200 transition-colors hover:border-slate-700 hover:bg-slate-800"
-        >
-          {m.auth_sign_up_action()}
         </Link>
       </div>
     </div>

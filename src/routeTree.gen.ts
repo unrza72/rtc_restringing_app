@@ -17,6 +17,7 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as AuthedAdminRouteImport } from './routes/_authed/admin'
 import { Route as AuthedBillingRouteImport } from './routes/_authed/billing'
 import { Route as AuthedDashboardRouteImport } from './routes/_authed/dashboard'
+import { Route as AuthedInvitesRouteImport } from './routes/_authed/invites'
 import { Route as AuthedQueueRouteImport } from './routes/_authed/queue'
 import { Route as AuthedAdminMembersRouteImport } from './routes/_authed/admin/members'
 import { Route as AuthedAdminStringsRouteImport } from './routes/_authed/admin/strings'
@@ -69,6 +70,11 @@ const AuthedBillingRoute = AuthedBillingRouteImport.update({
 const AuthedDashboardRoute = AuthedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedInvitesRoute = AuthedInvitesRouteImport.update({
+  id: '/invites',
+  path: '/invites',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedQueueRoute = AuthedQueueRouteImport.update({
@@ -150,6 +156,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthedAdminRouteWithChildren
   '/billing': typeof AuthedBillingRouteWithChildren
   '/dashboard': typeof AuthedDashboardRoute
+  '/invites': typeof AuthedInvitesRoute
   '/queue': typeof AuthedQueueRouteWithChildren
   '/admin/members': typeof AuthedAdminMembersRoute
   '/admin/strings': typeof AuthedAdminStringsRoute
@@ -172,6 +179,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/admin': typeof AuthedAdminRouteWithChildren
   '/dashboard': typeof AuthedDashboardRoute
+  '/invites': typeof AuthedInvitesRoute
   '/admin/members': typeof AuthedAdminMembersRoute
   '/admin/strings': typeof AuthedAdminStringsRoute
   '/billing/payouts': typeof AuthedBillingPayoutsRoute
@@ -196,6 +204,7 @@ export interface FileRoutesById {
   '/_authed/admin': typeof AuthedAdminRouteWithChildren
   '/_authed/billing': typeof AuthedBillingRouteWithChildren
   '/_authed/dashboard': typeof AuthedDashboardRoute
+  '/_authed/invites': typeof AuthedInvitesRoute
   '/_authed/queue': typeof AuthedQueueRouteWithChildren
   '/_authed/admin/members': typeof AuthedAdminMembersRoute
   '/_authed/admin/strings': typeof AuthedAdminStringsRoute
@@ -221,6 +230,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/billing'
     | '/dashboard'
+    | '/invites'
     | '/queue'
     | '/admin/members'
     | '/admin/strings'
@@ -243,6 +253,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/admin'
     | '/dashboard'
+    | '/invites'
     | '/admin/members'
     | '/admin/strings'
     | '/billing/payouts'
@@ -266,6 +277,7 @@ export interface FileRouteTypes {
     | '/_authed/admin'
     | '/_authed/billing'
     | '/_authed/dashboard'
+    | '/_authed/invites'
     | '/_authed/queue'
     | '/_authed/admin/members'
     | '/_authed/admin/strings'
@@ -347,6 +359,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthedDashboardRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/invites': {
+      id: '/_authed/invites'
+      path: '/invites'
+      fullPath: '/invites'
+      preLoaderRoute: typeof AuthedInvitesRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/queue': {
@@ -496,6 +515,7 @@ interface AuthedRouteChildren {
   AuthedAdminRoute: typeof AuthedAdminRouteWithChildren
   AuthedBillingRoute: typeof AuthedBillingRouteWithChildren
   AuthedDashboardRoute: typeof AuthedDashboardRoute
+  AuthedInvitesRoute: typeof AuthedInvitesRoute
   AuthedQueueRoute: typeof AuthedQueueRouteWithChildren
   AuthedRacketsIdRoute: typeof AuthedRacketsIdRoute
   AuthedRacketsNewRoute: typeof AuthedRacketsNewRoute
@@ -509,6 +529,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAdminRoute: AuthedAdminRouteWithChildren,
   AuthedBillingRoute: AuthedBillingRouteWithChildren,
   AuthedDashboardRoute: AuthedDashboardRoute,
+  AuthedInvitesRoute: AuthedInvitesRoute,
   AuthedQueueRoute: AuthedQueueRouteWithChildren,
   AuthedRacketsIdRoute: AuthedRacketsIdRoute,
   AuthedRacketsNewRoute: AuthedRacketsNewRoute,

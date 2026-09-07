@@ -18,7 +18,7 @@ import { getLocale } from '#/paraglide/runtime'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { Field, FormError, fieldErrors } from '#/components/form-field'
-import { AuthShell, AuthTabs } from '#/components/auth-shell'
+import { AuthShell } from '#/components/auth-shell'
 
 const searchSchema = z.object({
   redirect: z.string().optional(),
@@ -75,7 +75,6 @@ function LoginPage() {
 
   return (
     <AuthShell title={m.app_name()} subtitle={m.auth_sign_in_subtitle()}>
-      <AuthTabs active="login" />
       <form
         className="grid gap-4 p-6"
         onSubmit={(e) => {

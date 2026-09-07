@@ -1,8 +1,6 @@
-import { Link } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
-import { cn } from '#/lib/utils'
 
 /**
  * The prototype's full-page gate: ball tile, wordmark, then a single dark card.
@@ -35,32 +33,6 @@ export function AuthShell({
       <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl">
         {children}
       </div>
-    </div>
-  )
-}
-
-/** Login / sign-up switcher, styled as the prototype's two-up tab strip. */
-export function AuthTabs({ active }: { active: 'login' | 'signup' }) {
-  const tabClass = (isActive: boolean) =>
-    cn(
-      'flex-1 border-b-2 py-3 text-center font-bold transition',
-      isActive
-        ? 'border-lime-400 bg-lime-400/5 text-lime-300'
-        : 'border-transparent text-slate-400 hover:text-slate-200',
-    )
-
-  return (
-    <div className="flex border-b border-slate-800 text-xs">
-      <Link
-        to="/login"
-        search={{ redirect: undefined }}
-        className={tabClass(active === 'login')}
-      >
-        {m.auth_sign_in_title()}
-      </Link>
-      <Link to="/signup" className={tabClass(active === 'signup')}>
-        {m.auth_sign_up_title()}
-      </Link>
     </div>
   )
 }

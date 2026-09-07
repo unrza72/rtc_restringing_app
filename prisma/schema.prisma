@@ -36,6 +36,11 @@ model User {
   approvedById    String?
   // "en" | "de" — null until recorded by a login/signup or an explicit switch
   locale          String?
+  // The invite token this account was created with. Not the source of truth
+  // (Invite.usedById is) — just a denormalized copy so better-auth's own
+  // signUp.email() call can carry the token through, typed, with no extra
+  // server round trip. See src/lib/auth.ts's validateUserInfo.
+  inviteToken     String?
   sessions        Session[]
   accounts        Account[]
 
@@ -47,6 +52,8 @@ model User {
   events        RequestEvent[]
   labourEarned  Reimbursement[]    @relation("labourReimbursement")
   reimbursementsRecorded Reimbursement[] @relation("reimbursementRecordedBy")
+  invitesCreated Invite[] @relation("inviteCreatedBy")
+  invitesUsed    Invite[] @relation("inviteUsedBy")
 
   @@unique([email])
   @@map("user")
@@ -224,4 +231,25 @@ model Reimbursement {
   createdAt   DateTime @default(now())
 
   @@index([operatorId, createdAt])
+}
+
+/// A shareable, single-use link that gates account creation — /signup refuses
+/// to create anyone without a valid, unexpired, unused, unrevoked one. The
+/// club's actual gate lives in src/lib/auth.ts's validateUserInfo, which
+/// atomically claims a row here (sets usedAt) before better-auth is allowed to
+/// create the user; databaseHooks.user.create.after then stamps usedById once
+/// the new user's id is known.
+model Invite {
+  id          String    @id @default(cuid())
+  token       String    @unique
+  createdById String
+  createdBy   User      @relation("inviteCreatedBy", fields: [createdById], references: [id])
+  expiresAt   DateTime
+  usedAt      DateTime?
+  usedById    String?
+  usedBy      User?     @relation("inviteUsedBy", fields: [usedById], references: [id])
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([createdById, createdAt])
 }

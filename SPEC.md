@@ -33,14 +33,20 @@ someone who only reconciles payments and never touches a stringing machine.
 
 ## 3. Approval flow
 
-1. Sign up with name, email and password. Email is the login identifier.
+There is no open signup. An operator or admin creates a single-use invite link
+at `/invites` (expiry configurable at creation, default 24h); `/signup` refuses
+to create an account without one.
+
+1. Someone follows an invite link (`/signup?token=…`), signs up with name, email
+   and password. Email is the login identifier.
 2. User row is created with `status = PENDING`.
 3. They are signed in but every app route guard bounces them to `/pending`
    ("waiting for approval") — they can only sign out.
 4. Admin approves at `/admin/members` → `status = APPROVED`, full access.
    Rejecting sets `status = REJECTED` (kept for audit, cannot sign in).
 
-The first user created by the seed script is `admin` + `APPROVED` (bootstrap).
+The first user created by the seed script is `admin` + `APPROVED` (bootstrap) —
+seeding bypasses better-auth (and so the invite gate) entirely; see §9.
 
 ## 4. Data model
 
@@ -56,6 +62,7 @@ The first user created by the seed script is `admin` + `APPROVED` (bootstrap).
 //   approvedAt   DateTime?
 //   approvedById String?
 //   locale       String?  // "en" | "de" — see §8, Locale routing
+//   inviteToken  String?  // the invite this account was created with — see §9
 
 model Racket {
   id            String   @id @default(cuid())
@@ -179,21 +186,23 @@ REQUESTED --accept(operator)--> ACCEPTED --complete(operator)--> DONE --collect-
 
 ## 6. Routes
 
-| Route                                         | Access                 | Purpose                                                                 |
-| --------------------------------------------- | ---------------------- | ----------------------------------------------------------------------- |
-| `/`                                           | public                 | Landing → redirects to `/dashboard` when signed in                      |
-| `/login`, `/signup`                           | public                 | email + password                                                        |
-| `/pending`                                    | authed, PENDING        | "waiting for approval"                                                  |
-| `/dashboard`                                  | member                 | my open requests + quick "new request"                                  |
-| `/rackets`, `/rackets/new`, `/rackets/$id`    | member                 | manage own rackets                                                      |
-| `/requests`, `/requests/new`, `/requests/$id` | member                 | own requests + detail/timeline                                          |
-| `/queue`                                      | operator               | open + own claimed jobs, filter by status                               |
-| `/queue/$id`                                  | operator               | accept / complete / collect                                             |
-| `/billing`                                    | operator OR controller | every restrung racket: string/labour/total price, paid state            |
-| `/billing/payouts`                            | controller             | labour earned/reimbursed/outstanding per stringer, reimbursement ledger |
-| `/admin/members`                              | admin                  | approve, reject, set roles                                              |
-| `/admin/strings`                              | admin                  | club string catalogue: add, edit price, deactivate                      |
-| `/api/auth/$`                                 | public                 | better-auth handler (exists)                                            |
+| Route                                         | Access                  | Purpose                                                                 |
+| --------------------------------------------- | ----------------------- | ----------------------------------------------------------------------- |
+| `/`                                           | public                  | Landing → redirects to `/dashboard` when signed in                      |
+| `/login`                                      | public                  | email + password                                                        |
+| `/signup`                                     | public, needs `?token=` | invite-gated — see §9                                                   |
+| `/pending`                                    | authed, PENDING         | "waiting for approval"                                                  |
+| `/dashboard`                                  | member                  | my open requests + quick "new request"                                  |
+| `/rackets`, `/rackets/new`, `/rackets/$id`    | member                  | manage own rackets                                                      |
+| `/requests`, `/requests/new`, `/requests/$id` | member                  | own requests + detail/timeline                                          |
+| `/queue`                                      | operator                | open + own claimed jobs, filter by status                               |
+| `/queue/$id`                                  | operator                | accept / complete / collect                                             |
+| `/billing`                                    | operator OR controller  | every restrung racket: string/labour/total price, paid state            |
+| `/billing/payouts`                            | controller              | labour earned/reimbursed/outstanding per stringer, reimbursement ledger |
+| `/invites`                                    | operator OR admin       | create/list/revoke invite links — see §9                                |
+| `/admin/members`                              | admin                   | approve, reject, set roles                                              |
+| `/admin/strings`                              | admin                   | club string catalogue: add, edit price, deactivate                      |
+| `/api/auth/$`                                 | public                  | better-auth handler (exists)                                            |
 
 Guards live in one place: `beforeLoad` on a `_authed` pathless layout route that loads
 the session, checks `status === APPROVED`, and a `requireRole()` helper for
@@ -238,18 +247,73 @@ member across devices:
   redirects once, to the locale they last chose, then nothing further happens
   since the two now match.
 
-## 9. Decisions
+## 9. Invite-gated signup
 
-| Question        | Decision                                                                                |
-| --------------- | --------------------------------------------------------------------------------------- |
-| Status set      | `REQUESTED → ACCEPTED → DONE → COLLECTED` (+ `CANCELLED`), no separate in-progress step |
-| String choice   | Club catalogue (`ClubString`, admin-maintained) **or** own string as free text          |
-| Email at signup | Required — real address, enables notifications/reset later                              |
-| Language        | Keep `en` + `de` switchable; `de` is the base locale, per-account preference persists   |
-| Price           | Tracked per job (`priceCents`), prefilled from the catalogue                            |
-| Racket handover | Not tracked in the app                                                                  |
+There is no public signup — `/signup` refuses to create an account without a
+valid, unexpired, unused, unrevoked invite token in the URL (`?token=…`).
+`/invites` (operator or admin) creates and lists them; expiry is set per invite
+at creation, defaulting to 24h.
 
-## 10. What is built
+```prisma
+model Invite {
+  id          String    @id @default(cuid())
+  token       String    @unique
+  createdById String
+  createdBy   User      @relation(fields: [createdById], references: [id])
+  expiresAt   DateTime
+  usedAt      DateTime?
+  usedById    String?
+  usedBy      User?     @relation(fields: [usedById], references: [id])
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+}
+```
+
+**The enforcement is in better-auth, not just the route.** `src/lib/auth.ts`
+sets `user.validateUserInfo`, a gate that runs _inside_ `createUser`, before any
+row is written — confirmed against
+`node_modules/better-auth/dist/db/internal-adapter.mjs` rather than assumed.
+For `source.method === 'email-password'` it atomically claims the invite
+(`updateMany({ where: { token, usedAt: null, revokedAt: null, expiresAt: { gt:
+now } }, data: { usedAt: now } })`); a 0-row result means invalid/used/expired/
+revoked, and returning `{ error }` from the hook surfaces as a real `403` with
+a custom message (`node_modules/better-auth/dist/utils/validate-user-info.mjs`)
+— no half-created account on rejection, no separate follow-up call needed to
+"undo" a bad signup. `databaseHooks.user.create.after` then stamps `usedById`
+once the new user's id is committed.
+
+better-auth's own `organization` plugin has an invitation system, but it's the
+wrong shape for this: invitations there are pinned to a specific email and can
+only be _accepted_ by an already-signed-in session
+(`node_modules/better-auth/dist/plugins/organization/routes/crud-invites.mjs`)
+— exactly backwards from "an anonymous stranger uses a link to create an
+account." Adopting it would also drag in organizations/teams/org-scoped roles
+for an app with exactly one club. The `one-time-token` plugin is session
+transfer for an already-authenticated user, not a pre-signup invite, and
+defaults to a 3-minute expiry. Built custom instead.
+
+`/signup`'s loader calls the public `checkInvite` server function to show
+"this invite is no longer valid" before rendering a form — UX only; it cannot
+be trusted as the boundary, since it's a plain unauthenticated `GET` a client
+could just not call. The real gate is `validateUserInfo`, checked regardless.
+
+`prisma/seed.ts` creates users via a direct `prisma.user.create()`, bypassing
+better-auth (and so the invite gate) entirely — correct for a bootstrap script,
+worth remembering if this ever needs to change.
+
+## 10. Decisions
+
+| Question        | Decision                                                                                                               |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Status set      | `REQUESTED → ACCEPTED → DONE → COLLECTED` (+ `CANCELLED`), no separate in-progress step                                |
+| String choice   | Club catalogue (`ClubString`, admin-maintained) **or** own string as free text                                         |
+| Email at signup | Required — real address, enables notifications/reset later                                                             |
+| Language        | Keep `en` + `de` switchable; `de` is the base locale, per-account preference persists                                  |
+| Price           | Tracked per job (`priceCents`), prefilled from the catalogue                                                           |
+| Racket handover | Not tracked in the app                                                                                                 |
+| Signup access   | Invite-link only, single-use, expiry configurable (default 24h) — custom, not better-auth's `organization` invitations |
+
+## 11. What is built
 
 All of it. `pnpm test:e2e` drives the real HTTP stack (better-auth + the server
 function RPC endpoints) and covers the approval gate, ownership isolation,
@@ -266,7 +330,7 @@ role enforcement, the full request lifecycle, and rejection revoking access.
 | Screens               | `src/routes/**`                                                                         |
 | i18n                  | `messages/{en,de}.json`, `src/lib/labels.ts`                                            |
 
-## 11. Known gaps
+## 12. Known gaps
 
 - No automated unit tests; `scripts/e2e-flow.ts` is the safety net and needs a
   running dev server.

@@ -14,6 +14,7 @@ const prisma = new PrismaClient({
 
 await prisma.requestEvent.deleteMany()
 await prisma.reimbursement.deleteMany()
+await prisma.invite.deleteMany()
 await prisma.stringingRequest.deleteMany()
 await prisma.racket.deleteMany()
 await prisma.session.deleteMany()

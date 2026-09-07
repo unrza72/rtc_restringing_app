@@ -124,6 +124,7 @@ const MEMBERS = '/src/server/members.functions.ts'
 const PAYOUTS = '/src/server/payouts.functions.ts'
 const LOCALE = '/src/server/locale.functions.ts'
 const SESSION = '/src/lib/session.functions.ts'
+const INVITES = '/src/server/invites.functions.ts'
 
 let failures = 0
 function check(name: string, ok: boolean, detail?: unknown) {
@@ -147,12 +148,82 @@ check('admin signs in', signIn.status === 200, signIn.body)
 
 const uniq = Date.now().toString().slice(-6)
 const memberEmail = `player${uniq}@example.com`
+
+console.log('\n— invite-gated signup —')
+
+const noToken = await member.auth('sign-up/email', {
+  name: 'No Invite',
+  email: `no-invite${uniq}@example.com`,
+  password: 'password1234',
+})
+check(
+  'signup without an invite token is refused',
+  noToken.status !== 200 && /invite/i.test(noToken.body),
+  noToken.body,
+)
+
+const bogusToken = await member.auth('sign-up/email', {
+  name: 'Bogus Invite',
+  email: `bogus-invite${uniq}@example.com`,
+  password: 'password1234',
+  inviteToken: 'this-token-does-not-exist',
+})
+check(
+  'signup with a made-up invite token is refused',
+  bogusToken.status !== 200 && /invite/i.test(bogusToken.body),
+  bogusToken.body,
+)
+
+const invite = await admin.call(INVITES, 'createInvite', {
+  expiresInHours: 24,
+})
+check('admin creates an invite', invite.ok, invite.error)
+const inviteToken = (invite.result as { token: string } | undefined)?.token
+
 const signUp = await member.auth('sign-up/email', {
   name: 'Test Player',
   email: memberEmail,
   password: 'password1234',
+  inviteToken,
 })
-check('new member signs up', signUp.status === 200, signUp.body)
+check(
+  'new member signs up with a valid invite',
+  signUp.status === 200,
+  signUp.body,
+)
+
+const reuseToken = await new Session('reuse').auth('sign-up/email', {
+  name: 'Second Use',
+  email: `second-use${uniq}@example.com`,
+  password: 'password1234',
+  inviteToken,
+})
+check(
+  'the same invite token cannot be used twice',
+  reuseToken.status !== 200 && /invite/i.test(reuseToken.body),
+  reuseToken.body,
+)
+
+const toRevoke = await admin.call(INVITES, 'createInvite', {
+  expiresInHours: 24,
+})
+const revokeTargetId = (toRevoke.result as { id: string } | undefined)?.id
+const revoked = await admin.call(INVITES, 'revokeInvite', {
+  id: revokeTargetId,
+})
+check('admin revokes an unused invite', revoked.ok, revoked.error)
+
+const revokedTokenUse = await new Session('revoked').auth('sign-up/email', {
+  name: 'Revoked Invite',
+  email: `revoked-invite${uniq}@example.com`,
+  password: 'password1234',
+  inviteToken: (toRevoke.result as { token: string } | undefined)?.token,
+})
+check(
+  'a revoked invite cannot be used',
+  revokedTokenUse.status !== 200 && /invite/i.test(revokedTokenUse.body),
+  revokedTokenUse.body,
+)
 
 console.log('\n— approval gate —')
 const blocked = await member.call(
@@ -189,6 +260,39 @@ const allowed = await member.call(
   'GET',
 )
 check('approved member may now list rackets', allowed.ok, allowed.error)
+
+const memberCreatesInvite = await member.call(INVITES, 'createInvite', {
+  expiresInHours: 24,
+})
+check(
+  'a plain member (not operator/admin) cannot create an invite',
+  !memberCreatesInvite.ok,
+  memberCreatesInvite.error,
+)
+
+const preflightValid = await member.call(
+  INVITES,
+  'checkInvite',
+  { token: inviteToken },
+  'GET',
+)
+check(
+  'the pre-flight check reports a used invite as no longer valid',
+  (preflightValid.result as { valid?: boolean } | undefined)?.valid === false,
+  preflightValid.result,
+)
+
+const preflightMissing = await member.call(
+  INVITES,
+  'checkInvite',
+  { token: null },
+  'GET',
+)
+check(
+  'the pre-flight check reports no token as invalid',
+  (preflightMissing.result as { valid?: boolean } | undefined)?.valid === false,
+  preflightMissing.result,
+)
 
 console.log('\n— rackets —')
 const racket = await member.call(RACKETS, 'createRacket', {
@@ -453,10 +557,15 @@ check(
 // toggle paid but nothing else admin-only.
 const controllerEmail = `controller${uniq}@example.com`
 const controller = new Session('controller')
+const controllerInvite = await admin.call(INVITES, 'createInvite', {
+  expiresInHours: 24,
+})
 await controller.auth('sign-up/email', {
   name: 'Test Controller',
   email: controllerEmail,
   password: 'password1234',
+  inviteToken: (controllerInvite.result as { token: string } | undefined)
+    ?.token,
 })
 const list3 = await admin.call(MEMBERS, 'listMembers', undefined, 'GET')
 const controllerRow = ((list3.result ?? []) as Array<MemberRow>).find(
@@ -715,10 +824,14 @@ check(
 console.log('\n— rejection revokes access —')
 const rejectEmail = `reject${uniq}@example.com`
 const rejected = new Session('rejected')
+const rejectInvite = await admin.call(INVITES, 'createInvite', {
+  expiresInHours: 24,
+})
 await rejected.auth('sign-up/email', {
   name: 'Rejected Player',
   email: rejectEmail,
   password: 'password1234',
+  inviteToken: (rejectInvite.result as { token: string } | undefined)?.token,
 })
 const list2 = await admin.call(MEMBERS, 'listMembers', undefined, 'GET')
 const rejectRow = ((list2.result ?? []) as Array<MemberRow>).find(

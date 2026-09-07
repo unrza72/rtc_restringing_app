@@ -20,6 +20,9 @@ The seed creates `admin@rtc.local` / `changeme123` — **change that password**,
 set `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_ADMIN_NAME` before seeding.
 Members sign in with their email address; there are no usernames. Without this admin nobody can ever approve the first member.
 
+There is no open signup. Sign in as that admin, create an invite at `/invites`,
+and use the link it gives you (`/signup?token=…`) to create the second account.
+
 Environment lives in `.env`: `DATABASE_URL`, `BETTER_AUTH_URL`,
 `BETTER_AUTH_SECRET`.
 

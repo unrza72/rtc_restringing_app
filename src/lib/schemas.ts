@@ -122,3 +122,13 @@ export const recordReimbursementSchema = z.object({
 })
 
 export const localeInputSchema = z.object({ locale: z.enum(locales) })
+
+export const createInviteSchema = z.object({
+  // Hours, so the UI reads naturally for both "a few hours" and "a week"
+  // without unit-switching; 24 matches the "default to 1 day" ask.
+  expiresInHours: z.coerce.number().int().min(1).max(720).default(24),
+})
+
+export const checkInviteSchema = z.object({
+  token: z.string().min(1).nullable().default(null),
+})

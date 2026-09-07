@@ -10,6 +10,7 @@ import {
   Plus,
   Receipt,
   Spool,
+  UserPlus,
   Users,
   Wrench,
 } from 'lucide-react'
@@ -70,6 +71,9 @@ export function AppNav() {
                 icon: HandCoins,
               },
             ]
+          : []),
+        ...(user.roles.includes('operator')
+          ? [{ to: '/invites', label: m.nav_invites(), icon: UserPlus }]
           : []),
         ...(user.roles.includes('admin')
           ? [
