@@ -1,5 +1,5 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { ChevronDown, ChevronUp, ChevronsUpDown, Search } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { z } from 'zod'
 
@@ -11,11 +11,11 @@ import { m } from '#/paraglide/messages'
 import { Card, CardContent } from '#/components/ui/card'
 import { Input } from '#/components/ui/input'
 import { StatusBadge } from '#/components/status-badge'
+import { SortableHead, useTableSort } from '#/components/sortable-table'
 import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
   TableHeader,
   TableRow,
 } from '#/components/ui/table'
@@ -39,7 +39,6 @@ export const Route = createFileRoute('/_authed/queue/')({
 })
 
 type SortKey = 'racket' | 'requester' | 'stringer' | 'neededBy' | 'status'
-type SortDir = 'asc' | 'desc'
 
 // Pipeline order, not alphabetical — REQUESTED before ACCEPTED before DONE
 // is what "sorted by status" should mean when the open view mixes all three.
@@ -51,17 +50,7 @@ function QueuePage() {
   const { requests } = Route.useLoaderData()
   const search = Route.useSearch()
   const [query, setQuery] = useState('')
-  const [sortKey, setSortKey] = useState<SortKey>('neededBy')
-  const [sortDir, setSortDir] = useState<SortDir>('asc')
-
-  function toggleSort(key: SortKey) {
-    if (key === sortKey) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
-    } else {
-      setSortKey(key)
-      setSortDir('asc')
-    }
-  }
+  const { sortKey, sortDir, toggleSort } = useTableSort<SortKey>('neededBy')
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -72,6 +61,8 @@ function QueuePage() {
             .some((v) => v.toLowerCase().includes(q)),
         )
       : requests
+
+    if (!sortKey) return filtered
 
     const dir = sortDir === 'asc' ? 1 : -1
     return [...filtered].sort((a, b) => {
@@ -162,35 +153,40 @@ function QueuePage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <SortHead
+                  <SortableHead
                     label={m.request_racket()}
+                    sortKey="racket"
                     active={sortKey === 'racket'}
                     dir={sortDir}
-                    onClick={() => toggleSort('racket')}
+                    onSort={toggleSort}
                   />
-                  <SortHead
+                  <SortableHead
                     label={m.request_label_requester()}
+                    sortKey="requester"
                     active={sortKey === 'requester'}
                     dir={sortDir}
-                    onClick={() => toggleSort('requester')}
+                    onSort={toggleSort}
                   />
-                  <SortHead
+                  <SortableHead
                     label={m.request_stringer()}
+                    sortKey="stringer"
                     active={sortKey === 'stringer'}
                     dir={sortDir}
-                    onClick={() => toggleSort('stringer')}
+                    onSort={toggleSort}
                   />
-                  <SortHead
+                  <SortableHead
                     label={m.request_needed_by()}
+                    sortKey="neededBy"
                     active={sortKey === 'neededBy'}
                     dir={sortDir}
-                    onClick={() => toggleSort('neededBy')}
+                    onSort={toggleSort}
                   />
-                  <SortHead
+                  <SortableHead
                     label={m.queue_col_status()}
+                    sortKey="status"
                     active={sortKey === 'status'}
                     dir={sortDir}
-                    onClick={() => toggleSort('status')}
+                    onSort={toggleSort}
                   />
                 </TableRow>
               </TableHeader>
@@ -261,38 +257,5 @@ function FilterTab({
     >
       {label}
     </Link>
-  )
-}
-
-function SortHead({
-  label,
-  active,
-  dir,
-  onClick,
-}: {
-  label: string
-  active: boolean
-  dir: SortDir
-  onClick: () => void
-}) {
-  const Icon = !active
-    ? ChevronsUpDown
-    : dir === 'asc'
-      ? ChevronUp
-      : ChevronDown
-  return (
-    <TableHead>
-      <button
-        type="button"
-        onClick={onClick}
-        className={cn(
-          'flex items-center gap-1 transition-colors hover:text-slate-100',
-          active && 'text-slate-100',
-        )}
-      >
-        {label}
-        <Icon className={cn('size-3.5', !active && 'text-slate-600')} />
-      </button>
-    </TableHead>
   )
 }

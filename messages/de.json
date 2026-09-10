@@ -127,6 +127,8 @@
   "billing_mark_paid": "Als bezahlt markieren",
   "billing_mark_unpaid": "Zurücksetzen",
   "billing_paid_on": "Bezahlt {date}",
+  "billing_search_placeholder": "Schläger, Mitglied, Besaiter suchen…",
+  "billing_search_empty": "Keine Aufträge gefunden.",
   "payouts_title": "Besaiter-Auszahlungen",
   "payouts_empty": "Noch keine Arbeitslohn-Einnahmen erfasst.",
   "payouts_earned": "Verdient",

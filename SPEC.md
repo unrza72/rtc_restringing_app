@@ -197,7 +197,7 @@ REQUESTED --accept(operator)--> ACCEPTED --complete(operator)--> DONE --collect-
 | `/requests`, `/requests/new`, `/requests/$id` | member                  | own requests + detail/timeline                                          |
 | `/queue`                                      | operator                | open + own claimed jobs, filter by status, sortable/searchable table    |
 | `/queue/$id`                                  | operator                | accept / complete / collect                                             |
-| `/billing`                                    | operator OR controller  | every restrung racket: string/labour/total price, paid state            |
+| `/billing`                                    | operator OR controller  | every restrung racket: string/labour/total price, paid state, sortable/searchable table |
 | `/billing/payouts`                            | controller              | labour earned/reimbursed/outstanding per stringer, reimbursement ledger |
 | `/invites`                                    | operator OR admin       | create/list/revoke invite links — see §9                                |
 | `/admin/members`                              | admin                   | approve, reject, set roles                                              |

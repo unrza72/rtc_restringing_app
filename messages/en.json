@@ -127,6 +127,8 @@
   "billing_mark_paid": "Mark paid",
   "billing_mark_unpaid": "Reset",
   "billing_paid_on": "Paid {date}",
+  "billing_search_placeholder": "Search racket, member, stringer…",
+  "billing_search_empty": "No jobs match your search.",
   "payouts_title": "Stringer payouts",
   "payouts_empty": "No labour earnings recorded yet.",
   "payouts_earned": "Earned",
