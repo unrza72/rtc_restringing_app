@@ -58,6 +58,7 @@ function requireAnyRole(...roles: Array<Role>) {
 
 export const operatorMiddleware = requireRole('operator')
 export const controllerMiddleware = requireRole('controller')
+export const coachMiddleware = requireRole('coach')
 export const adminMiddleware = requireRole('admin')
 
 /**

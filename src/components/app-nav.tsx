@@ -2,6 +2,7 @@ import { Link, useRouteContext, useRouter } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
 import {
   Clock,
+  GraduationCap,
   HandCoins,
   Languages,
   Layers,
@@ -74,6 +75,15 @@ export function AppNav() {
           : []),
         ...(user.roles.includes('operator')
           ? [{ to: '/invites', label: m.nav_invites(), icon: UserPlus }]
+          : []),
+        ...(user.roles.includes('coach')
+          ? [
+              {
+                to: '/training',
+                label: m.nav_training(),
+                icon: GraduationCap,
+              },
+            ]
           : []),
         ...(user.roles.includes('admin')
           ? [

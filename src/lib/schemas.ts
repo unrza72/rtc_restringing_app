@@ -4,6 +4,7 @@ import { locales } from '#/paraglide/runtime'
 
 import { ROLES, USER_STATUSES } from './roles'
 import { STRING_SOURCES } from './status'
+import { BALLS, MAX_STRENGTH, MIN_STRENGTH, PERSON_KINDS } from './training'
 
 /** Shared by the forms and the server functions, so both reject the same input. */
 
@@ -122,6 +123,66 @@ export const recordReimbursementSchema = z.object({
 })
 
 export const localeInputSchema = z.object({ locale: z.enum(locales) })
+
+// ---------------------------------------------------------------------------
+// training planner
+// ---------------------------------------------------------------------------
+
+export const trainingPersonInputSchema = z
+  .object({
+    name: z.string().trim().min(1, 'Give the person a name').max(80),
+    kind: z.enum(PERSON_KINDS),
+    ball: z.enum(BALLS).nullable().default(null),
+    strength: z.coerce
+      .number()
+      .min(MIN_STRENGTH)
+      .max(MAX_STRENGTH)
+      .nullable()
+      .default(null),
+    notes: optionalText(300),
+  })
+  // Ball and strength are what the solver groups on, so a trainee without them
+  // could never be placed. Trainers are graded by neither.
+  .refine((v) => v.kind !== 'TRAINEE' || v.ball !== null, {
+    message: 'Pick the ball this player trains with',
+    path: ['ball'],
+  })
+  .refine((v) => v.kind !== 'TRAINEE' || v.strength !== null, {
+    message: 'Rate the player from 0 to 5',
+    path: ['strength'],
+  })
+  .transform((v) => ({
+    ...v,
+    ball: v.kind === 'TRAINEE' ? v.ball : null,
+    strength: v.kind === 'TRAINEE' ? v.strength : null,
+  }))
+
+export const availabilityInputSchema = z
+  .object({
+    personId: z.string().min(1),
+    weekday: z.coerce.number().int().min(0).max(6),
+    startMin: z.coerce.number().int().min(0).max(1439),
+    endMin: z.coerce.number().int().min(1).max(1440),
+  })
+  .refine((v) => v.endMin > v.startMin, {
+    message: 'The end has to come after the start',
+    path: ['endMin'],
+  })
+
+export const solvePlanSchema = z
+  .object({
+    name: z.string().trim().min(1, 'Name the plan').max(80),
+    minGroupSize: z.coerce.number().int().min(1).max(20),
+    maxGroupSize: z.coerce.number().int().min(1).max(20),
+    strengthSpread: z.coerce.number().min(0).max(5),
+    sessionMinutes: z.coerce.number().int().min(15).max(240),
+    slotStepMinutes: z.coerce.number().int().min(5).max(120),
+    courtCount: z.coerce.number().int().min(1).max(20),
+  })
+  .refine((v) => v.maxGroupSize >= v.minGroupSize, {
+    message: 'The maximum cannot be below the minimum',
+    path: ['maxGroupSize'],
+  })
 
 export const createInviteSchema = z.object({
   // Hours, so the UI reads naturally for both "a few hours" and "a week"

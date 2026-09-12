@@ -25,11 +25,13 @@ multi-role). Roles cascade — each one implies everything to its left:
 - **controller** — member + views the billing overview, sets/resets a job's paid state,
   and reconciles the labour payout ledger. Independent of operator — a controller
   need not string rackets.
-- **admin** — implies operator, controller and member. Approves members, assigns roles,
-  edits the string catalogue, and can do anything a controller or operator can.
+- **coach** — member + runs the training planner (§13): the trainee/trainer roster,
+  their weekly availability, and the grouping solver. Independent of the other two.
+- **admin** — implies operator, controller, coach and member. Approves members, assigns
+  roles, edits the string catalogue, and can do anything the others can.
 
-`operator` and `controller` are parallel specialties, not a ladder — a club can have
-someone who only reconciles payments and never touches a stringing machine.
+`operator`, `controller` and `coach` are parallel specialties, not a ladder — a club can
+have someone who only reconciles payments and never touches a stringing machine.
 
 ## 3. Approval flow
 
@@ -186,23 +188,26 @@ REQUESTED --accept(operator)--> ACCEPTED --complete(operator)--> DONE --collect-
 
 ## 6. Routes
 
-| Route                                         | Access                  | Purpose                                                                 |
-| --------------------------------------------- | ----------------------- | ----------------------------------------------------------------------- |
-| `/`                                           | public                  | Landing → redirects to `/dashboard` when signed in                      |
-| `/login`                                      | public                  | email + password                                                        |
-| `/signup`                                     | public, needs `?token=` | invite-gated — see §9                                                   |
-| `/pending`                                    | authed, PENDING         | "waiting for approval"                                                  |
-| `/dashboard`                                  | member                  | my open requests + quick "new request"                                  |
-| `/rackets`, `/rackets/new`, `/rackets/$id`    | member                  | manage own rackets                                                      |
-| `/requests`, `/requests/new`, `/requests/$id` | member                  | own requests + detail/timeline                                          |
-| `/queue`                                      | operator                | open + own claimed jobs, filter by status, sortable/searchable table    |
-| `/queue/$id`                                  | operator                | accept / complete / collect                                             |
+| Route                                         | Access                  | Purpose                                                                                 |
+| --------------------------------------------- | ----------------------- | --------------------------------------------------------------------------------------- |
+| `/`                                           | public                  | Landing → redirects to `/dashboard` when signed in                                      |
+| `/login`                                      | public                  | email + password                                                                        |
+| `/signup`                                     | public, needs `?token=` | invite-gated — see §9                                                                   |
+| `/pending`                                    | authed, PENDING         | "waiting for approval"                                                                  |
+| `/dashboard`                                  | member                  | my open requests + quick "new request"                                                  |
+| `/rackets`, `/rackets/new`, `/rackets/$id`    | member                  | manage own rackets                                                                      |
+| `/requests`, `/requests/new`, `/requests/$id` | member                  | own requests + detail/timeline                                                          |
+| `/queue`                                      | operator                | open + own claimed jobs, filter by status, sortable/searchable table                    |
+| `/queue/$id`                                  | operator                | accept / complete / collect                                                             |
 | `/billing`                                    | operator OR controller  | every restrung racket: string/labour/total price, paid state, sortable/searchable table |
-| `/billing/payouts`                            | controller              | labour earned/reimbursed/outstanding per stringer, reimbursement ledger |
-| `/invites`                                    | operator OR admin       | create/list/revoke invite links — see §9                                |
-| `/admin/members`                              | admin                   | approve, reject, set roles                                              |
-| `/admin/strings`                              | admin                   | club string catalogue: add, edit price, deactivate                      |
-| `/api/auth/$`                                 | public                  | better-auth handler (exists)                                            |
+| `/billing/payouts`                            | controller              | labour earned/reimbursed/outstanding per stringer, reimbursement ledger                 |
+| `/invites`                                    | operator OR admin       | create/list/revoke invite links — see §9                                                |
+| `/training`                                   | coach                   | redirects to the roster                                                                 |
+| `/training/people`, `/training/people/$id`    | coach                   | trainee/trainer roster + weekly availability                                            |
+| `/training/plans`, `/training/plans/$id`      | coach                   | solver knobs, saved runs, groups and who was left out                                   |
+| `/admin/members`                              | admin                   | approve, reject, set roles                                                              |
+| `/admin/strings`                              | admin                   | club string catalogue: add, edit price, deactivate                                      |
+| `/api/auth/$`                                 | public                  | better-auth handler (exists)                                                            |
 
 Guards live in one place: `beforeLoad` on a `_authed` pathless layout route that loads
 the session, checks `status === APPROVED`, and a `requireRole()` helper for
@@ -339,3 +344,57 @@ role enforcement, the full request lifecycle, and rejection revoking access.
   the member finds out on the detail page rather than being asked first.
 - `fetchSession` runs on every navigation. Correct and always fresh, but it is one
   RPC per navigation — worth caching if the club ever outgrows it.
+
+## 13. Training planner (spike)
+
+A second, largely independent section: plan weekly group training and assign
+trainees to trainers. Coaches only (§2); admins inherit the role.
+
+### Roster
+
+`TrainingPerson` is **standalone** — it is not a `User` relation. Juniors have no club
+login, so a coach types the roster in: name, `kind` (`TRAINEE` | `TRAINER`), and for
+trainees a `ball` (`RED` | `ORANGE` | `GREEN` | `YELLOW`) plus a `strength` from 0
+(beginner) to 5. Trainers are graded by neither. People are archived rather than
+deleted once a plan references them, so old plans still name everybody.
+
+`TrainingAvailability` is **weekly recurring**, not calendar dates: `weekday`
+(0 = Monday … 6 = Sunday) plus `startMin`/`endMin` as minutes from midnight. The plan
+is one typical week, repeated through the season.
+
+### The solver
+
+Lives in `src/solver/` and is a **separate module**: plain data in, plain data out, no
+Prisma, no React, no framework imports. `pnpm test:solver` checks it in isolation.
+
+Inputs (all stored on the plan that produced them, so an old run still explains itself):
+
+| Knob              | Meaning                                             |
+| ----------------- | --------------------------------------------------- |
+| `minGroupSize`    | below this a group is not formed at all             |
+| `maxGroupSize`    | hard cap per group                                  |
+| `strengthSpread`  | largest allowed gap between weakest and strongest   |
+| `sessionMinutes`  | how long one session runs                           |
+| `slotStepMinutes` | sessions may start only on this grid, from midnight |
+| `courtCount`      | how many groups may run at the same time            |
+
+Hard rules the result never violates: one ball type per group; strength spread within
+the limit; size within the bounds; trainer and every trainee free for the whole session;
+a trainer runs one group at a time; at most `courtCount` groups overlap; a trainee is
+placed **at most once**.
+
+The strategy is greedy — repeatedly commit the single best group formable anywhere in
+the week (largest, then tightest spread, then earliest), until nothing reaches the
+minimum. Not guaranteed optimal, but fast, explainable and **deterministic**: the same
+roster always yields the same plan, including when the input order changes, which
+matters when a coach re-runs after a small edit.
+
+Whoever is left over is stored with a reason — `NO_AVAILABILITY`,
+`NO_TRAINER_OVERLAP` or `NO_COMPATIBLE_GROUP` — since that half of the result is the
+part a coach has to act on.
+
+### Plans
+
+Every solve is saved (`TrainingPlan` + `TrainingGroup` + `TrainingGroupMember` +
+`TrainingPlanUnplaced`), so two sets of knobs can be compared rather than one
+overwriting the other. Plans are immutable: re-solving writes a new one.

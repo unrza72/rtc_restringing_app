@@ -12,6 +12,14 @@ const prisma = new PrismaClient({
   }),
 })
 
+// Children first: every model below is deleted before whatever it points at,
+// and everything holding a User foreign key goes before the users themselves.
+await prisma.trainingGroupMember.deleteMany()
+await prisma.trainingPlanUnplaced.deleteMany()
+await prisma.trainingGroup.deleteMany()
+await prisma.trainingPlan.deleteMany()
+await prisma.trainingAvailability.deleteMany()
+await prisma.trainingPerson.deleteMany()
 await prisma.requestEvent.deleteMany()
 await prisma.reimbursement.deleteMany()
 await prisma.invite.deleteMany()

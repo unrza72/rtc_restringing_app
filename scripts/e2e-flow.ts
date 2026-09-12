@@ -125,6 +125,7 @@ const PAYOUTS = '/src/server/payouts.functions.ts'
 const LOCALE = '/src/server/locale.functions.ts'
 const SESSION = '/src/lib/session.functions.ts'
 const INVITES = '/src/server/invites.functions.ts'
+const TRAINING = '/src/server/training.functions.ts'
 
 let failures = 0
 function check(name: string, ok: boolean, detail?: unknown) {
@@ -820,6 +821,216 @@ check(
   matchingUrlHit.status === 200,
   matchingUrlHit,
 )
+
+console.log('\n— training planner —')
+
+// Sunday morning is untouched by the seed roster, so everything created here
+// is the only thing free then and the assertions stay independent of it.
+const SUN = 6
+const hm = (hour: number) => hour * 60
+
+const memberListsPeople = await member.call(
+  TRAINING,
+  'listTrainingPeople',
+  undefined,
+  'GET',
+)
+check(
+  'a plain member cannot see the training roster',
+  !memberListsPeople.ok,
+  memberListsPeople.error,
+)
+
+const adminListsPeople = await admin.call(
+  TRAINING,
+  'listTrainingPeople',
+  undefined,
+  'GET',
+)
+check(
+  'an admin sees it through the role cascade',
+  adminListsPeople.ok,
+  adminListsPeople.error,
+)
+
+const coachEmail = `coach${uniq}@example.com`
+const coach = new Session('coach')
+const coachInvite = await admin.call(INVITES, 'createInvite', {
+  expiresInHours: 24,
+})
+await coach.auth('sign-up/email', {
+  name: 'Test Coach',
+  email: coachEmail,
+  password: 'password1234',
+  inviteToken: (coachInvite.result as { token: string } | undefined)?.token,
+})
+const list4 = await admin.call(MEMBERS, 'listMembers', undefined, 'GET')
+const coachRow = ((list4.result ?? []) as Array<MemberRow>).find(
+  (r) => r.email === coachEmail,
+)
+await admin.call(MEMBERS, 'decideMember', {
+  userId: coachRow!.id,
+  status: 'APPROVED',
+})
+const grantCoach = await admin.call(MEMBERS, 'setMemberRoles', {
+  userId: coachRow!.id,
+  roles: ['coach'],
+})
+check('admin grants the coach role', grantCoach.ok, grantCoach.error)
+
+const coachListsPeople = await coach.call(
+  TRAINING,
+  'listTrainingPeople',
+  undefined,
+  'GET',
+)
+check(
+  'a coach sees the training roster',
+  coachListsPeople.ok,
+  coachListsPeople.error,
+)
+
+const coachListsMembers = await coach.call(
+  MEMBERS,
+  'listMembers',
+  undefined,
+  'GET',
+)
+check('a coach is not an admin', !coachListsMembers.ok, coachListsMembers.error)
+
+const addPerson = (
+  name: string,
+  kind: 'TRAINEE' | 'TRAINER',
+  ball: string | null,
+  strength: number | null,
+) =>
+  coach.call(TRAINING, 'createTrainingPerson', {
+    name,
+    kind,
+    ball,
+    strength,
+    notes: null,
+  })
+const idOf = (res: { result: unknown }) =>
+  (res.result as { id: string } | undefined)?.id
+
+const trainerRes = await addPerson(`E2E Trainer ${uniq}`, 'TRAINER', null, null)
+check('coach adds a trainer', trainerRes.ok, trainerRes.error)
+const traineeARes = await addPerson(`E2E A ${uniq}`, 'TRAINEE', 'GREEN', 2)
+const traineeBRes = await addPerson(`E2E B ${uniq}`, 'TRAINEE', 'GREEN', 2)
+check(
+  'coach adds two trainees',
+  traineeARes.ok && traineeBRes.ok,
+  traineeARes.error ?? traineeBRes.error,
+)
+const orphanRes = await addPerson(`E2E Orphan ${uniq}`, 'TRAINEE', 'YELLOW', 3)
+const trainerId = idOf(trainerRes)
+const orphanId = idOf(orphanRes)
+
+const noBall = await addPerson(`E2E No Ball ${uniq}`, 'TRAINEE', null, null)
+check('a trainee without a ball is refused', !noBall.ok, noBall.error)
+
+const addSlot = (personId: string, startMin: number, endMin: number) =>
+  coach.call(TRAINING, 'addAvailability', {
+    personId,
+    weekday: SUN,
+    startMin,
+    endMin,
+  })
+
+const firstSlot = await addSlot(trainerId!, hm(8), hm(10))
+await addSlot(idOf(traineeARes)!, hm(8), hm(10))
+await addSlot(idOf(traineeBRes)!, hm(8), hm(10))
+check('coach records availability', firstSlot.ok, firstSlot.error)
+
+const badSlot = await addSlot(trainerId!, hm(10), hm(9))
+check('an end before the start is refused', !badSlot.ok, badSlot.error)
+
+const knobs = {
+  minGroupSize: 2,
+  maxGroupSize: 4,
+  strengthSpread: 1,
+  sessionMinutes: 60,
+  slotStepMinutes: 30,
+  courtCount: 4,
+}
+const planRes = await coach.call(TRAINING, 'solveAndSavePlan', {
+  name: `E2E plan ${uniq}`,
+  ...knobs,
+})
+check('coach solves and saves a plan', planRes.ok, planRes.error)
+const planId = idOf(planRes)
+
+type PlanShape = {
+  minGroupSize: number
+  courtCount: number
+  groups: Array<{
+    weekday: number
+    trainerId: string
+    startMin: number
+    members: Array<{ personId: string }>
+  }>
+  unplaced: Array<{ personId: string; reason: string }>
+}
+const readBack = await coach.call(
+  TRAINING,
+  'getTrainingPlan',
+  { id: planId },
+  'GET',
+)
+check('the plan can be read back', readBack.ok, readBack.error)
+const plan = readBack.result as PlanShape | undefined
+
+const sundayGroup = plan?.groups.find((g) => g.weekday === SUN)
+check(
+  'the Sunday pair became a group of two',
+  sundayGroup?.members.length === 2,
+  plan?.groups,
+)
+check(
+  'led by the trainer who was free then',
+  sundayGroup?.trainerId === trainerId,
+  sundayGroup,
+)
+check(
+  'starting on the half-hour grid at 08:00',
+  sundayGroup?.startMin === hm(8),
+  sundayGroup,
+)
+check(
+  'the plan remembers the knobs it ran with',
+  plan?.minGroupSize === 2 && plan.courtCount === 4,
+  plan,
+)
+check(
+  'a trainee with no availability is reported as such',
+  !!plan?.unplaced.some(
+    (u) => u.personId === orphanId && u.reason === 'NO_AVAILABILITY',
+  ),
+  plan?.unplaced,
+)
+
+const memberSolves = await member.call(TRAINING, 'solveAndSavePlan', {
+  name: 'nope',
+  ...knobs,
+})
+check(
+  'a plain member cannot solve a plan',
+  !memberSolves.ok,
+  memberSolves.error,
+)
+
+const memberOpensTraining = await member.page('/training/people')
+check(
+  'a plain member is redirected away from /training',
+  memberOpensTraining.status === 307,
+  memberOpensTraining,
+)
+
+const deletePlan = await coach.call(TRAINING, 'deleteTrainingPlan', {
+  id: planId,
+})
+check('coach deletes the plan', deletePlan.ok, deletePlan.error)
 
 console.log('\n— rejection revokes access —')
 const rejectEmail = `reject${uniq}@example.com`

@@ -19,6 +19,7 @@ import { Route as AuthedBillingRouteImport } from './routes/_authed/billing'
 import { Route as AuthedDashboardRouteImport } from './routes/_authed/dashboard'
 import { Route as AuthedInvitesRouteImport } from './routes/_authed/invites'
 import { Route as AuthedQueueRouteImport } from './routes/_authed/queue'
+import { Route as AuthedTrainingRouteImport } from './routes/_authed/training'
 import { Route as AuthedAdminMembersRouteImport } from './routes/_authed/admin/members'
 import { Route as AuthedAdminStringsRouteImport } from './routes/_authed/admin/strings'
 import { Route as AuthedBillingIndexRouteImport } from './routes/_authed/billing/index'
@@ -31,7 +32,12 @@ import { Route as AuthedRacketsNewRouteImport } from './routes/_authed/rackets/n
 import { Route as AuthedRequestsIndexRouteImport } from './routes/_authed/requests/index'
 import { Route as AuthedRequestsIdRouteImport } from './routes/_authed/requests/$id'
 import { Route as AuthedRequestsNewRouteImport } from './routes/_authed/requests/new'
+import { Route as AuthedTrainingIndexRouteImport } from './routes/_authed/training/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as AuthedTrainingPeopleIndexRouteImport } from './routes/_authed/training/people/index'
+import { Route as AuthedTrainingPeopleIdRouteImport } from './routes/_authed/training/people/$id'
+import { Route as AuthedTrainingPlansIndexRouteImport } from './routes/_authed/training/plans/index'
+import { Route as AuthedTrainingPlansIdRouteImport } from './routes/_authed/training/plans/$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -80,6 +86,11 @@ const AuthedInvitesRoute = AuthedInvitesRouteImport.update({
 const AuthedQueueRoute = AuthedQueueRouteImport.update({
   id: '/queue',
   path: '/queue',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedTrainingRoute = AuthedTrainingRouteImport.update({
+  id: '/training',
+  path: '/training',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedAdminMembersRoute = AuthedAdminMembersRouteImport.update({
@@ -142,10 +153,37 @@ const AuthedRequestsNewRoute = AuthedRequestsNewRouteImport.update({
   path: '/requests/new',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedTrainingIndexRoute = AuthedTrainingIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthedTrainingRoute,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthedTrainingPeopleIndexRoute =
+  AuthedTrainingPeopleIndexRouteImport.update({
+    id: '/people/',
+    path: '/people/',
+    getParentRoute: () => AuthedTrainingRoute,
+  } as any)
+const AuthedTrainingPeopleIdRoute = AuthedTrainingPeopleIdRouteImport.update({
+  id: '/people/$id',
+  path: '/people/$id',
+  getParentRoute: () => AuthedTrainingRoute,
+} as any)
+const AuthedTrainingPlansIndexRoute =
+  AuthedTrainingPlansIndexRouteImport.update({
+    id: '/plans/',
+    path: '/plans/',
+    getParentRoute: () => AuthedTrainingRoute,
+  } as any)
+const AuthedTrainingPlansIdRoute = AuthedTrainingPlansIdRouteImport.update({
+  id: '/plans/$id',
+  path: '/plans/$id',
+  getParentRoute: () => AuthedTrainingRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -158,6 +196,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthedDashboardRoute
   '/invites': typeof AuthedInvitesRoute
   '/queue': typeof AuthedQueueRouteWithChildren
+  '/training': typeof AuthedTrainingRouteWithChildren
   '/admin/members': typeof AuthedAdminMembersRoute
   '/admin/strings': typeof AuthedAdminStringsRoute
   '/billing/payouts': typeof AuthedBillingPayoutsRoute
@@ -171,6 +210,11 @@ export interface FileRoutesByFullPath {
   '/queue/': typeof AuthedQueueIndexRoute
   '/rackets/': typeof AuthedRacketsIndexRoute
   '/requests/': typeof AuthedRequestsIndexRoute
+  '/training/': typeof AuthedTrainingIndexRoute
+  '/training/people/$id': typeof AuthedTrainingPeopleIdRoute
+  '/training/plans/$id': typeof AuthedTrainingPlansIdRoute
+  '/training/people/': typeof AuthedTrainingPeopleIndexRoute
+  '/training/plans/': typeof AuthedTrainingPlansIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -193,6 +237,11 @@ export interface FileRoutesByTo {
   '/queue': typeof AuthedQueueIndexRoute
   '/rackets': typeof AuthedRacketsIndexRoute
   '/requests': typeof AuthedRequestsIndexRoute
+  '/training': typeof AuthedTrainingIndexRoute
+  '/training/people/$id': typeof AuthedTrainingPeopleIdRoute
+  '/training/plans/$id': typeof AuthedTrainingPlansIdRoute
+  '/training/people': typeof AuthedTrainingPeopleIndexRoute
+  '/training/plans': typeof AuthedTrainingPlansIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -206,6 +255,7 @@ export interface FileRoutesById {
   '/_authed/dashboard': typeof AuthedDashboardRoute
   '/_authed/invites': typeof AuthedInvitesRoute
   '/_authed/queue': typeof AuthedQueueRouteWithChildren
+  '/_authed/training': typeof AuthedTrainingRouteWithChildren
   '/_authed/admin/members': typeof AuthedAdminMembersRoute
   '/_authed/admin/strings': typeof AuthedAdminStringsRoute
   '/_authed/billing/payouts': typeof AuthedBillingPayoutsRoute
@@ -219,6 +269,11 @@ export interface FileRoutesById {
   '/_authed/queue/': typeof AuthedQueueIndexRoute
   '/_authed/rackets/': typeof AuthedRacketsIndexRoute
   '/_authed/requests/': typeof AuthedRequestsIndexRoute
+  '/_authed/training/': typeof AuthedTrainingIndexRoute
+  '/_authed/training/people/$id': typeof AuthedTrainingPeopleIdRoute
+  '/_authed/training/plans/$id': typeof AuthedTrainingPlansIdRoute
+  '/_authed/training/people/': typeof AuthedTrainingPeopleIndexRoute
+  '/_authed/training/plans/': typeof AuthedTrainingPlansIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -232,6 +287,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/invites'
     | '/queue'
+    | '/training'
     | '/admin/members'
     | '/admin/strings'
     | '/billing/payouts'
@@ -245,6 +301,11 @@ export interface FileRouteTypes {
     | '/queue/'
     | '/rackets/'
     | '/requests/'
+    | '/training/'
+    | '/training/people/$id'
+    | '/training/plans/$id'
+    | '/training/people/'
+    | '/training/plans/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -267,6 +328,11 @@ export interface FileRouteTypes {
     | '/queue'
     | '/rackets'
     | '/requests'
+    | '/training'
+    | '/training/people/$id'
+    | '/training/plans/$id'
+    | '/training/people'
+    | '/training/plans'
   id:
     | '__root__'
     | '/'
@@ -279,6 +345,7 @@ export interface FileRouteTypes {
     | '/_authed/dashboard'
     | '/_authed/invites'
     | '/_authed/queue'
+    | '/_authed/training'
     | '/_authed/admin/members'
     | '/_authed/admin/strings'
     | '/_authed/billing/payouts'
@@ -292,6 +359,11 @@ export interface FileRouteTypes {
     | '/_authed/queue/'
     | '/_authed/rackets/'
     | '/_authed/requests/'
+    | '/_authed/training/'
+    | '/_authed/training/people/$id'
+    | '/_authed/training/plans/$id'
+    | '/_authed/training/people/'
+    | '/_authed/training/plans/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -373,6 +445,13 @@ declare module '@tanstack/react-router' {
       path: '/queue'
       fullPath: '/queue'
       preLoaderRoute: typeof AuthedQueueRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/training': {
+      id: '/_authed/training'
+      path: '/training'
+      fullPath: '/training'
+      preLoaderRoute: typeof AuthedTrainingRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/admin/members': {
@@ -459,12 +538,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedRequestsNewRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/training/': {
+      id: '/_authed/training/'
+      path: '/'
+      fullPath: '/training/'
+      preLoaderRoute: typeof AuthedTrainingIndexRouteImport
+      parentRoute: typeof AuthedTrainingRoute
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
       fullPath: '/api/auth/$'
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authed/training/people/': {
+      id: '/_authed/training/people/'
+      path: '/people'
+      fullPath: '/training/people/'
+      preLoaderRoute: typeof AuthedTrainingPeopleIndexRouteImport
+      parentRoute: typeof AuthedTrainingRoute
+    }
+    '/_authed/training/people/$id': {
+      id: '/_authed/training/people/$id'
+      path: '/people/$id'
+      fullPath: '/training/people/$id'
+      preLoaderRoute: typeof AuthedTrainingPeopleIdRouteImport
+      parentRoute: typeof AuthedTrainingRoute
+    }
+    '/_authed/training/plans/': {
+      id: '/_authed/training/plans/'
+      path: '/plans'
+      fullPath: '/training/plans/'
+      preLoaderRoute: typeof AuthedTrainingPlansIndexRouteImport
+      parentRoute: typeof AuthedTrainingRoute
+    }
+    '/_authed/training/plans/$id': {
+      id: '/_authed/training/plans/$id'
+      path: '/plans/$id'
+      fullPath: '/training/plans/$id'
+      preLoaderRoute: typeof AuthedTrainingPlansIdRouteImport
+      parentRoute: typeof AuthedTrainingRoute
     }
   }
 }
@@ -511,12 +625,33 @@ const AuthedQueueRouteWithChildren = AuthedQueueRoute._addFileChildren(
   AuthedQueueRouteChildren,
 )
 
+interface AuthedTrainingRouteChildren {
+  AuthedTrainingIndexRoute: typeof AuthedTrainingIndexRoute
+  AuthedTrainingPeopleIdRoute: typeof AuthedTrainingPeopleIdRoute
+  AuthedTrainingPlansIdRoute: typeof AuthedTrainingPlansIdRoute
+  AuthedTrainingPeopleIndexRoute: typeof AuthedTrainingPeopleIndexRoute
+  AuthedTrainingPlansIndexRoute: typeof AuthedTrainingPlansIndexRoute
+}
+
+const AuthedTrainingRouteChildren: AuthedTrainingRouteChildren = {
+  AuthedTrainingIndexRoute: AuthedTrainingIndexRoute,
+  AuthedTrainingPeopleIdRoute: AuthedTrainingPeopleIdRoute,
+  AuthedTrainingPlansIdRoute: AuthedTrainingPlansIdRoute,
+  AuthedTrainingPeopleIndexRoute: AuthedTrainingPeopleIndexRoute,
+  AuthedTrainingPlansIndexRoute: AuthedTrainingPlansIndexRoute,
+}
+
+const AuthedTrainingRouteWithChildren = AuthedTrainingRoute._addFileChildren(
+  AuthedTrainingRouteChildren,
+)
+
 interface AuthedRouteChildren {
   AuthedAdminRoute: typeof AuthedAdminRouteWithChildren
   AuthedBillingRoute: typeof AuthedBillingRouteWithChildren
   AuthedDashboardRoute: typeof AuthedDashboardRoute
   AuthedInvitesRoute: typeof AuthedInvitesRoute
   AuthedQueueRoute: typeof AuthedQueueRouteWithChildren
+  AuthedTrainingRoute: typeof AuthedTrainingRouteWithChildren
   AuthedRacketsIdRoute: typeof AuthedRacketsIdRoute
   AuthedRacketsNewRoute: typeof AuthedRacketsNewRoute
   AuthedRequestsIdRoute: typeof AuthedRequestsIdRoute
@@ -531,6 +666,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedDashboardRoute: AuthedDashboardRoute,
   AuthedInvitesRoute: AuthedInvitesRoute,
   AuthedQueueRoute: AuthedQueueRouteWithChildren,
+  AuthedTrainingRoute: AuthedTrainingRouteWithChildren,
   AuthedRacketsIdRoute: AuthedRacketsIdRoute,
   AuthedRacketsNewRoute: AuthedRacketsNewRoute,
   AuthedRequestsIdRoute: AuthedRequestsIdRoute,

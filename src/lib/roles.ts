@@ -3,7 +3,13 @@
  * components can use them on the client too.
  */
 
-export const ROLES = ['member', 'operator', 'controller', 'admin'] as const
+export const ROLES = [
+  'member',
+  'operator',
+  'controller',
+  'coach',
+  'admin',
+] as const
 export type Role = (typeof ROLES)[number]
 
 export const USER_STATUSES = ['PENDING', 'APPROVED', 'REJECTED'] as const
@@ -14,7 +20,8 @@ const IMPLIES: Record<Role, Array<Role>> = {
   member: ['member'],
   operator: ['operator', 'member'],
   controller: ['controller', 'member'],
-  admin: ['admin', 'operator', 'controller', 'member'],
+  coach: ['coach', 'member'],
+  admin: ['admin', 'operator', 'controller', 'coach', 'member'],
 }
 
 /** better-auth stores roles as a comma-separated string. */
