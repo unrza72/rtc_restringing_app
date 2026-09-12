@@ -362,6 +362,25 @@ deleted once a plan references them, so old plans still name everybody.
 (0 = Monday … 6 = Sunday) plus `startMin`/`endMin` as minutes from midnight. The plan
 is one typical week, repeated through the season.
 
+### Entering availability
+
+Two editors sit on the person page, deliberately, so the pair can be compared:
+
+- **Timetable** (`src/components/availability-grid.tsx`) — a Mon–Sun × 08:00–22:00 grid
+  of half-hour cells. Drag to paint, drag over filled cells to erase; the cell the
+  stroke starts on decides which, so one gesture never flip-flops. It saves once per
+  stroke via `setAvailability`, which replaces the person's whole week — the grid always
+  knows the complete picture, so a diff would just be a slower route to the same state.
+- **Exact times** — the original day + from + to form, kept for anything the grid cannot
+  express.
+
+Cells convert to slots by merging touching runs, and slots convert to cells by taking
+only those lying **entirely inside** a slot. Rounding outwards would claim time nobody
+offered and the planner would then schedule sessions they cannot attend. A week that the
+grid cannot represent exactly (17:10, or times outside the drawn window) is flagged
+above the grid rather than being quietly trimmed on the next save.
+`pnpm test:timetable` covers the conversion both ways.
+
 ### The solver
 
 Lives in `src/solver/` and is a **separate module**: plain data in, plain data out, no

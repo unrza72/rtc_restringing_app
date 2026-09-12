@@ -7,8 +7,10 @@ import {
   addAvailability,
   getTrainingPerson,
   removeAvailability,
+  setAvailability,
   updateTrainingPerson,
 } from '#/server/training.functions'
+import { AvailabilityGrid } from '#/components/availability-grid'
 import { trainingPersonInputSchema } from '#/lib/schemas'
 import {
   BALLS,
@@ -16,10 +18,11 @@ import {
   MIN_STRENGTH,
   PERSON_KINDS,
   WEEKDAYS,
+  fitsGrid,
   formatSlot,
   parseMinutes,
 } from '#/lib/training'
-import type { Ball, PersonKind } from '#/lib/training'
+import type { Ball, PersonKind, Slot } from '#/lib/training'
 import { m } from '#/paraglide/messages'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
@@ -232,12 +235,82 @@ function PersonPage() {
         </CardContent>
       </Card>
 
+      <TimetableCard
+        personId={person.id}
+        slots={person.availability}
+        onChanged={() => router.invalidate()}
+      />
+
       <AvailabilityCard
         personId={person.id}
         slots={person.availability}
         onChanged={() => router.invalidate()}
       />
     </div>
+  )
+}
+
+/** The timetable spike: paint the week instead of typing rows into a form. */
+function TimetableCard({
+  personId,
+  slots,
+  onChanged,
+}: {
+  personId: string
+  slots: Array<Slot>
+  onChanged: () => Promise<void> | void
+}) {
+  const save = useServerFn(setAvailability)
+  const [error, setError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  async function handleSave(next: Array<Slot>) {
+    setError(null)
+    setSaving(true)
+    try {
+      await save({ data: { personId, slots: next } })
+      await onChanged()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : m.common_error_generic())
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const plain = slots.map((s) => ({
+    weekday: s.weekday,
+    startMin: s.startMin,
+    endMin: s.endMin,
+  }))
+  const hours =
+    Math.round(
+      (plain.reduce((sum, s) => sum + (s.endMin - s.startMin), 0) / 60) * 10,
+    ) / 10
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex flex-wrap items-baseline gap-3 text-base">
+          {m.training_grid_title()}
+          <span className="text-xs font-normal text-slate-400">
+            {m.training_grid_total({ hours })}
+          </span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="grid gap-3">
+        <FormError>{error}</FormError>
+        {!fitsGrid(plain) && (
+          <p className="rounded-md border border-amber-700/50 bg-amber-950/40 px-3 py-2 text-xs text-amber-200">
+            {m.training_grid_offgrid()}
+          </p>
+        )}
+        <AvailabilityGrid
+          slots={plain}
+          saving={saving}
+          onSave={(next) => void handleSave(next)}
+        />
+      </CardContent>
+    </Card>
   )
 }
 
@@ -298,9 +371,7 @@ function AvailabilityCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">
-          {m.training_availability_title()}
-        </CardTitle>
+        <CardTitle className="text-base">{m.training_exact_title()}</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-4">
         <FormError>{error}</FormError>

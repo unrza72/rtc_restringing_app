@@ -8,6 +8,7 @@ import { coachMiddleware } from '#/lib/auth-middleware'
 import {
   availabilityInputSchema,
   idSchema,
+  setAvailabilitySchema,
   solvePlanSchema,
   trainingPersonInputSchema,
 } from '#/lib/schemas'
@@ -116,6 +117,40 @@ export const addAvailability = createServerFn({ method: 'POST' })
     })
     if (!person) throw notFound()
     return prisma.trainingAvailability.create({ data })
+  })
+
+/**
+ * Replaces a person's whole week in one go — what the timetable grid saves.
+ * A diff would only be a slower route to the same state, since the grid always
+ * knows the complete picture it is editing.
+ */
+export const setAvailability = createServerFn({ method: 'POST' })
+  .middleware([coachMiddleware])
+  .validator(setAvailabilitySchema)
+  .handler(async ({ data }) => {
+    const person = await prisma.trainingPerson.findUnique({
+      where: { id: data.personId },
+      select: { id: true },
+    })
+    if (!person) throw notFound()
+
+    return prisma.$transaction(async (tx) => {
+      await tx.trainingAvailability.deleteMany({
+        where: { personId: data.personId },
+      })
+      if (data.slots.length > 0) {
+        await tx.trainingAvailability.createMany({
+          data: data.slots.map((slot) => ({
+            personId: data.personId,
+            ...slot,
+          })),
+        })
+      }
+      return tx.trainingAvailability.findMany({
+        where: { personId: data.personId },
+        orderBy: [{ weekday: 'asc' }, { startMin: 'asc' }],
+      })
+    })
   })
 
 export const removeAvailability = createServerFn({ method: 'POST' })
