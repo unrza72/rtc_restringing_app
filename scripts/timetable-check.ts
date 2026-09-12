@@ -4,17 +4,20 @@
  * so a merging bug here silently corrupts the roster.
  */
 import {
-  GRID_END,
-  GRID_START,
+  DEFAULT_GRID_WINDOW,
   GRID_STEP,
+  MINUTES_PER_DAY,
   cellKey,
   cellsFromSlots,
   fitsGrid,
   gridRowStarts,
+  normaliseWindow,
   slotSignature,
   slotsFromCells,
+  slotsOutsideWindow,
+  windowCovering,
 } from '../src/lib/training.js'
-import type { Slot } from '../src/lib/training.js'
+import type { GridWindow, Slot } from '../src/lib/training.js'
 
 const hm = (hour: number, minute = 0) => hour * 60 + minute
 const MON = 0
@@ -32,29 +35,36 @@ function check(name: string, ok: boolean, detail?: unknown) {
 }
 
 const cells = (...keys: Array<string>) => new Set(keys)
-const roundTrip = (slots: Array<Slot>) => slotsFromCells(cellsFromSlots(slots))
+const WIN = DEFAULT_GRID_WINDOW
+const win = (fromHour: number, toHour: number): GridWindow => ({
+  startMin: hm(fromHour),
+  endMin: hm(toHour),
+})
+const roundTrip = (slots: Array<Slot>, window: GridWindow = WIN) =>
+  slotsFromCells(cellsFromSlots(slots, window))
 
 console.log('\n— the grid itself —')
 {
-  const rows = gridRowStarts()
-  check('starts at the window start', rows[0] === GRID_START, rows[0])
+  const rows = gridRowStarts(WIN)
+  check('starts at the window start', rows[0] === WIN.startMin, rows[0])
   check(
     'never runs past the window end',
-    rows[rows.length - 1] + GRID_STEP === GRID_END,
+    rows[rows.length - 1] + GRID_STEP === WIN.endMin,
     rows[rows.length - 1],
   )
   check(
     'is evenly stepped',
-    rows.every((t, i) => t === GRID_START + i * GRID_STEP),
+    rows.every((t, i) => t === WIN.startMin + i * GRID_STEP),
     rows,
   )
 }
 
 console.log('\n— slots become cells —')
 {
-  const filled = cellsFromSlots([
-    { weekday: MON, startMin: hm(17), endMin: hm(19) },
-  ])
+  const filled = cellsFromSlots(
+    [{ weekday: MON, startMin: hm(17), endMin: hm(19) }],
+    WIN,
+  )
   check('a two-hour slot fills four half-hour cells', filled.size === 4, [
     ...filled,
   ])
@@ -74,9 +84,10 @@ console.log('\n— slots become cells —')
 }
 {
   // 17:10–18:40 only fully contains 17:30–18:00 and 18:00–18:30.
-  const filled = cellsFromSlots([
-    { weekday: MON, startMin: hm(17, 10), endMin: hm(18, 40) },
-  ])
+  const filled = cellsFromSlots(
+    [{ weekday: MON, startMin: hm(17, 10), endMin: hm(18, 40) }],
+    WIN,
+  )
   check(
     'an off-grid slot keeps only the cells fully inside it',
     filled.size === 2,
@@ -89,10 +100,11 @@ console.log('\n— slots become cells —')
   )
 }
 {
-  const filled = cellsFromSlots([
-    { weekday: MON, startMin: hm(6), endMin: hm(23, 30) },
-  ])
-  const rows = gridRowStarts()
+  const filled = cellsFromSlots(
+    [{ weekday: MON, startMin: hm(6), endMin: hm(23, 30) }],
+    WIN,
+  )
+  const rows = gridRowStarts(WIN)
   check(
     'a slot wider than the window is clipped to it',
     filled.size === rows.length,
@@ -105,9 +117,10 @@ console.log('\n— slots become cells —')
   )
 }
 {
-  const filled = cellsFromSlots([
-    { weekday: MON, startMin: hm(17), endMin: hm(17, 20) },
-  ])
+  const filled = cellsFromSlots(
+    [{ weekday: MON, startMin: hm(17), endMin: hm(17, 20) }],
+    WIN,
+  )
   check('a slot shorter than one cell fills nothing', filled.size === 0, [
     ...filled,
   ])
@@ -162,13 +175,13 @@ console.log('\n— round trips —')
     slotSignature(roundTrip(original)) === slotSignature(original),
     roundTrip(original),
   )
-  check('and are reported as fitting the grid', fitsGrid(original))
+  check('and are reported as fitting the grid', fitsGrid(original, WIN))
 }
 {
   const ragged: Array<Slot> = [
     { weekday: MON, startMin: hm(17, 10), endMin: hm(18, 40) },
   ]
-  check('an off-grid slot is reported as not fitting', !fitsGrid(ragged))
+  check('an off-grid slot is reported as not fitting', !fitsGrid(ragged, WIN))
   check(
     'and the round trip narrows rather than widens it',
     roundTrip(ragged)[0]?.startMin === hm(17, 30) &&
@@ -180,7 +193,10 @@ console.log('\n— round trips —')
   const outside: Array<Slot> = [
     { weekday: MON, startMin: hm(6), endMin: hm(7) },
   ]
-  check('a slot entirely outside the window does not fit', !fitsGrid(outside))
+  check(
+    'a slot entirely outside the window does not fit',
+    !fitsGrid(outside, WIN),
+  )
   check('and round-trips to nothing', roundTrip(outside).length === 0)
 }
 {
@@ -200,6 +216,162 @@ console.log('\n— round trips —')
     roundTrip(adjacent)[0]?.startMin === hm(17) &&
       roundTrip(adjacent)[0]?.endMin === hm(19),
     roundTrip(adjacent),
+  )
+}
+
+console.log('\n— a configurable window —')
+{
+  const early = gridRowStarts(win(6, 9))
+  check('a custom window starts where asked', early[0] === hm(6), early[0])
+  check(
+    'and stops before running past its end',
+    early[early.length - 1] + GRID_STEP === hm(9),
+    early[early.length - 1],
+  )
+  check('with a row per step', early.length === 6, early.length)
+}
+{
+  const dawn: Array<Slot> = [{ weekday: MON, startMin: hm(6), endMin: hm(7) }]
+  check(
+    'a 06:00 slot does not fit the default window',
+    !fitsGrid(dawn, WIN),
+    WIN,
+  )
+  check(
+    'but fits once the window is widened to reach it',
+    fitsGrid(dawn, win(6, 22)),
+  )
+  check(
+    'and its cells then appear',
+    cellsFromSlots(dawn, win(6, 22)).has(cellKey(MON, hm(6))),
+  )
+}
+{
+  const late: Array<Slot> = [{ weekday: MON, startMin: hm(22), endMin: hm(23) }]
+  check('a slot past the window end is dropped', !fitsGrid(late, WIN))
+  check('and kept when the end is pushed out', fitsGrid(late, win(8, 23)))
+}
+
+console.log('\n— hours outside the window are left alone —')
+{
+  const saturday: Array<Slot> = [
+    { weekday: WED, startMin: hm(9), endMin: hm(11) },
+    { weekday: MON, startMin: hm(17), endMin: hm(19) },
+  ]
+  // A coach narrows the grid to weekday evenings, then paints. The morning is
+  // off screen and must survive the save that replaces the whole week.
+  const narrow = win(16, 21)
+  const kept = slotsOutsideWindow(saturday, narrow)
+  check('an entirely off-screen slot is carried over', kept.length === 1, kept)
+  check(
+    'unchanged',
+    kept[0]?.weekday === WED &&
+      kept[0].startMin === hm(9) &&
+      kept[0].endMin === hm(11),
+    kept,
+  )
+  check(
+    'while a slot inside the window is not duplicated',
+    !kept.some((s) => s.weekday === MON),
+    kept,
+  )
+}
+{
+  const straddling: Array<Slot> = [
+    { weekday: MON, startMin: hm(15), endMin: hm(18) },
+  ]
+  const kept = slotsOutsideWindow(straddling, win(16, 21))
+  check(
+    'a slot straddling the start keeps only its early part',
+    kept.length === 1,
+    kept,
+  )
+  check(
+    'clipped to where the window begins',
+    kept[0]?.startMin === hm(15) && kept[0].endMin === hm(16),
+    kept,
+  )
+}
+{
+  const straddling: Array<Slot> = [
+    { weekday: MON, startMin: hm(20), endMin: hm(23) },
+  ]
+  const kept = slotsOutsideWindow(straddling, win(16, 21))
+  check(
+    'a slot running past the end keeps only its late part',
+    kept[0]?.startMin === hm(21) && kept[0].endMin === hm(23),
+    kept,
+  )
+}
+{
+  const spanning: Array<Slot> = [
+    { weekday: MON, startMin: hm(8), endMin: hm(22) },
+  ]
+  const kept = slotsOutsideWindow(spanning, win(16, 21))
+  check(
+    'a slot wrapping the whole window keeps both ends',
+    kept.length === 2,
+    kept,
+  )
+}
+{
+  check(
+    'nothing is carried over when everything is on screen',
+    slotsOutsideWindow(
+      [{ weekday: MON, startMin: hm(17), endMin: hm(19) }],
+      WIN,
+    ).length === 0,
+  )
+}
+
+console.log('\n— windows are kept sane —')
+{
+  const snapped = normaliseWindow({ startMin: hm(7, 10), endMin: hm(21, 50) })
+  check(
+    'the start rounds down onto the step',
+    snapped.startMin === hm(7),
+    snapped,
+  )
+  check('the end rounds up onto the step', snapped.endMin === hm(22), snapped)
+}
+{
+  const upsideDown = normaliseWindow({ startMin: hm(20), endMin: hm(9) })
+  check(
+    'an end before the start still yields one row',
+    upsideDown.endMin === upsideDown.startMin + GRID_STEP,
+    upsideDown,
+  )
+  check(
+    'and that window renders exactly one row',
+    gridRowStarts({ startMin: hm(20), endMin: hm(9) }).length === 1,
+  )
+}
+{
+  const clamped = normaliseWindow({ startMin: -120, endMin: 99 * 60 })
+  check('a negative start clamps to midnight', clamped.startMin === 0, clamped)
+  check(
+    'an overlong end clamps to the end of the day',
+    clamped.endMin === MINUTES_PER_DAY,
+    clamped,
+  )
+}
+{
+  const spread: Array<Slot> = [
+    { weekday: MON, startMin: hm(6, 30), endMin: hm(8) },
+    { weekday: WED, startMin: hm(21), endMin: hm(23) },
+  ]
+  const covering = windowCovering(spread, WIN)
+  check(
+    'a covering window reaches the earliest slot',
+    covering.startMin === hm(6, 30),
+    covering,
+  )
+  check('and the latest one', covering.endMin === hm(23), covering)
+  check('so everything fits inside it', fitsGrid(spread, covering))
+  check(
+    'and it never shrinks below the fallback',
+    windowCovering([], WIN).startMin === WIN.startMin &&
+      windowCovering([], WIN).endMin === WIN.endMin,
   )
 }
 

@@ -366,11 +366,21 @@ is one typical week, repeated through the season.
 
 Two editors sit on the person page, deliberately, so the pair can be compared:
 
-- **Timetable** (`src/components/availability-grid.tsx`) — a Mon–Sun × 08:00–22:00 grid
-  of half-hour cells. Drag to paint, drag over filled cells to erase; the cell the
-  stroke starts on decides which, so one gesture never flip-flops. It saves once per
-  stroke via `setAvailability`, which replaces the person's whole week — the grid always
-  knows the complete picture, so a diff would just be a slower route to the same state.
+- **Timetable** (`src/components/availability-grid.tsx`) — a Mon–Sun grid of half-hour
+  cells. Drag to paint, drag over filled cells to erase; the cell the stroke starts on
+  decides which, so one gesture never flip-flops. It saves once per stroke via
+  `setAvailability`, which replaces the person's whole week.
+
+  Which hours it draws is configurable (default 08:00–22:00) through two time pickers
+  above the grid, remembered per browser in `localStorage` — a view preference, not club
+  data. The window is snapped to the step and always keeps at least one row, so a
+  half-typed time cannot produce an empty or inverted grid. A "fit to entered times"
+  button appears whenever somebody has hours the current window hides.
+
+  Because a save rewrites the whole week, anything **outside** the drawn window is read
+  off the existing slots and written back untouched. Without that, narrowing the window
+  and then painting would silently delete a Saturday morning nobody could even see.
+
 - **Exact times** — the original day + from + to form, kept for anything the grid cannot
   express.
 

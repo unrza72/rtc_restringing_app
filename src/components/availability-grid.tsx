@@ -8,8 +8,9 @@ import {
   gridRowStarts,
   slotSignature,
   slotsFromCells,
+  slotsOutsideWindow,
 } from '#/lib/training'
-import type { Slot } from '#/lib/training'
+import type { GridWindow, Slot } from '#/lib/training'
 import { m } from '#/paraglide/messages'
 import { cn } from '#/lib/utils'
 
@@ -23,14 +24,18 @@ import { cn } from '#/lib/utils'
  */
 export function AvailabilityGrid({
   slots,
+  gridWindow,
   onSave,
   saving,
 }: {
   slots: Array<Slot>
+  gridWindow: GridWindow
   onSave: (slots: Array<Slot>) => void
   saving: boolean
 }) {
-  const [selected, setSelected] = useState(() => cellsFromSlots(slots))
+  const [selected, setSelected] = useState(() =>
+    cellsFromSlots(slots, gridWindow),
+  )
   // Painting true = filling, false = erasing, null = not in a stroke.
   const painting = useRef<boolean | null>(null)
   const surface = useRef<HTMLDivElement>(null)
@@ -38,14 +43,16 @@ export function AvailabilityGrid({
   // Re-sync when the server sends a different week than the one we are showing
   // (another tab, or the precise editor below). Adjusting state during render
   // beats an effect: no extra paint with the stale week on screen.
-  const incoming = slotSignature(slots)
+  // Changing the window is a re-read too: a wider one exposes cells that were
+  // not on screen a moment ago.
+  const incoming = `${slotSignature(slots)}@${gridWindow.startMin}-${gridWindow.endMin}`
   const [syncedFrom, setSyncedFrom] = useState(incoming)
   if (incoming !== syncedFrom) {
     setSyncedFrom(incoming)
-    setSelected(cellsFromSlots(slots))
+    setSelected(cellsFromSlots(slots, gridWindow))
   }
 
-  const rows = gridRowStarts()
+  const rows = gridRowStarts(gridWindow)
 
   function apply(key: string, fill: boolean) {
     setSelected((current) => {
@@ -83,8 +90,12 @@ export function AvailabilityGrid({
     painting.current = null
     surface.current?.releasePointerCapture(event.pointerId)
     // Pointer-up is its own event, so the moves before it have already been
-    // flushed and `selected` is the finished stroke.
-    const next = slotsFromCells(selected)
+    // flushed and `selected` is the finished stroke. Hours outside the drawn
+    // window are carried over untouched — the grid never saw them.
+    const next = [
+      ...slotsOutsideWindow(slots, gridWindow),
+      ...slotsFromCells(selected),
+    ]
     if (slotSignature(next) !== slotSignature(slots)) onSave(next)
   }
 

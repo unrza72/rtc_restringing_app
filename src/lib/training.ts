@@ -44,21 +44,45 @@ export function formatSlot(startMin: number, endMin: number) {
 // timetable grid
 // ---------------------------------------------------------------------------
 
-/**
- * The window the timetable draws, and the size of one cell. Club training never
- * starts before eight or runs past ten, so a narrower grid keeps the cells big
- * enough to hit on a phone.
- */
-export const GRID_START = 8 * 60
-export const GRID_END = 22 * 60
+/** The size of one cell. Everything else about the window is configurable. */
 export const GRID_STEP = 30
+
+export const MINUTES_PER_DAY = 24 * 60
 
 export type Slot = { weekday: number; startMin: number; endMin: number }
 
-export const gridRowStarts = () => {
+/** The span of day the timetable draws. Narrower keeps cells big on a phone. */
+export type GridWindow = { startMin: number; endMin: number }
+
+export const DEFAULT_GRID_WINDOW: GridWindow = {
+  startMin: 8 * 60,
+  endMin: 22 * 60,
+}
+
+/**
+ * Pulls a window onto the step and guarantees at least one row, so a half-typed
+ * time in the picker can never produce an empty or upside-down grid. The start
+ * rounds down and the end rounds up, widening rather than hiding anything.
+ */
+export function normaliseWindow(window: GridWindow): GridWindow {
+  const startMin = Math.min(
+    Math.max(0, Math.floor(window.startMin / GRID_STEP) * GRID_STEP),
+    MINUTES_PER_DAY - GRID_STEP,
+  )
+  const endMin = Math.min(
+    Math.max(
+      Math.ceil(window.endMin / GRID_STEP) * GRID_STEP,
+      startMin + GRID_STEP,
+    ),
+    MINUTES_PER_DAY,
+  )
+  return { startMin, endMin }
+}
+
+export function gridRowStarts(window: GridWindow) {
+  const { startMin, endMin } = normaliseWindow(window)
   const rows: Array<number> = []
-  for (let t = GRID_START; t + GRID_STEP <= GRID_END; t += GRID_STEP)
-    rows.push(t)
+  for (let t = startMin; t + GRID_STEP <= endMin; t += GRID_STEP) rows.push(t)
   return rows
 }
 
@@ -70,12 +94,16 @@ export const cellKey = (weekday: number, startMin: number) =>
  * slot count: rounding outwards would claim time the person never offered, and
  * the planner would then schedule sessions they cannot attend.
  */
-export function cellsFromSlots(slots: Array<Slot>): Set<string> {
+export function cellsFromSlots(
+  slots: Array<Slot>,
+  window: GridWindow,
+): Set<string> {
+  const { startMin, endMin } = normaliseWindow(window)
   const cells = new Set<string>()
   for (const slot of slots) {
     const first =
-      Math.ceil(Math.max(slot.startMin, GRID_START) / GRID_STEP) * GRID_STEP
-    const limit = Math.min(slot.endMin, GRID_END)
+      Math.ceil(Math.max(slot.startMin, startMin) / GRID_STEP) * GRID_STEP
+    const limit = Math.min(slot.endMin, endMin)
     for (let t = first; t + GRID_STEP <= limit; t += GRID_STEP) {
       cells.add(cellKey(slot.weekday, t))
     }
@@ -123,11 +151,55 @@ export const slotSignature = (slots: Array<Slot>) =>
  * 17:10, or a time outside the drawn window — would be quietly narrowed on the
  * next save, so the UI warns instead of silently editing it away.
  */
-export function fitsGrid(slots: Array<Slot>) {
+export function fitsGrid(slots: Array<Slot>, window: GridWindow) {
   return (
-    slotSignature(slotsFromCells(cellsFromSlots(slots))) ===
+    slotSignature(slotsFromCells(cellsFromSlots(slots, window))) ===
     slotSignature(slots)
   )
+}
+
+/**
+ * The parts of these slots lying outside the window, clipped to it.
+ *
+ * The grid only owns the hours it draws. Without this, narrowing the window and
+ * then painting would silently delete a Saturday morning nobody could even see —
+ * the save replaces the whole week, so what the grid does not hand back is gone.
+ */
+export function slotsOutsideWindow(
+  slots: Array<Slot>,
+  window: GridWindow,
+): Array<Slot> {
+  const { startMin, endMin } = normaliseWindow(window)
+  const outside: Array<Slot> = []
+  for (const slot of slots) {
+    if (slot.startMin < startMin) {
+      outside.push({
+        weekday: slot.weekday,
+        startMin: slot.startMin,
+        endMin: Math.min(slot.endMin, startMin),
+      })
+    }
+    if (slot.endMin > endMin) {
+      outside.push({
+        weekday: slot.weekday,
+        startMin: Math.max(slot.startMin, endMin),
+        endMin: slot.endMin,
+      })
+    }
+  }
+  return outside.filter((s) => s.endMin > s.startMin)
+}
+
+/** The tightest window that still shows every one of these slots whole. */
+export function windowCovering(
+  slots: Array<Slot>,
+  fallback: GridWindow,
+): GridWindow {
+  if (slots.length === 0) return normaliseWindow(fallback)
+  return normaliseWindow({
+    startMin: Math.min(fallback.startMin, ...slots.map((s) => s.startMin)),
+    endMin: Math.max(fallback.endMin, ...slots.map((s) => s.endMin)),
+  })
 }
 
 /** Carried over from the status badges: one colour per ball, dark-friendly. */
