@@ -15,6 +15,7 @@ export const DEV_LOGIN_SLOTS = [
   'admin',
   'stringer-1',
   'stringer-2',
+  'coach',
   'member-1',
   'member-2',
   'member-3',
@@ -46,6 +47,12 @@ export const DEV_LOGIN_ROSTER: ReadonlyArray<DevLoginRosterEntry> = [
     name: 'Dev Stringer 2',
     email: 'dev-stringer-2@example.test',
     role: 'operator',
+  },
+  {
+    slot: 'coach',
+    name: 'Dev Coach',
+    email: 'dev-coach@example.test',
+    role: 'coach',
   },
   {
     slot: 'member-1',

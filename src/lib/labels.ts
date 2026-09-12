@@ -40,6 +40,7 @@ const ROLE_LABELS: Record<Role, () => string> = {
   member: m.role_member,
   operator: m.role_operator,
   controller: m.role_controller,
+  coach: m.role_coach,
   admin: m.role_admin,
 }
 

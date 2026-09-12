@@ -430,12 +430,114 @@ async function seedSampleRacketsAndRequests() {
   console.log('✅ sample rackets and requests seeded')
 }
 
+/**
+ * A training roster with enough overlap to be interesting: three trainers on
+ * different evenings, and trainees spread over all four balls so the solver has
+ * real choices to make — including a couple who deliberately cannot be placed.
+ */
+async function seedTrainingRoster() {
+  const existing = await prisma.trainingPerson.findFirst({
+    where: { name: 'Coach Meier' },
+  })
+  if (existing) {
+    console.log('↷ training roster already seeded')
+    return
+  }
+
+  const hm = (hour: number, minute = 0) => hour * 60 + minute
+  const MON = 0
+  const TUE = 1
+  const WED = 2
+  const THU = 3
+  const SAT = 5
+
+  type Slot = [weekday: number, startMin: number, endMin: number]
+  const person = (
+    name: string,
+    kind: 'TRAINEE' | 'TRAINER',
+    ball: string | null,
+    strength: number | null,
+    slots: Array<Slot>,
+  ) =>
+    prisma.trainingPerson.create({
+      data: {
+        name,
+        kind,
+        ball,
+        strength,
+        availability: {
+          create: slots.map(([weekday, startMin, endMin]) => ({
+            weekday,
+            startMin,
+            endMin,
+          })),
+        },
+      },
+    })
+
+  await Promise.all([
+    person('Coach Meier', 'TRAINER', null, null, [
+      [MON, hm(16), hm(20)],
+      [WED, hm(16), hm(20)],
+    ]),
+    person('Coach Schulz', 'TRAINER', null, null, [
+      [MON, hm(17), hm(20)],
+      [THU, hm(16), hm(19)],
+    ]),
+    person('Coach Weber', 'TRAINER', null, null, [
+      [WED, hm(17), hm(20)],
+      [SAT, hm(9), hm(12)],
+    ]),
+
+    // Red — the youngest, straight after school.
+    person('Mia Braun', 'TRAINEE', 'RED', 0, [[MON, hm(16), hm(18)]]),
+    person('Leon Fischer', 'TRAINEE', 'RED', 0, [[MON, hm(16), hm(18)]]),
+    person('Emma Wolf', 'TRAINEE', 'RED', 1, [
+      [MON, hm(16), hm(18)],
+      [WED, hm(16), hm(18)],
+    ]),
+    person('Noah Richter', 'TRAINEE', 'RED', 1, [[WED, hm(16), hm(18)]]),
+
+    person('Lina Koch', 'TRAINEE', 'ORANGE', 1, [[WED, hm(16), hm(19)]]),
+    person('Paul Neumann', 'TRAINEE', 'ORANGE', 2, [[WED, hm(16), hm(19)]]),
+    person('Sofia Lang', 'TRAINEE', 'ORANGE', 2, [
+      [MON, hm(17), hm(19)],
+      [WED, hm(16), hm(19)],
+    ]),
+
+    person('Jonas Hofmann', 'TRAINEE', 'GREEN', 2, [[MON, hm(17), hm(20)]]),
+    person('Clara Vogel', 'TRAINEE', 'GREEN', 3, [[MON, hm(17), hm(20)]]),
+    person('Felix Bauer', 'TRAINEE', 'GREEN', 3, [
+      [MON, hm(17), hm(20)],
+      [THU, hm(16), hm(19)],
+    ]),
+
+    // Yellow — adults, later in the evening.
+    person('Anna Schmidt', 'TRAINEE', 'YELLOW', 3, [[MON, hm(18), hm(20)]]),
+    person('Tom Krüger', 'TRAINEE', 'YELLOW', 3, [[MON, hm(18), hm(20)]]),
+    person('Nina Hartmann', 'TRAINEE', 'YELLOW', 4, [
+      [MON, hm(18), hm(20)],
+      [SAT, hm(9), hm(12)],
+    ]),
+    person('David Peters', 'TRAINEE', 'YELLOW', 4, [[SAT, hm(9), hm(12)]]),
+    person('Sarah König', 'TRAINEE', 'YELLOW', 5, [[SAT, hm(9), hm(12)]]),
+
+    // Deliberately awkward, so the "not placed" half of a plan is never empty:
+    // one who never entered a time, one free only when no trainer is.
+    person('Markus Ziegler', 'TRAINEE', 'YELLOW', 2, []),
+    person('Julia Sommer', 'TRAINEE', 'YELLOW', 3, [[TUE, hm(19), hm(21)]]),
+  ])
+
+  console.log('✅ training roster seeded')
+}
+
 async function main() {
   console.log('🌱 Seeding database…')
   await seedAdmin()
   await seedStrings()
   await seedDevQuickLoginUsers()
   await seedSampleRacketsAndRequests()
+  await seedTrainingRoster()
 }
 
 main()

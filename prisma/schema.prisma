@@ -54,6 +54,7 @@ model User {
   reimbursementsRecorded Reimbursement[] @relation("reimbursementRecordedBy")
   invitesCreated Invite[] @relation("inviteCreatedBy")
   invitesUsed    Invite[] @relation("inviteUsedBy")
+  trainingPlans  TrainingPlan[] @relation("trainingPlanCreatedBy")
 
   @@unique([email])
   @@map("user")
@@ -252,4 +253,116 @@ model Invite {
   createdAt   DateTime  @default(now())
 
   @@index([createdById, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// training planner
+// ---------------------------------------------------------------------------
+
+/// Somebody in the training programme. Deliberately standalone rather than a
+/// User relation: juniors have no club login, and a coach types the roster in.
+model TrainingPerson {
+  id       String  @id @default(cuid())
+  name     String
+  /// TRAINEE | TRAINER
+  kind     String
+  /// RED | ORANGE | GREEN | YELLOW. Required for trainees, unused for trainers.
+  ball     String?
+  /// 0 (beginner) … 5 (strongest) within that ball. Trainees only.
+  strength Float?
+  notes    String?
+  /// Kept out of new plans without losing the ones already solved.
+  archived  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  availability TrainingAvailability[]
+  ledGroups    TrainingGroup[]        @relation("groupTrainer")
+  memberships  TrainingGroupMember[]
+  unplacedIn   TrainingPlanUnplaced[]
+
+  @@index([kind, archived, name])
+}
+
+/// One recurring window per week, e.g. Monday 17:00–19:00. Minutes from
+/// midnight rather than DateTime, because nothing here is a calendar date.
+model TrainingAvailability {
+  id       String         @id @default(cuid())
+  personId String
+  person   TrainingPerson @relation(fields: [personId], references: [id], onDelete: Cascade)
+  /// 0 = Monday … 6 = Sunday
+  weekday  Int
+  startMin Int
+  endMin   Int
+
+  createdAt DateTime @default(now())
+
+  @@index([personId, weekday, startMin])
+}
+
+/// One run of the solver, stored with the knobs it ran on so two runs can be
+/// compared. Immutable: re-solving writes a new plan rather than editing one.
+model TrainingPlan {
+  id          String @id @default(cuid())
+  name        String
+  createdById String
+  createdBy   User   @relation("trainingPlanCreatedBy", fields: [createdById], references: [id])
+
+  // the inputs, copied in so a plan still explains itself after the knobs move
+  minGroupSize    Int
+  maxGroupSize    Int
+  strengthSpread  Float
+  sessionMinutes  Int
+  slotStepMinutes Int
+  courtCount      Int
+
+  createdAt DateTime @default(now())
+
+  groups   TrainingGroup[]
+  unplaced TrainingPlanUnplaced[]
+
+  @@index([createdAt])
+}
+
+model TrainingGroup {
+  id        String         @id @default(cuid())
+  planId    String
+  plan      TrainingPlan   @relation(fields: [planId], references: [id], onDelete: Cascade)
+  trainerId String
+  trainer   TrainingPerson @relation("groupTrainer", fields: [trainerId], references: [id])
+  weekday   Int
+  startMin  Int
+  endMin    Int
+  ball      String
+  court     Int
+
+  members TrainingGroupMember[]
+
+  @@index([planId, weekday, startMin])
+}
+
+model TrainingGroupMember {
+  id       String         @id @default(cuid())
+  groupId  String
+  group    TrainingGroup  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  personId String
+  person   TrainingPerson @relation(fields: [personId], references: [id])
+
+  @@unique([groupId, personId])
+  @@index([personId])
+}
+
+/// Who the solver could not place, and why — the half of the result a coach
+/// actually has to act on.
+model TrainingPlanUnplaced {
+  id       String         @id @default(cuid())
+  planId   String
+  plan     TrainingPlan   @relation(fields: [planId], references: [id], onDelete: Cascade)
+  personId String
+  person   TrainingPerson @relation(fields: [personId], references: [id])
+  /// NO_AVAILABILITY | NO_TRAINER_OVERLAP | NO_COMPATIBLE_GROUP
+  reason   String
+
+  @@unique([planId, personId])
+  @@index([personId])
 }
