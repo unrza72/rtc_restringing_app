@@ -1,6 +1,7 @@
 import { Link, Outlet, createFileRoute } from '@tanstack/react-router'
 
 import { requireRole } from '#/lib/guards'
+import { GridWindowPicker, GridWindowProvider } from '#/components/grid-window'
 import { m } from '#/paraglide/messages'
 import { cn } from '#/lib/utils'
 
@@ -14,18 +15,23 @@ export const Route = createFileRoute('/_authed/training')({
 
 function TrainingLayout() {
   return (
-    <div className="grid gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-extrabold tracking-tight text-white">
-          {m.training_title()}
-        </h1>
-        <div className="flex gap-2">
-          <SubTab to="/training/people" label={m.training_tab_people()} />
-          <SubTab to="/training/plans" label={m.training_tab_plans()} />
+    <GridWindowProvider>
+      <div className="grid gap-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-2xl font-extrabold tracking-tight text-white">
+            {m.training_title()}
+          </h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <GridWindowPicker />
+            <div className="flex gap-2">
+              <SubTab to="/training/people" label={m.training_tab_people()} />
+              <SubTab to="/training/plans" label={m.training_tab_plans()} />
+            </div>
+          </div>
         </div>
+        <Outlet />
       </div>
-      <Outlet />
-    </div>
+    </GridWindowProvider>
   )
 }
 

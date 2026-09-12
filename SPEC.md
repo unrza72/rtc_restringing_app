@@ -362,6 +362,37 @@ deleted once a plan references them, so old plans still name everybody.
 (0 = Monday … 6 = Sunday) plus `startMin`/`endMin` as minutes from midnight. The plan
 is one typical week, repeated through the season.
 
+### Entering availability
+
+Two editors sit on the person page, deliberately, so the pair can be compared:
+
+- **Timetable** (`src/components/availability-grid.tsx`) — a Mon–Sun grid of half-hour
+  cells. Drag to paint, drag over filled cells to erase; the cell the stroke starts on
+  decides which, so one gesture never flip-flops. It saves once per stroke via
+  `setAvailability`, which replaces the person's whole week.
+
+  Which hours it draws is configurable (default 08:00–22:00). The two time pickers live
+  in the `/training` header (`src/components/grid-window.tsx`), which owns the setting
+  and hands it to both timetables through context, so the roster and the solved plans
+  always agree on it. It is remembered per browser in `localStorage` — a view
+  preference, not club data. The window is snapped to the step and always keeps at least
+  one row, so a half-typed time cannot produce an empty or inverted grid. A "fit to
+  entered times" button on the person page widens it to whatever that person has.
+
+  Because a save rewrites the whole week, anything **outside** the drawn window is read
+  off the existing slots and written back untouched. Without that, narrowing the window
+  and then painting would silently delete a Saturday morning nobody could even see.
+
+- **Exact times** — the original day + from + to form, kept for anything the grid cannot
+  express.
+
+Cells convert to slots by merging touching runs, and slots convert to cells by taking
+only those lying **entirely inside** a slot. Rounding outwards would claim time nobody
+offered and the planner would then schedule sessions they cannot attend. A week that the
+grid cannot represent exactly (17:10, or times outside the drawn window) is flagged
+above the grid rather than being quietly trimmed on the next save.
+`pnpm test:timetable` covers the conversion both ways.
+
 ### The solver
 
 Lives in `src/solver/` and is a **separate module**: plain data in, plain data out, no
@@ -398,3 +429,13 @@ part a coach has to act on.
 Every solve is saved (`TrainingPlan` + `TrainingGroup` + `TrainingGroupMember` +
 `TrainingPlanUnplaced`), so two sets of knobs can be compared rather than one
 overwriting the other. Plans are immutable: re-solving writes a new one.
+
+A plan is shown twice: as a week timetable
+(`src/components/schedule-timetable.tsx`) over the same configurable window, and as the
+per-day list beneath it. The timetable positions blocks **by the minute** rather than
+snapping them to the half-hour rows, because a plan's session length and start grid are
+its own knobs and need not line up with the rows behind them. Groups running at the same
+time are spread across side-by-side lanes (`assignLanes`) the way a calendar shows two
+simultaneous meetings; lanes are counted per weekday, so a day with one clash draws all
+of its groups at half width. Anything outside the window is counted in a note above the
+grid — the list below is always complete.

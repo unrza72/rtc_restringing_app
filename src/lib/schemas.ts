@@ -157,17 +157,29 @@ export const trainingPersonInputSchema = z
     strength: v.kind === 'TRAINEE' ? v.strength : null,
   }))
 
+const slotFields = {
+  weekday: z.coerce.number().int().min(0).max(6),
+  startMin: z.coerce.number().int().min(0).max(1439),
+  endMin: z.coerce.number().int().min(1).max(1440),
+}
+const endAfterStart = {
+  message: 'The end has to come after the start',
+  path: ['endMin'],
+}
+
 export const availabilityInputSchema = z
-  .object({
-    personId: z.string().min(1),
-    weekday: z.coerce.number().int().min(0).max(6),
-    startMin: z.coerce.number().int().min(0).max(1439),
-    endMin: z.coerce.number().int().min(1).max(1440),
-  })
-  .refine((v) => v.endMin > v.startMin, {
-    message: 'The end has to come after the start',
-    path: ['endMin'],
-  })
+  .object({ personId: z.string().min(1), ...slotFields })
+  .refine((v) => v.endMin > v.startMin, endAfterStart)
+
+/** The timetable owns a person's whole week, so it writes all slots at once. */
+export const setAvailabilitySchema = z.object({
+  personId: z.string().min(1),
+  slots: z
+    .array(
+      z.object(slotFields).refine((v) => v.endMin > v.startMin, endAfterStart),
+    )
+    .max(200),
+})
 
 export const solvePlanSchema = z
   .object({

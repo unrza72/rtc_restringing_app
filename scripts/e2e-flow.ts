@@ -827,7 +827,7 @@ console.log('\n— training planner —')
 // Sunday morning is untouched by the seed roster, so everything created here
 // is the only thing free then and the assertions stay independent of it.
 const SUN = 6
-const hm = (hour: number) => hour * 60
+const hm = (hour: number, minute = 0) => hour * 60 + minute
 
 const memberListsPeople = await member.call(
   TRAINING,
@@ -945,6 +945,84 @@ check('coach records availability', firstSlot.ok, firstSlot.error)
 
 const badSlot = await addSlot(trainerId!, hm(10), hm(9))
 check('an end before the start is refused', !badSlot.ok, badSlot.error)
+
+// What the timetable grid saves: the whole week at once, replacing whatever
+// was there. Painted here as two runs on one day plus a separate day.
+const painted = await coach.call(TRAINING, 'setAvailability', {
+  personId: idOf(traineeARes),
+  slots: [
+    { weekday: 1, startMin: hm(17), endMin: hm(18, 30) },
+    { weekday: 1, startMin: hm(19), endMin: hm(20) },
+    { weekday: 3, startMin: hm(9), endMin: hm(10) },
+  ],
+})
+check('the timetable saves a whole week at once', painted.ok, painted.error)
+
+const repainted = await coach.call(
+  TRAINING,
+  'getTrainingPerson',
+  { id: idOf(traineeARes) },
+  'GET',
+)
+const saved = (
+  repainted.result as
+    | {
+        availability: Array<{
+          weekday: number
+          startMin: number
+          endMin: number
+        }>
+      }
+    | undefined
+)?.availability
+check(
+  'it replaced the earlier times rather than adding to them',
+  saved?.length === 3,
+  saved,
+)
+check(
+  'and stored the painted runs verbatim',
+  saved?.[0]?.weekday === 1 &&
+    saved[0].startMin === hm(17) &&
+    saved[0].endMin === hm(18, 30) &&
+    saved[2]?.weekday === 3,
+  saved,
+)
+
+const clearedRes = await coach.call(TRAINING, 'setAvailability', {
+  personId: idOf(traineeARes),
+  slots: [],
+})
+check(
+  'an empty week clears the person entirely',
+  clearedRes.ok,
+  clearedRes.error,
+)
+const afterClear = await coach.call(
+  TRAINING,
+  'getTrainingPerson',
+  { id: idOf(traineeARes) },
+  'GET',
+)
+check(
+  'leaving no availability behind',
+  (afterClear.result as { availability: Array<unknown> } | undefined)
+    ?.availability.length === 0,
+  afterClear.result,
+)
+
+const memberPaints = await member.call(TRAINING, 'setAvailability', {
+  personId: idOf(traineeARes),
+  slots: [{ weekday: 1, startMin: hm(17), endMin: hm(18) }],
+})
+check(
+  'a plain member cannot paint somebody else’s week',
+  !memberPaints.ok,
+  memberPaints.error,
+)
+
+// Put trainee A back where the solver assertions below expect them.
+await addSlot(idOf(traineeARes)!, hm(8), hm(10))
 
 const knobs = {
   minGroupSize: 2,
