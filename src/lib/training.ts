@@ -190,6 +190,33 @@ export function slotsOutsideWindow(
   return outside.filter((s) => s.endMin > s.startMin)
 }
 
+/**
+ * Spreads overlapping items across side-by-side lanes, the way a calendar puts
+ * two simultaneous meetings next to each other. Greedy and deterministic: each
+ * item takes the lowest lane that is free when it starts.
+ */
+export function assignLanes<T extends { startMin: number; endMin: number }>(
+  items: Array<T>,
+): { items: Array<T & { lane: number }>; laneCount: number } {
+  const laneEnds: Array<number> = []
+  const placed: Array<T & { lane: number }> = []
+
+  for (const item of [...items].sort(
+    (a, b) => a.startMin - b.startMin || a.endMin - b.endMin,
+  )) {
+    let lane = laneEnds.findIndex((end) => end <= item.startMin)
+    if (lane === -1) {
+      lane = laneEnds.length
+      laneEnds.push(item.endMin)
+    } else {
+      laneEnds[lane] = item.endMin
+    }
+    placed.push({ ...item, lane })
+  }
+
+  return { items: placed, laneCount: Math.max(1, laneEnds.length) }
+}
+
 /** The tightest window that still shows every one of these slots whole. */
 export function windowCovering(
   slots: Array<Slot>,

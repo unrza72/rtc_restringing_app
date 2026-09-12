@@ -1,7 +1,7 @@
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import { useForm } from '@tanstack/react-form'
 import { useServerFn } from '@tanstack/react-start'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import {
   addAvailability,
@@ -11,24 +11,20 @@ import {
   updateTrainingPerson,
 } from '#/server/training.functions'
 import { AvailabilityGrid } from '#/components/availability-grid'
+import { useGridWindow } from '#/components/grid-window'
 import { trainingPersonInputSchema } from '#/lib/schemas'
 import {
   BALLS,
-  DEFAULT_GRID_WINDOW,
-  GRID_STEP,
   MAX_STRENGTH,
   MIN_STRENGTH,
-  MINUTES_PER_DAY,
   PERSON_KINDS,
   WEEKDAYS,
   fitsGrid,
-  formatMinutes,
   formatSlot,
-  normaliseWindow,
   parseMinutes,
   windowCovering,
 } from '#/lib/training'
-import type { Ball, GridWindow, PersonKind, Slot } from '#/lib/training'
+import type { Ball, PersonKind, Slot } from '#/lib/training'
 import { m } from '#/paraglide/messages'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
@@ -256,41 +252,6 @@ function PersonPage() {
   )
 }
 
-/**
- * Which hours the grid draws is a per-browser view preference, not club data —
- * a coach who only ever plans weekday evenings wants a short grid, and that is
- * nobody else's business. Reads are guarded because storage throws outright in
- * some privacy modes.
- */
-const WINDOW_KEY = 'rtc.training.grid-window'
-
-function loadWindow(): GridWindow {
-  try {
-    const raw = localStorage.getItem(WINDOW_KEY)
-    if (!raw) return DEFAULT_GRID_WINDOW
-    const parsed: unknown = JSON.parse(raw)
-    if (
-      typeof parsed !== 'object' ||
-      parsed === null ||
-      typeof (parsed as GridWindow).startMin !== 'number' ||
-      typeof (parsed as GridWindow).endMin !== 'number'
-    ) {
-      return DEFAULT_GRID_WINDOW
-    }
-    return normaliseWindow(parsed as GridWindow)
-  } catch {
-    return DEFAULT_GRID_WINDOW
-  }
-}
-
-function storeWindow(value: GridWindow) {
-  try {
-    localStorage.setItem(WINDOW_KEY, JSON.stringify(value))
-  } catch {
-    // Blocked storage just means the choice will not survive a reload.
-  }
-}
-
 /** The timetable spike: paint the week instead of typing rows into a form. */
 function TimetableCard({
   personId,
@@ -304,16 +265,7 @@ function TimetableCard({
   const save = useServerFn(setAvailability)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
-  // Starts at the default so the server and the first client render agree;
-  // the stored preference is picked up right after mount.
-  const [gridWindow, setGridWindow] = useState(DEFAULT_GRID_WINDOW)
-  useEffect(() => setGridWindow(loadWindow()), [])
-
-  function changeWindow(next: GridWindow) {
-    const normalised = normaliseWindow(next)
-    setGridWindow(normalised)
-    storeWindow(normalised)
-  }
+  const { gridWindow, setGridWindow } = useGridWindow()
 
   async function handleSave(next: Array<Slot>) {
     setError(null)
@@ -359,44 +311,17 @@ function TimetableCard({
       <CardContent className="grid gap-3">
         <FormError>{error}</FormError>
 
-        <div className="flex flex-wrap items-end gap-3">
-          <Field id="window-from" label={m.training_from()} className="w-28">
-            <Input
-              id="window-from"
-              type="time"
-              step={GRID_STEP * 60}
-              value={formatMinutes(gridWindow.startMin)}
-              onChange={(e) => {
-                const startMin = parseMinutes(e.target.value)
-                if (startMin !== null) changeWindow({ ...gridWindow, startMin })
-              }}
-            />
-          </Field>
-          <Field id="window-to" label={m.training_to()} className="w-28">
-            <Input
-              id="window-to"
-              type="time"
-              step={GRID_STEP * 60}
-              value={formatMinutes(
-                Math.min(gridWindow.endMin, MINUTES_PER_DAY - 1),
-              )}
-              onChange={(e) => {
-                const endMin = parseMinutes(e.target.value)
-                if (endMin !== null) changeWindow({ ...gridWindow, endMin })
-              }}
-            />
-          </Field>
-          {covering && (
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              onClick={() => changeWindow(covering)}
-            >
-              {m.training_grid_fit()}
-            </Button>
-          )}
-        </div>
+        {covering && (
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            className="justify-self-start"
+            onClick={() => setGridWindow(covering)}
+          >
+            {m.training_grid_fit()}
+          </Button>
+        )}
 
         {!fitsGrid(plain, gridWindow) && (
           <p className="rounded-md border border-amber-700/50 bg-amber-950/40 px-3 py-2 text-xs text-amber-200">

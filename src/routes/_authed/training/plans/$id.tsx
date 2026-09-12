@@ -6,7 +6,14 @@ import {
   deleteTrainingPlan,
   getTrainingPlan,
 } from '#/server/training.functions'
-import { BALL_BADGE, WEEKDAYS, formatSlot } from '#/lib/training'
+import {
+  BALL_BADGE,
+  WEEKDAYS,
+  formatSlot,
+  normaliseWindow,
+} from '#/lib/training'
+import { useGridWindow } from '#/components/grid-window'
+import { ScheduleTimetable } from '#/components/schedule-timetable'
 import type { Ball } from '#/lib/training'
 import type { UnplacedReason } from '#/solver/types'
 import { formatDate } from '#/lib/labels'
@@ -27,6 +34,7 @@ function PlanPage() {
   const { plan } = Route.useLoaderData()
   const router = useRouter()
   const remove = useServerFn(deleteTrainingPlan)
+  const { gridWindow } = useGridWindow()
   const [error, setError] = useState<string | null>(null)
 
   async function handleDelete() {
@@ -43,6 +51,13 @@ function PlanPage() {
     day,
     groups: plan.groups.filter((g) => g.weekday === day),
   })).filter((d) => d.groups.length > 0)
+
+  // The timetable only draws the configured hours; the per-day list below is
+  // always complete, so this just explains the discrepancy.
+  const { startMin, endMin } = normaliseWindow(gridWindow)
+  const hidden = plan.groups.filter(
+    (g) => g.endMin <= startMin || g.startMin >= endMin,
+  ).length
 
   return (
     <div className="grid gap-6">
@@ -114,58 +129,74 @@ function PlanPage() {
             </CardContent>
           </Card>
         ) : (
-          days.map(({ day, groups }) => (
-            <Card key={day}>
-              <CardHeader>
-                <CardTitle className="text-base">
-                  {m[`training_weekday_${day}`]()}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="py-2">
-                <ul className="divide-y">
-                  {groups.map((group) => (
-                    <li key={group.id} className="grid gap-1.5 py-3">
-                      <div className="flex flex-wrap items-center gap-2.5">
-                        <span className="font-mono text-sm text-slate-200">
-                          {formatSlot(group.startMin, group.endMin)}
-                        </span>
-                        <Badge
-                          variant="outline"
-                          className={BALL_BADGE[group.ball as Ball]}
-                        >
-                          {m[`training_ball_${group.ball as Ball}`]()}
-                        </Badge>
-                        <span className="text-xs text-slate-500">
-                          {m.training_group_court({ court: group.court })}
-                        </span>
-                        <span className="ml-auto text-xs text-slate-400">
-                          {m.training_group_trainer()}:{' '}
-                          <span className="text-slate-200">
-                            {group.trainer.name}
-                          </span>
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {group.members.map(({ person }) => (
-                          <span
-                            key={person.id}
-                            className="rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1 text-xs text-slate-300"
-                          >
-                            {person.name}
-                            {person.strength !== null && (
-                              <span className="ml-1.5 text-slate-500">
-                                {person.strength}
-                              </span>
-                            )}
-                          </span>
-                        ))}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+          <>
+            <Card>
+              <CardContent className="grid gap-3 py-4">
+                {hidden > 0 && (
+                  <p className="rounded-md border border-amber-700/50 bg-amber-950/40 px-3 py-2 text-xs text-amber-200">
+                    {m.training_schedule_outside({ count: hidden })}
+                  </p>
+                )}
+                <ScheduleTimetable
+                  groups={plan.groups}
+                  gridWindow={gridWindow}
+                />
               </CardContent>
             </Card>
-          ))
+
+            {days.map(({ day, groups }) => (
+              <Card key={day}>
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    {m[`training_weekday_${day}`]()}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="py-2">
+                  <ul className="divide-y">
+                    {groups.map((group) => (
+                      <li key={group.id} className="grid gap-1.5 py-3">
+                        <div className="flex flex-wrap items-center gap-2.5">
+                          <span className="font-mono text-sm text-slate-200">
+                            {formatSlot(group.startMin, group.endMin)}
+                          </span>
+                          <Badge
+                            variant="outline"
+                            className={BALL_BADGE[group.ball as Ball]}
+                          >
+                            {m[`training_ball_${group.ball as Ball}`]()}
+                          </Badge>
+                          <span className="text-xs text-slate-500">
+                            {m.training_group_court({ court: group.court })}
+                          </span>
+                          <span className="ml-auto text-xs text-slate-400">
+                            {m.training_group_trainer()}:{' '}
+                            <span className="text-slate-200">
+                              {group.trainer.name}
+                            </span>
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {group.members.map(({ person }) => (
+                            <span
+                              key={person.id}
+                              className="rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1 text-xs text-slate-300"
+                            >
+                              {person.name}
+                              {person.strength !== null && (
+                                <span className="ml-1.5 text-slate-500">
+                                  {person.strength}
+                                </span>
+                              )}
+                            </span>
+                          ))}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            ))}
+          </>
         )}
       </section>
 

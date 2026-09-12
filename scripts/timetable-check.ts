@@ -7,6 +7,7 @@ import {
   DEFAULT_GRID_WINDOW,
   GRID_STEP,
   MINUTES_PER_DAY,
+  assignLanes,
   cellKey,
   cellsFromSlots,
   fitsGrid,
@@ -321,6 +322,80 @@ console.log('\n— hours outside the window are left alone —')
       [{ weekday: MON, startMin: hm(17), endMin: hm(19) }],
       WIN,
     ).length === 0,
+  )
+}
+
+console.log('\n— overlapping sessions get their own lane —')
+{
+  const back2back = assignLanes([
+    { startMin: hm(17), endMin: hm(18) },
+    { startMin: hm(18), endMin: hm(19) },
+  ])
+  check(
+    'sessions that merely touch share one lane',
+    back2back.laneCount === 1,
+    back2back,
+  )
+}
+{
+  const clash = assignLanes([
+    { startMin: hm(17), endMin: hm(18, 30) },
+    { startMin: hm(18), endMin: hm(19) },
+  ])
+  check('an overlap opens a second lane', clash.laneCount === 2, clash)
+  check(
+    'and the later one moves over',
+    clash.items.find((i) => i.startMin === hm(18))?.lane === 1,
+    clash.items,
+  )
+}
+{
+  const three = assignLanes([
+    { startMin: hm(17), endMin: hm(19) },
+    { startMin: hm(17), endMin: hm(19) },
+    { startMin: hm(17), endMin: hm(19) },
+  ])
+  check('three at once need three lanes', three.laneCount === 3, three)
+  check(
+    'each on a distinct one',
+    new Set(three.items.map((i) => i.lane)).size === 3,
+    three.items,
+  )
+}
+{
+  // The first slot frees up again, so the third session reuses lane 0.
+  const reuse = assignLanes([
+    { startMin: hm(17), endMin: hm(18) },
+    { startMin: hm(17, 30), endMin: hm(18, 30) },
+    { startMin: hm(18), endMin: hm(19) },
+  ])
+  check(
+    'a freed lane is reused rather than growing',
+    reuse.laneCount === 2,
+    reuse,
+  )
+  check(
+    'by the session that starts when it frees up',
+    reuse.items.find((i) => i.startMin === hm(18))?.lane === 0,
+    reuse.items,
+  )
+}
+{
+  const empty = assignLanes([])
+  check('nothing to place still reports one lane', empty.laneCount === 1, empty)
+  check('and places nothing', empty.items.length === 0)
+}
+{
+  const unsorted = [
+    { startMin: hm(19), endMin: hm(20) },
+    { startMin: hm(17), endMin: hm(18) },
+  ]
+  const a = assignLanes(unsorted)
+  const b = assignLanes([...unsorted].reverse())
+  check(
+    'input order does not change the result',
+    JSON.stringify(a) === JSON.stringify(b),
+    { a, b },
   )
 }
 

@@ -246,6 +246,8 @@
   "training_grid_hint": "Drag across the grid to add times, drag over filled cells to remove them.",
   "training_grid_total": "{hours} h per week",
   "training_grid_fit": "Fit to entered times",
+  "training_grid_window": "Timetable range",
+  "training_schedule_outside": "{count} group(s) fall outside the timetable range and are only listed below.",
   "training_grid_offgrid": "Some saved times fall outside the shown range or off the half-hour grid, so painting here would trim them. Widen the range above, or use the exact times below.",
   "training_exact_title": "Exact times",
   "training_weekday_short_0": "Mon",

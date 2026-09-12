@@ -246,6 +246,8 @@
   "training_grid_hint": "Über das Raster ziehen, um Zeiten hinzuzufügen; über belegte Felder ziehen, um sie zu entfernen.",
   "training_grid_total": "{hours} Std. pro Woche",
   "training_grid_fit": "An erfasste Zeiten anpassen",
+  "training_grid_window": "Zeitraster",
+  "training_schedule_outside": "{count} Gruppe(n) liegen außerhalb des Zeitrasters und stehen nur unten in der Liste.",
   "training_grid_offgrid": "Einige gespeicherte Zeiten liegen außerhalb des angezeigten Bereichs oder neben dem Halbstundenraster und würden beim Malen gekürzt. Erweitere den Bereich oben oder nutze die exakten Zeiten unten.",
   "training_exact_title": "Exakte Zeiten",
   "training_weekday_short_0": "Mo",
