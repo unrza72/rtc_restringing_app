@@ -30,7 +30,7 @@ export function RequestList({
   linkTo?: 'member' | 'queue'
 }) {
   return (
-    <ul className="divide-y divide-slate-800">
+    <ul className="divide-y divide-border">
       {requests.map((request) => (
         <li key={request.id}>
           <Link
@@ -38,12 +38,14 @@ export function RequestList({
             params={{ id: request.id }}
             className={cn(
               'flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl px-3 py-3',
-              '-mx-3 transition-colors hover:bg-slate-800/50',
+              '-mx-3 transition-colors hover:bg-muted',
             )}
           >
-            <span className="font-bold text-white">{request.racket.label}</span>
+            <span className="font-bold text-foreground">
+              {request.racket.label}
+            </span>
 
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-muted-foreground">
               {describeString(request)} ·{' '}
               <span className="font-semibold text-lime-400">
                 {formatTension(request.tensionMain, request.tensionCross)}
@@ -51,7 +53,7 @@ export function RequestList({
             </span>
 
             {showRequester && request.requester && (
-              <span className="text-xs text-slate-400">
+              <span className="text-xs text-muted-foreground">
                 {m.request_requested_by({ name: request.requester.name })}
               </span>
             )}

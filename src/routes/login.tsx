@@ -177,7 +177,7 @@ function DevQuickLogin({
   }
 
   return (
-    <div className="border-t border-slate-800 p-6">
+    <div className="border-t border-border p-6">
       <p className="mb-3 text-[11px] font-bold tracking-wider text-amber-400 uppercase">
         {m.devlogin_title()}
       </p>
@@ -188,10 +188,10 @@ function DevQuickLogin({
             type="button"
             disabled={pendingSlot !== null}
             onClick={() => void handleClick(user.slot)}
-            className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-left text-sm transition-colors hover:border-slate-700 hover:bg-slate-800 disabled:opacity-50"
+            className="flex items-center justify-between rounded-lg border border-border bg-surface-sunken px-3 py-2 text-left text-sm transition-colors hover:border-slate-300 hover:bg-muted disabled:opacity-50"
           >
-            <span className="font-medium text-slate-200">{user.name}</span>
-            <span className="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+            <span className="font-medium text-foreground">{user.name}</span>
+            <span className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
               {pendingSlot === user.slot
                 ? m.common_loading()
                 : roleLabel(user.role)}

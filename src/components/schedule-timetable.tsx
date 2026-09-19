@@ -55,7 +55,7 @@ export function ScheduleTimetable({
         {WEEKDAYS.map((day) => (
           <div
             key={day}
-            className="pb-1.5 text-center text-[11px] font-bold tracking-wide text-slate-400 uppercase"
+            className="pb-1.5 text-center text-[11px] font-bold tracking-wide text-muted-foreground uppercase"
           >
             {m[`training_weekday_short_${day}`]()}
           </div>
@@ -66,7 +66,7 @@ export function ScheduleTimetable({
             rowStart % 60 === 0 ? (
               <div
                 key={rowStart}
-                className="absolute right-2 -translate-y-1/2 font-mono text-[11px] text-slate-400"
+                className="absolute right-2 -translate-y-1/2 font-mono text-[11px] text-muted-foreground"
                 style={{ top: i * ROW_PX }}
               >
                 {formatMinutes(rowStart)}
@@ -82,7 +82,7 @@ export function ScheduleTimetable({
           return (
             <div
               key={day}
-              className="relative rounded-sm bg-slate-900/60"
+              className="relative rounded-sm bg-muted/60"
               style={{ height }}
             >
               {rows.map((rowStart, i) => (
@@ -91,8 +91,8 @@ export function ScheduleTimetable({
                   className={cn(
                     'absolute inset-x-0 border-t',
                     rowStart % 60 === 0
-                      ? 'border-t-slate-700/60'
-                      : 'border-t-slate-800/40',
+                      ? 'border-t-slate-300'
+                      : 'border-t-slate-200',
                   )}
                   style={{ top: i * ROW_PX }}
                 />

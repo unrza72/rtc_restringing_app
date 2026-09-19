@@ -18,7 +18,7 @@ export function StatusBadge({
   const tone =
     status in STATUS_BADGE
       ? STATUS_BADGE[status as RequestStatus]
-      : 'bg-slate-800 text-slate-300 border-slate-700'
+      : 'bg-muted text-foreground border-border'
 
   return (
     <span

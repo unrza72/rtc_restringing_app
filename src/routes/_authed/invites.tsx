@@ -43,10 +43,10 @@ function invitePath(token: string) {
 }
 
 const STATUS_BADGE: Record<InviteStatus, string> = {
-  ACTIVE: 'border-emerald-500 bg-emerald-950 text-emerald-200',
-  USED: 'border-slate-700 bg-slate-800 text-slate-300',
-  EXPIRED: 'border-slate-700 bg-slate-800/60 text-slate-500',
-  REVOKED: 'border-rose-800 bg-rose-950 text-rose-300',
+  ACTIVE: 'border-emerald-300 bg-emerald-50 text-emerald-800',
+  USED: 'border-border bg-muted text-foreground',
+  EXPIRED: 'border-border bg-muted text-muted-foreground',
+  REVOKED: 'border-rose-300 bg-rose-50 text-rose-700',
 }
 
 const STATUS_LABEL: Record<InviteStatus, () => string> = {
@@ -95,7 +95,7 @@ function InvitesPage() {
 
   return (
     <div className="grid gap-6">
-      <h1 className="text-2xl font-extrabold tracking-tight text-white">
+      <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
         {m.invites_title()}
       </h1>
 
@@ -186,16 +186,16 @@ function InvitesPage() {
                         {status === 'ACTIVE' ? (
                           <InviteLink token={invite.token} compact />
                         ) : (
-                          <span className="text-slate-600">
+                          <span className="text-muted-foreground">
                             {m.common_none()}
                           </span>
                         )}
                       </TableCell>
                       <TableCell>{invite.createdBy.name}</TableCell>
-                      <TableCell className="text-slate-400">
+                      <TableCell className="text-muted-foreground">
                         {formatDateTime(invite.createdAt)}
                       </TableCell>
-                      <TableCell className="text-slate-400">
+                      <TableCell className="text-muted-foreground">
                         {formatDateTime(invite.expiresAt)}
                       </TableCell>
                       <TableCell>
@@ -247,12 +247,13 @@ function InviteLink({ token, compact }: { token: string; compact?: boolean }) {
     <div
       className={cn(
         'flex items-center gap-2',
-        !compact && 'rounded-lg border border-slate-800 bg-slate-950 px-3 py-2',
+        !compact &&
+          'rounded-lg border border-border bg-surface-sunken px-3 py-2',
       )}
     >
       <code
         className={cn(
-          'truncate font-mono text-slate-300',
+          'truncate font-mono text-foreground',
           compact ? 'max-w-48 text-xs' : 'text-sm',
         )}
       >

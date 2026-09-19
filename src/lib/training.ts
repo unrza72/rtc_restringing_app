@@ -229,10 +229,14 @@ export function windowCovering(
   })
 }
 
-/** Carried over from the status badges: one colour per ball, dark-friendly. */
+/**
+ * One colour per ball, matching the status badges: a soft tint carrying
+ * saturated text, which stays legible both as a badge and as a filled block in
+ * the plan timetable.
+ */
 export const BALL_BADGE: Record<Ball, string> = {
-  RED: 'bg-rose-950 text-rose-200 border-rose-700',
-  ORANGE: 'bg-orange-950 text-orange-200 border-orange-700',
-  GREEN: 'bg-emerald-950 text-emerald-200 border-emerald-600',
-  YELLOW: 'bg-yellow-950 text-yellow-100 border-yellow-600',
+  RED: 'bg-rose-100 text-rose-800 border-rose-300',
+  ORANGE: 'bg-orange-100 text-orange-800 border-orange-300',
+  GREEN: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+  YELLOW: 'bg-yellow-100 text-yellow-800 border-yellow-400',
 }

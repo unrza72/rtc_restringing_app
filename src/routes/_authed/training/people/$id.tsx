@@ -85,7 +85,7 @@ function PersonPage() {
     <div className="grid gap-6">
       <Link
         to="/training/people"
-        className="text-sm text-slate-400 underline-offset-4 hover:underline"
+        className="text-sm text-muted-foreground underline-offset-4 hover:underline"
       >
         ← {m.common_back()}
       </Link>
@@ -303,7 +303,7 @@ function TimetableCard({
       <CardHeader>
         <CardTitle className="flex flex-wrap items-baseline gap-3 text-base">
           {m.training_grid_title()}
-          <span className="text-xs font-normal text-slate-400">
+          <span className="text-xs font-normal text-muted-foreground">
             {m.training_grid_total({ hours })}
           </span>
         </CardTitle>
@@ -324,7 +324,7 @@ function TimetableCard({
         )}
 
         {!fitsGrid(plain, gridWindow) && (
-          <p className="rounded-md border border-amber-700/50 bg-amber-950/40 px-3 py-2 text-xs text-amber-200">
+          <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
             {m.training_grid_offgrid()}
           </p>
         )}
@@ -412,21 +412,21 @@ function AvailabilityCard({
                 key={day}
                 className="flex flex-wrap items-center gap-3 py-2.5"
               >
-                <span className="w-28 text-sm font-medium text-slate-300">
+                <span className="w-28 text-sm font-medium text-foreground">
                   {m[`training_weekday_${day}`]()}
                 </span>
                 <span className="flex flex-wrap gap-2">
                   {daySlots.map((slot) => (
                     <span
                       key={slot.id}
-                      className="flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1 text-xs"
+                      className="flex items-center gap-1.5 rounded-lg border border-border bg-surface-sunken px-2.5 py-1 text-xs"
                     >
                       {formatSlot(slot.startMin, slot.endMin)}
                       <button
                         type="button"
                         onClick={() => void handleRemove(slot.id)}
                         aria-label={m.common_delete()}
-                        className="text-slate-500 transition-colors hover:text-destructive"
+                        className="text-muted-foreground transition-colors hover:text-destructive"
                       >
                         ×
                       </button>
@@ -438,7 +438,7 @@ function AvailabilityCard({
           </ul>
         )}
 
-        <div className="flex flex-wrap items-end gap-3 border-t border-slate-800 pt-4">
+        <div className="flex flex-wrap items-end gap-3 border-t border-border pt-4">
           <Field id="avail-day" label={m.training_day()} className="w-40">
             <Select value={weekday} onValueChange={setWeekday}>
               <SelectTrigger id="avail-day" className="w-full">

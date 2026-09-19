@@ -109,7 +109,7 @@ export function AppNav() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md">
+    <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur-md">
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
         <div className="flex h-14 items-center gap-3">
           <Link
@@ -119,7 +119,7 @@ export function AppNav() {
             <span className="ball-tile flex size-8 items-center justify-center rounded-lg text-base">
               🎾
             </span>
-            <span className="text-base font-bold tracking-tight text-white">
+            <span className="text-base font-bold tracking-tight text-foreground">
               {m.app_name()}
             </span>
           </Link>
@@ -152,10 +152,10 @@ export function AppNav() {
             {user ? (
               <>
                 <span className="hidden items-center gap-2 pr-1 pl-2 md:flex">
-                  <span className="flex size-7 items-center justify-center rounded-full bg-slate-800 text-[11px] font-bold text-slate-300">
+                  <span className="flex size-7 items-center justify-center rounded-full bg-muted text-[11px] font-bold text-foreground">
                     {user.name.charAt(0).toUpperCase()}
                   </span>
-                  <span className="text-xs font-medium text-slate-300">
+                  <span className="text-xs font-medium text-foreground">
                     {user.name}
                   </span>
                 </span>
@@ -169,7 +169,7 @@ export function AppNav() {
               <Link
                 to="/login"
                 search={{ redirect: undefined }}
-                className="rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-300 transition-colors hover:bg-slate-900 hover:text-white"
+                className="rounded-lg px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-slate-100 hover:text-foreground"
               >
                 {m.nav_sign_in()}
               </Link>
@@ -189,7 +189,7 @@ export function AppNav() {
         </div>
 
         {open && items.length > 0 && (
-          <nav className="flex flex-col gap-0.5 border-t border-slate-800/80 py-2 lg:hidden">
+          <nav className="flex flex-col gap-0.5 border-t border-border py-2 lg:hidden">
             {items.map((item) => (
               <NavTab
                 key={item.to}
@@ -218,10 +218,10 @@ function NavTab({
       activeOptions={{ exact }}
       className={cn(
         'flex items-center gap-2 rounded-lg px-3 py-1.5',
-        'text-xs font-medium text-slate-400 transition-colors',
-        'hover:bg-slate-900 hover:text-slate-100',
+        'text-xs font-medium text-muted-foreground transition-colors',
+        'hover:bg-slate-100 hover:text-foreground',
       )}
-      activeProps={{ className: 'bg-slate-800 text-white font-semibold' }}
+      activeProps={{ className: 'bg-slate-200 text-foreground font-semibold' }}
     >
       <Icon className="size-3.5" />
       {label}
@@ -247,7 +247,7 @@ function IconButton({
       title={label}
       aria-label={label}
       aria-expanded={expanded}
-      className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-900 hover:text-slate-100"
+      className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-slate-100 hover:text-foreground"
     >
       <Icon className="size-4" />
     </button>
@@ -284,7 +284,7 @@ function LocaleToggle({ signedIn }: { signedIn: boolean }) {
       onClick={() => void handleClick()}
       title={m.language_switch_to({ locale: next.toUpperCase() })}
       aria-label={m.language_switch_to({ locale: next.toUpperCase() })}
-      className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-bold tracking-wider text-slate-400 transition-colors hover:bg-slate-900 hover:text-slate-100"
+      className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-bold tracking-wider text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
     >
       <Languages className="size-3.5" />
       {next.toUpperCase()}

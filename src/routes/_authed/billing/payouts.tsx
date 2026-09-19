@@ -62,7 +62,7 @@ function PayoutsPage() {
 
   return (
     <div className="grid gap-6">
-      <h1 className="text-2xl font-extrabold tracking-tight text-white">
+      <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
         {m.payouts_title()}
       </h1>
 
@@ -94,7 +94,7 @@ function PayoutsPage() {
               <TableBody>
                 {balances.map((balance) => (
                   <TableRow key={balance.operatorId}>
-                    <TableCell className="font-medium text-slate-200">
+                    <TableCell className="font-medium text-foreground">
                       {balance.name}
                     </TableCell>
                     <TableCell className="text-right">
@@ -103,7 +103,7 @@ function PayoutsPage() {
                     <TableCell className="text-right">
                       {formatPrice(balance.reimbursedCents)}
                     </TableCell>
-                    <TableCell className="text-right font-semibold text-slate-100">
+                    <TableCell className="text-right font-semibold text-foreground">
                       {formatPrice(balance.outstandingCents)}
                     </TableCell>
                     <TableCell>
@@ -126,7 +126,7 @@ function PayoutsPage() {
 
       <Card>
         <CardContent className="px-0 py-2 sm:px-2">
-          <div className="px-4 pt-4 pb-2 text-[11px] font-bold tracking-wider text-slate-500 uppercase sm:px-2">
+          <div className="px-4 pt-4 pb-2 text-[11px] font-bold tracking-wider text-muted-foreground uppercase sm:px-2">
             {m.payouts_history()}
           </div>
           {reimbursements.length === 0 ? (
@@ -153,11 +153,11 @@ function PayoutsPage() {
                     <TableCell className="text-right">
                       {formatPrice(entry.amountCents)}
                     </TableCell>
-                    <TableCell className="text-slate-400">
+                    <TableCell className="text-muted-foreground">
                       {entry.note}
                     </TableCell>
                     <TableCell>{entry.createdBy.name}</TableCell>
-                    <TableCell className="text-slate-400">
+                    <TableCell className="text-muted-foreground">
                       {formatDateTime(entry.createdAt)}
                     </TableCell>
                   </TableRow>

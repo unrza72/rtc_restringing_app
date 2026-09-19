@@ -94,7 +94,7 @@ export function GridWindowPicker() {
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
+      <span className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
         {m.training_grid_window()}
       </span>
       <Input
@@ -108,7 +108,7 @@ export function GridWindowPicker() {
         }}
         className="h-8 w-24 text-xs"
       />
-      <span className="text-slate-600">–</span>
+      <span className="text-muted-foreground">–</span>
       <Input
         aria-label={m.training_to()}
         type="time"

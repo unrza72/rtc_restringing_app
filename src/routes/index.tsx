@@ -19,13 +19,13 @@ function Landing() {
       <span className="ball-tile mx-auto flex size-16 items-center justify-center rounded-2xl text-4xl">
         🎾
       </span>
-      <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-white">
+      <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-foreground">
         {m.app_name()}
       </h1>
-      <span className="mt-2 inline-block rounded border border-lime-400/30 bg-lime-400/20 px-2 py-0.5 text-[10px] font-bold tracking-wider text-lime-300 uppercase">
+      <span className="mt-2 inline-block rounded border border-lime-500/40 bg-lime-100 px-2 py-0.5 text-[10px] font-bold tracking-wider text-lime-800 uppercase">
         {m.app_badge()}
       </span>
-      <p className="mt-3 text-sm text-slate-400">{m.app_tagline()}</p>
+      <p className="mt-3 text-sm text-muted-foreground">{m.app_tagline()}</p>
 
       {/* No "create account" here — signup only exists behind an invite link
           a member/admin sent directly, so there's nothing to discover. */}

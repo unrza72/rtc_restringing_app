@@ -17,7 +17,7 @@ function RequestsPage() {
   return (
     <div className="grid gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-extrabold tracking-tight text-white">
+        <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
           {m.request_list_title()}
         </h1>
         <Button asChild>

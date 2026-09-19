@@ -53,13 +53,13 @@ export function SortableHead<TKey extends string>({
         type="button"
         onClick={() => onSort(sortKey)}
         className={cn(
-          'flex items-center gap-1 transition-colors hover:text-slate-100',
+          'flex items-center gap-1 transition-colors hover:text-foreground',
           className?.includes('text-right') && 'ml-auto',
-          active && 'text-slate-100',
+          active && 'text-foreground',
         )}
       >
         {label}
-        <Icon className={cn('size-3.5', !active && 'text-slate-600')} />
+        <Icon className={cn('size-3.5', !active && 'text-muted-foreground')} />
       </button>
     </TableHead>
   )

@@ -45,7 +45,7 @@ function MembersPage() {
 
   return (
     <div className="grid gap-6">
-      <h1 className="text-2xl font-extrabold tracking-tight text-white">
+      <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
         {m.admin_members_title()}
       </h1>
 

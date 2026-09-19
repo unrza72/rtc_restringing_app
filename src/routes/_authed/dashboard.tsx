@@ -21,7 +21,7 @@ function Dashboard() {
   return (
     <div className="grid gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-extrabold tracking-tight text-white">
+        <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
           {m.dash_title({ name: user.name })}
         </h1>
         <Link
@@ -85,14 +85,14 @@ function ShortcutCard({
 }) {
   const tone =
     accent === 'amber'
-      ? 'hover:border-amber-600/60 text-amber-300'
-      : 'hover:border-emerald-500/60 text-emerald-300'
+      ? 'hover:border-amber-400 text-amber-700'
+      : 'hover:border-emerald-400 text-emerald-700'
 
   return (
     <Link
       to={to}
       className={cn(
-        'group flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-900 p-5 transition-colors',
+        'group flex items-center justify-between rounded-2xl border border-border bg-muted p-5 transition-colors',
         tone,
       )}
     >
@@ -100,11 +100,11 @@ function ShortcutCard({
         <span className="block text-[10px] font-bold tracking-wider uppercase">
           {title}
         </span>
-        <span className="mt-1 block text-sm font-semibold text-white">
+        <span className="mt-1 block text-sm font-semibold text-foreground">
           {action}
         </span>
       </span>
-      <ArrowRight className="size-4 text-slate-500 transition-transform group-hover:translate-x-0.5" />
+      <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
     </Link>
   )
 }

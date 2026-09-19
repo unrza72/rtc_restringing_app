@@ -22,15 +22,15 @@ export function AuthShell({
         <span className="ball-tile mx-auto flex size-14 items-center justify-center rounded-2xl text-3xl">
           🎾
         </span>
-        <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-white">
+        <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-foreground">
           {title}
         </h1>
-        <p className="mt-1 text-sm text-slate-400">
+        <p className="mt-1 text-sm text-muted-foreground">
           {subtitle ?? m.app_tagline()}
         </p>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl">
+      <div className="overflow-hidden rounded-2xl border border-border bg-muted shadow-2xl">
         {children}
       </div>
     </div>

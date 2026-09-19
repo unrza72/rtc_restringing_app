@@ -3,68 +3,87 @@
 @import 'tw-animate-css';
 
 /*
- * Look and feel carried over from the tennis-racquet-restringing prototype:
- * a dark slate workshop surface with a tennis-ball lime as the one loud accent,
- * emerald for the member side and amber for the stringer's bench.
+ * Daylight refresh of the tennis-workshop look: a bright, near-white surface
+ * with the tennis-ball lime kept as the one loud accent, emerald for the member
+ * side and amber for the stringer's bench.
  *
- * The palette is dark-only by design — the prototype had no light mode, and a
- * half-converted one reads worse than a committed dark one. The shadcn tokens
- * are therefore defined on :root rather than under a .dark selector.
+ * The palette is light-only by design — a half-converted theme reads worse than
+ * a committed one, so the shadcn tokens are defined on :root rather than split
+ * across .dark. Components should reach for these tokens (bg-card, text-muted-
+ * foreground, border-border) instead of raw slate utilities, so the next change
+ * of mind is a change to this block alone.
  */
 
 :root {
   /* raw palette — Tailwind's slate/lime/emerald/amber, kept as hex so the
-     values are greppable against the prototype's utility classes */
-  --slate-950: #020617;
-  --slate-900: #0f172a;
-  --slate-850: #16203a;
-  --slate-800: #1e293b;
-  --slate-700: #334155;
-  --slate-500: #64748b;
-  --slate-400: #94a3b8;
-  --slate-300: #cbd5e1;
+     values stay greppable against the utility classes */
+  --white: #ffffff;
+  --slate-50: #f8fafc;
   --slate-100: #f1f5f9;
+  --slate-200: #e2e8f0;
+  --slate-300: #cbd5e1;
+  --slate-400: #94a3b8;
+  --slate-500: #64748b;
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1e293b;
+  --slate-900: #0f172a;
+  --slate-950: #020617;
 
   --lime-300: #bef264;
   --lime-400: #a3e635;
   --lime-500: #84cc16;
+  --lime-600: #65a30d;
+  --lime-700: #4d7c0f;
   --emerald-500: #10b981;
   --emerald-600: #059669;
+  --emerald-700: #047857;
   --amber-500: #f59e0b;
   --amber-600: #d97706;
+  --amber-700: #b45309;
   --rose-400: #fb7185;
   --rose-600: #e11d48;
 
   /* shadcn semantic tokens — every Card/Button/Input inherits from here */
-  --background: var(--slate-950);
-  --foreground: var(--slate-100);
-  --card: var(--slate-900);
-  --card-foreground: var(--slate-100);
-  --popover: var(--slate-900);
-  --popover-foreground: var(--slate-100);
-  --primary: var(--lime-400);
+  --background: var(--slate-50);
+  --foreground: var(--slate-900);
+  --card: var(--white);
+  --card-foreground: var(--slate-900);
+  --popover: var(--white);
+  --popover-foreground: var(--slate-900);
+  /* Lime-500 rather than 400: the brighter one dissolves into a white card,
+     and it still carries near-black text at full contrast. */
+  --primary: var(--lime-500);
   --primary-foreground: var(--slate-950);
-  --secondary: var(--slate-800);
-  --secondary-foreground: var(--slate-100);
-  --muted: var(--slate-800);
-  --muted-foreground: var(--slate-400);
-  --accent: var(--slate-800);
-  --accent-foreground: var(--slate-100);
+  --secondary: var(--slate-100);
+  --secondary-foreground: var(--slate-900);
+  --muted: var(--slate-100);
+  --muted-foreground: var(--slate-500);
+  --accent: var(--slate-100);
+  --accent-foreground: var(--slate-900);
   --destructive: var(--rose-600);
-  --destructive-foreground: var(--slate-100);
-  --border: var(--slate-800);
-  --input: var(--slate-700);
-  --ring: var(--lime-400);
+  --destructive-foreground: var(--white);
+  --border: var(--slate-200);
+  --input: var(--slate-300);
+  /* Lime as ink rather than as a fill. The bright lime works under dark
+     text but is nearly invisible *as* a mark on white, so anything drawn
+     thin — a link, a radio dot, a slider edge — uses the darker one. */
+  --primary-ink: var(--lime-700);
+  --ring: var(--lime-500);
   --radius: 0.75rem;
 
-  --sidebar: var(--slate-900);
-  --sidebar-foreground: var(--slate-100);
-  --sidebar-primary: var(--lime-400);
+  /* Surfaces a hair off the page, for rows and wells inside a white card. */
+  --surface-sunken: var(--slate-50);
+  --surface-raised: var(--white);
+
+  --sidebar: var(--white);
+  --sidebar-foreground: var(--slate-900);
+  --sidebar-primary: var(--lime-500);
   --sidebar-primary-foreground: var(--slate-950);
-  --sidebar-accent: var(--slate-800);
-  --sidebar-accent-foreground: var(--slate-100);
-  --sidebar-border: var(--slate-800);
-  --sidebar-ring: var(--lime-400);
+  --sidebar-accent: var(--slate-100);
+  --sidebar-accent-foreground: var(--slate-900);
+  --sidebar-border: var(--slate-200);
+  --sidebar-ring: var(--lime-500);
 }
 
 @theme inline {
@@ -103,11 +122,23 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-primary-ink: var(--primary-ink);
+
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-raised: var(--surface-raised);
 }
 
 html,
 body {
   min-height: 100%;
+}
+
+html {
+  /* One notch up from the 16px default — 104.2% lands on 16.67px, exactly half
+     a point larger. A percentage rather than a px value so a reader who has
+     raised their browser's base size still gets the bump on top of it. */
+  font-size: 104.2%;
 }
 
 body {
@@ -120,7 +151,8 @@ body {
 }
 
 /* A single lime bloom behind the header, so the top of the page carries the
-   accent without every card having to. */
+   accent without every card having to. Stronger than the dark theme's wash:
+   a tint this faint simply disappears against white. */
 body::before {
   content: '';
   position: fixed;
@@ -130,12 +162,12 @@ body::before {
   background:
     radial-gradient(
       900px 420px at 12% -12%,
-      rgba(163, 230, 53, 0.09),
+      rgba(132, 204, 22, 0.16),
       transparent 62%
     ),
     radial-gradient(
       760px 400px at 92% -8%,
-      rgba(16, 185, 129, 0.08),
+      rgba(16, 185, 129, 0.12),
       transparent 60%
     );
 }
@@ -162,5 +194,17 @@ body::before {
     var(--emerald-600)
   );
   color: var(--slate-950);
-  box-shadow: 0 10px 25px -5px rgb(132 204 22 / 0.2);
+  box-shadow: 0 8px 20px -6px rgb(132 204 22 / 0.45);
+}
+
+/*
+ * Light UI needs its depth from shadow rather than from a lighter fill, so
+ * cards get a soft two-stage shadow instead of the dark theme's flat surface.
+ */
+@layer components {
+  [data-slot='card'] {
+    box-shadow:
+      0 1px 2px rgb(15 23 42 / 0.04),
+      0 1px 3px rgb(15 23 42 / 0.06);
+  }
 }

@@ -82,13 +82,13 @@ function SignupPage() {
     return (
       <AuthShell title={m.app_name()} subtitle={m.auth_invite_invalid_title()}>
         <div className="grid gap-4 p-6">
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-muted-foreground">
             {m.auth_invite_invalid_body()}
           </p>
           <Link
             to="/login"
             search={{ redirect: undefined }}
-            className="text-sm font-semibold text-lime-400 hover:text-lime-300"
+            className="text-sm font-semibold text-lime-700 hover:text-lime-800"
           >
             {m.auth_to_sign_in()}
           </Link>

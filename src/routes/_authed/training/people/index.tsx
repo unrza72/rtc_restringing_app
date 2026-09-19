@@ -133,8 +133,8 @@ function PersonGroup({
                   to="/training/people/$id"
                   params={{ id: person.id }}
                   className={cn(
-                    'font-medium text-slate-200 underline-offset-4 hover:underline',
-                    person.archived && 'text-slate-500',
+                    'font-medium text-foreground underline-offset-4 hover:underline',
+                    person.archived && 'text-muted-foreground',
                   )}
                 >
                   {person.name}
@@ -149,7 +149,7 @@ function PersonGroup({
                   </Badge>
                 )}
                 {person.strength !== null && (
-                  <span className="text-xs text-slate-400">
+                  <span className="text-xs text-muted-foreground">
                     {m.training_strength()} {person.strength}
                   </span>
                 )}

@@ -98,7 +98,7 @@ function QueuePage() {
 
   return (
     <div className="grid gap-6">
-      <h1 className="text-2xl font-extrabold tracking-tight text-white">
+      <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
         {m.queue_title()}
       </h1>
 
@@ -125,7 +125,7 @@ function QueuePage() {
         </div>
 
         <div className="relative w-full sm:w-64">
-          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-slate-500" />
+          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -197,11 +197,11 @@ function QueuePage() {
                       <Link
                         to="/queue/$id"
                         params={{ id: request.id }}
-                        className="font-medium text-slate-200 underline-offset-4 hover:underline"
+                        className="font-medium text-foreground underline-offset-4 hover:underline"
                       >
                         {request.racket.label}
                       </Link>
-                      <div className="text-xs text-slate-500">
+                      <div className="text-xs text-muted-foreground">
                         {describeString(request)} ·{' '}
                         {formatTension(
                           request.tensionMain,
@@ -252,7 +252,7 @@ function FilterTab({
         active
           ? // The workshop is amber territory throughout the prototype.
             'border-amber-600 bg-amber-600 text-white shadow-md'
-          : 'border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-slate-200',
+          : 'border-border bg-card text-muted-foreground hover:bg-slate-100 hover:text-foreground',
       )}
     >
       {label}

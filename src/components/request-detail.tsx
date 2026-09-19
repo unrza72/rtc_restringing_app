@@ -155,10 +155,10 @@ function Row({
 }) {
   return (
     <div className={full ? 'sm:col-span-2' : undefined}>
-      <dt className="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+      <dt className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
         {label}
       </dt>
-      <dd className="mt-0.5 text-sm text-slate-200">{children}</dd>
+      <dd className="mt-0.5 text-sm text-foreground">{children}</dd>
     </div>
   )
 }
@@ -187,10 +187,10 @@ export function RequestTimeline({
               className="flex flex-wrap items-baseline gap-x-2"
             >
               <StatusBadge status={event.toStatus} />
-              <span className="text-sm font-semibold text-white">
+              <span className="text-sm font-semibold text-foreground">
                 {event.actor.name}
               </span>
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-muted-foreground">
                 {formatDateTime(event.createdAt)}
               </span>
               {event.note && (

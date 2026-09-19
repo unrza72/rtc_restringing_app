@@ -29,13 +29,13 @@ function PendingPage() {
           className={
             'flex size-11 items-center justify-center rounded-xl border ' +
             (rejected
-              ? 'border-rose-800 bg-rose-950 text-rose-300'
-              : 'border-amber-600 bg-amber-950 text-amber-300')
+              ? 'border-rose-300 bg-rose-50 text-rose-700'
+              : 'border-amber-300 bg-amber-50 text-amber-800')
           }
         >
           <Icon className="size-5" />
         </span>
-        <p className="text-sm leading-relaxed text-slate-400">
+        <p className="text-sm leading-relaxed text-muted-foreground">
           {rejected ? m.pending_rejected_body() : m.pending_body()}
         </p>
       </div>

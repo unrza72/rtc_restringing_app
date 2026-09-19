@@ -11,7 +11,7 @@ New accounts are unusable until an admin approves them.
 | Framework | TanStack Start (file routes in `src/routes`, `createServerFn` for mutations/loads) |
 | DB        | Prisma 7 + SQLite (`@prisma/adapter-better-sqlite3`)                               |
 | Auth      | better-auth 1.7 — `admin` plugin, `prismaAdapter`; email + password                |
-| UI        | Tailwind 4 + shadcn/ui (new-york, zinc), lucide icons                              |
+| UI        | Tailwind 4 + shadcn/ui (new-york, zinc), lucide icons; light theme, see §14        |
 | Forms     | TanStack Form + Zod schemas shared client/server                                   |
 | i18n      | Paraglide (`de` base, `en`) — all user-facing strings via messages                 |
 
@@ -439,3 +439,26 @@ time are spread across side-by-side lanes (`assignLanes`) the way a calendar sho
 simultaneous meetings; lanes are counted per weekday, so a day with one clash draws all
 of its groups at half width. Anything outside the window is counted in a note above the
 grid — the list below is always complete.
+
+## 14. Look and feel (spike)
+
+A bright, near-white surface with the tennis-ball lime kept as the one loud accent.
+Everything lives in `src/styles.css`:
+
+- **Tokens over utilities.** Components reach for `bg-card`, `text-muted-foreground`,
+  `border-border` rather than raw `slate-*`, so the next change of mind is a change to
+  the `:root` block alone. The one deliberate exception is a saturated fill that carries
+  its own text, such as the amber "active filter" tab.
+- **Fill vs ink.** `--primary` is lime-500, which reads well as a button fill under
+  near-black text (10.2:1) but is nearly invisible _as_ a mark on white (2.0:1). Anything
+  drawn thin — a link, a radio dot, a slider edge — uses `--primary-ink` (lime-700,
+  5.0:1) instead. Reaching for `text-primary` on a light surface is almost always wrong.
+- **Depth from shadow.** A dark theme separates surfaces by making them lighter; a light
+  one cannot, so cards carry a soft two-stage shadow instead.
+- **Badges are tints, not fills.** Status and ball badges pair a pale background with
+  saturated text. Solid colour blocks shout far louder than a status deserves on white.
+- **Base size** is 104.2% (16.67px), half a point above the browser default, as a
+  percentage so a reader who has already raised their own base size keeps the increase.
+
+Every foreground/background pair in the palette clears WCAG AA (4.5:1 for text, 3:1 for
+UI marks); the tightest are muted text at 4.55:1 and the collected-status badge at 4.55:1.

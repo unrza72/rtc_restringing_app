@@ -49,16 +49,16 @@ function PlansPage() {
                   <Link
                     to="/training/plans/$id"
                     params={{ id: plan.id }}
-                    className="font-medium text-slate-200 underline-offset-4 hover:underline"
+                    className="font-medium text-foreground underline-offset-4 hover:underline"
                   >
                     {plan.name}
                   </Link>
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-muted-foreground">
                     {formatDate(plan.createdAt)} ·{' '}
                     {m.training_plan_by({ name: plan.createdBy.name })}
                   </span>
                   <span className="ml-auto flex items-center gap-3 text-xs">
-                    <span className="text-slate-300">
+                    <span className="text-foreground">
                       {m.training_plan_group_count({
                         count: plan._count.groups,
                       })}
@@ -67,7 +67,7 @@ function PlansPage() {
                       className={
                         plan._count.unplaced > 0
                           ? 'text-amber-400'
-                          : 'text-slate-500'
+                          : 'text-muted-foreground'
                       }
                     >
                       {m.training_plan_unplaced_count({

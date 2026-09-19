@@ -63,7 +63,7 @@ function PlanPage() {
     <div className="grid gap-6">
       <Link
         to="/training/plans"
-        className="text-sm text-slate-400 underline-offset-4 hover:underline"
+        className="text-sm text-muted-foreground underline-offset-4 hover:underline"
       >
         ← {m.common_back()}
       </Link>
@@ -74,7 +74,7 @@ function PlanPage() {
         <CardHeader>
           <CardTitle className="flex flex-wrap items-center gap-3 text-base">
             {plan.name}
-            <span className="text-xs font-normal text-slate-500">
+            <span className="text-xs font-normal text-muted-foreground">
               {formatDate(plan.createdAt)} ·{' '}
               {m.training_plan_by({ name: plan.createdBy.name })}
             </span>
@@ -115,9 +115,9 @@ function PlanPage() {
       </Card>
 
       <section className="grid gap-3">
-        <h2 className="text-lg font-bold tracking-tight text-white">
+        <h2 className="text-lg font-bold tracking-tight text-foreground">
           {m.training_groups_title()}{' '}
-          <span className="text-sm font-normal text-slate-500">
+          <span className="text-sm font-normal text-muted-foreground">
             {m.training_plan_group_count({ count: plan.groups.length })}
           </span>
         </h2>
@@ -133,7 +133,7 @@ function PlanPage() {
             <Card>
               <CardContent className="grid gap-3 py-4">
                 {hidden > 0 && (
-                  <p className="rounded-md border border-amber-700/50 bg-amber-950/40 px-3 py-2 text-xs text-amber-200">
+                  <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                     {m.training_schedule_outside({ count: hidden })}
                   </p>
                 )}
@@ -156,7 +156,7 @@ function PlanPage() {
                     {groups.map((group) => (
                       <li key={group.id} className="grid gap-1.5 py-3">
                         <div className="flex flex-wrap items-center gap-2.5">
-                          <span className="font-mono text-sm text-slate-200">
+                          <span className="font-mono text-sm text-foreground">
                             {formatSlot(group.startMin, group.endMin)}
                           </span>
                           <Badge
@@ -165,12 +165,12 @@ function PlanPage() {
                           >
                             {m[`training_ball_${group.ball as Ball}`]()}
                           </Badge>
-                          <span className="text-xs text-slate-500">
+                          <span className="text-xs text-muted-foreground">
                             {m.training_group_court({ court: group.court })}
                           </span>
-                          <span className="ml-auto text-xs text-slate-400">
+                          <span className="ml-auto text-xs text-muted-foreground">
                             {m.training_group_trainer()}:{' '}
-                            <span className="text-slate-200">
+                            <span className="text-foreground">
                               {group.trainer.name}
                             </span>
                           </span>
@@ -179,11 +179,11 @@ function PlanPage() {
                           {group.members.map(({ person }) => (
                             <span
                               key={person.id}
-                              className="rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1 text-xs text-slate-300"
+                              className="rounded-lg border border-border bg-surface-sunken px-2.5 py-1 text-xs text-foreground"
                             >
                               {person.name}
                               {person.strength !== null && (
-                                <span className="ml-1.5 text-slate-500">
+                                <span className="ml-1.5 text-muted-foreground">
                                   {person.strength}
                                 </span>
                               )}
@@ -201,9 +201,9 @@ function PlanPage() {
       </section>
 
       <section className="grid gap-3">
-        <h2 className="text-lg font-bold tracking-tight text-white">
+        <h2 className="text-lg font-bold tracking-tight text-foreground">
           {m.training_unplaced_title()}{' '}
-          <span className="text-sm font-normal text-slate-500">
+          <span className="text-sm font-normal text-muted-foreground">
             {m.training_plan_unplaced_count({ count: plan.unplaced.length })}
           </span>
         </h2>
@@ -220,7 +220,7 @@ function PlanPage() {
                     key={entry.id}
                     className="flex flex-wrap items-center gap-3 py-2.5"
                   >
-                    <span className="text-sm text-slate-200">
+                    <span className="text-sm text-foreground">
                       {entry.person.name}
                     </span>
                     {entry.person.ball && (
@@ -249,7 +249,7 @@ function Knob({ label, value }: { label: string; value: number }) {
   return (
     <div className="flex gap-1.5">
       <dt className="text-muted-foreground">{label}</dt>
-      <dd className="font-medium text-slate-200">{value}</dd>
+      <dd className="font-medium text-foreground">{value}</dd>
     </div>
   )
 }
