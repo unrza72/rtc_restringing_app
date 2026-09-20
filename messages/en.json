@@ -114,6 +114,7 @@
   "request_timeline": "History",
   "request_cancel": "Cancel request",
   "request_cancel_confirm": "Cancel this restringing request?",
+  "request_cancel_keep": "Keep it",
   "request_used_string": "Strung with",
   "request_string_price": "String",
   "request_labour_price": "Labour",

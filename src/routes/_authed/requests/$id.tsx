@@ -10,6 +10,13 @@ import {
 import { canTransition } from '#/lib/status'
 import { m } from '#/paraglide/messages'
 import { Button } from '#/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '#/components/ui/dialog'
 import { FormError } from '#/components/form-field'
 import { RequestSummary, RequestTimeline } from '#/components/request-detail'
 
@@ -26,6 +33,8 @@ function RequestDetailPage() {
   const cancel = useServerFn(cancelRequest)
   const collect = useServerFn(collectRequest)
   const [error, setError] = useState<string | null>(null)
+  const [confirmingCancel, setConfirmingCancel] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
 
   async function run(action: () => Promise<unknown>) {
     setError(null)
@@ -34,6 +43,16 @@ function RequestDetailPage() {
       await router.invalidate()
     } catch (e) {
       setError(e instanceof Error ? e.message : m.common_error_generic())
+    }
+  }
+
+  async function handleCancel() {
+    setCancelling(true)
+    try {
+      await run(() => cancel({ data: { id: request.id } }))
+    } finally {
+      setCancelling(false)
+      setConfirmingCancel(false)
     }
   }
 
@@ -62,10 +81,7 @@ function RequestDetailPage() {
             <Button
               variant="ghost"
               className="text-destructive hover:text-destructive"
-              onClick={() => {
-                if (!confirm(m.request_cancel_confirm())) return
-                void run(() => cancel({ data: { id: request.id } }))
-              }}
+              onClick={() => setConfirmingCancel(true)}
             >
               {m.request_cancel()}
             </Button>
@@ -74,6 +90,32 @@ function RequestDetailPage() {
       )}
 
       <RequestTimeline events={request.events} />
+
+      <Dialog open={confirmingCancel} onOpenChange={setConfirmingCancel}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{m.request_cancel_confirm()}</DialogTitle>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={cancelling}
+              onClick={() => setConfirmingCancel(false)}
+            >
+              {m.request_cancel_keep()}
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={cancelling}
+              onClick={() => void handleCancel()}
+            >
+              {cancelling ? m.common_loading() : m.request_cancel()}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

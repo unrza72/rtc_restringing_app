@@ -114,6 +114,7 @@
   "request_timeline": "Verlauf",
   "request_cancel": "Auftrag stornieren",
   "request_cancel_confirm": "Diesen Besaitungsauftrag stornieren?",
+  "request_cancel_keep": "Auftrag behalten",
   "request_used_string": "Bespannt mit",
   "request_string_price": "Saite",
   "request_labour_price": "Arbeitslohn",
