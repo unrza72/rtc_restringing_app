@@ -5,6 +5,7 @@ import { prisma } from '#/db'
 import { adminMiddleware } from '#/lib/auth-middleware'
 import { memberDecisionSchema, memberRolesSchema } from '#/lib/schemas'
 import { parseRoles, serializeRoles } from '#/lib/roles'
+import { m } from '#/paraglide/messages'
 
 /** Admin-only member administration: approvals and role assignment. */
 
@@ -34,7 +35,7 @@ export const decideMember = createServerFn({ method: 'POST' })
   .validator(memberDecisionSchema)
   .handler(async ({ context, data }) => {
     if (data.userId === context.user.id) {
-      throw new Error('You cannot change your own approval status')
+      throw new Error(m.members_cannot_change_own_status())
     }
 
     const { count } = await prisma.user.updateMany({
@@ -60,7 +61,7 @@ export const setMemberRoles = createServerFn({ method: 'POST' })
   .validator(memberRolesSchema)
   .handler(async ({ context, data }) => {
     if (data.userId === context.user.id && !data.roles.includes('admin')) {
-      throw new Error('You cannot remove your own admin role')
+      throw new Error(m.members_cannot_remove_own_admin())
     }
 
     // Never leave the club without an admin.
@@ -73,7 +74,7 @@ export const setMemberRoles = createServerFn({ method: 'POST' })
         const admins = await prisma.user.count({
           where: { role: { contains: 'admin' }, status: 'APPROVED' },
         })
-        if (admins <= 1) throw new Error('The club needs at least one admin')
+        if (admins <= 1) throw new Error(m.admin_last_admin())
       }
     }
 

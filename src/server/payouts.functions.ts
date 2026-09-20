@@ -3,6 +3,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { prisma } from '#/db'
 import { controllerMiddleware } from '#/lib/auth-middleware'
 import { recordReimbursementSchema } from '#/lib/schemas'
+import { m } from '#/paraglide/messages'
 
 /**
  * The labour payout ledger. A stringer earns their share of a job's price —
@@ -96,9 +97,7 @@ export const recordReimbursement = createServerFn({ method: 'POST' })
     const outstanding =
       (earned._sum.labourPriceCents ?? 0) - (reimbursed._sum.amountCents ?? 0)
     if (data.amountCents > outstanding) {
-      throw new Error(
-        'That is more than the outstanding balance for this stringer',
-      )
+      throw new Error(m.payouts_exceeds_outstanding())
     }
 
     return prisma.reimbursement.create({

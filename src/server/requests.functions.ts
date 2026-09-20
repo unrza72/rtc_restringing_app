@@ -16,7 +16,8 @@ import {
   setPaidSchema,
 } from '#/lib/schemas'
 import { REQUEST_STATUSES, canTransition, nextStatus } from '#/lib/status'
-import type { RequestAction } from '#/lib/status'
+import type { RequestAction, RequestStatus } from '#/lib/status'
+import { m } from '#/paraglide/messages'
 
 const requestInclude = {
   racket: true,
@@ -121,7 +122,7 @@ export const createRequest = createServerFn({ method: 'POST' })
         where: { id: data.clubStringId, active: true },
         select: { id: true },
       })
-      if (!clubString) throw new Error('That string is no longer available')
+      if (!clubString) throw new Error(m.request_string_unavailable())
     }
 
     return prisma.$transaction(async (tx) => {
@@ -175,7 +176,11 @@ async function transition({
     })
     if (!current) throw notFound()
     if (!canTransition(current.status, action)) {
-      throw new Error(`Cannot ${action} a request that is ${current.status}`)
+      throw new Error(
+        m.request_transition_blocked({
+          status: m[`status_${current.status as RequestStatus}`](),
+        }),
+      )
     }
 
     const { count } = await tx.stringingRequest.updateMany({
@@ -183,9 +188,7 @@ async function transition({
       data: { ...data, status: to },
     })
     if (count === 0) {
-      throw new Error(
-        'Someone else changed this request — reload and try again',
-      )
+      throw new Error(m.queue_conflict())
     }
 
     await tx.requestEvent.create({
@@ -310,7 +313,7 @@ export const setRequestPaid = createServerFn({ method: 'POST' })
     })
     if (!request) throw notFound()
     if (!['DONE', 'COLLECTED'].includes(request.status)) {
-      throw new Error('Only a finished job can be marked paid')
+      throw new Error(m.request_must_be_finished_to_pay())
     }
 
     await prisma.stringingRequest.update({

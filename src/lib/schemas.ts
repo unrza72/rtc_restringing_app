@@ -1,12 +1,23 @@
 import { z } from 'zod'
 
 import { locales } from '#/paraglide/runtime'
+import { m } from '#/paraglide/messages'
 
 import { ROLES, USER_STATUSES } from './roles'
 import { STRING_SOURCES } from './status'
 import { BALLS, MAX_STRENGTH, MIN_STRENGTH, PERSON_KINDS } from './training'
 
-/** Shared by the forms and the server functions, so both reject the same input. */
+/**
+ * Shared by the forms and the server functions, so both reject the same input.
+ *
+ * Validation messages use Zod's `{ error: () => m.foo() }` function form rather
+ * than a plain string. These schemas are built once, at module load, and shared
+ * across every request — a plain string (or an `m.foo()` call made directly at
+ * that call site) would freeze in whatever locale happened to be active at that
+ * first import. `error`'s function form defers the `m.foo()` call to parse
+ * time, so it reads the current request's locale instead. Zod's `message` is
+ * the same idea but string-only (no function form, deprecated) — use `error`.
+ */
 
 const optionalText = (max: number) =>
   z
@@ -18,7 +29,11 @@ const optionalText = (max: number) =>
     .default(null)
 
 export const racketInputSchema = z.object({
-  label: z.string().trim().min(1, 'Give the racket a name').max(80),
+  label: z
+    .string()
+    .trim()
+    .min(1, { error: () => m.racket_name_required() })
+    .max(80),
   brand: optionalText(60),
   model: optionalText(60),
   headSizeCm2: z.coerce
@@ -36,12 +51,12 @@ export type RacketInput = z.infer<typeof racketInputSchema>
 
 const tension = z.coerce
   .number()
-  .min(10, 'Tension looks too low')
-  .max(35, 'Tension looks too high')
+  .min(10, { error: () => m.request_tension_too_low() })
+  .max(35, { error: () => m.request_tension_too_high() })
 
 export const requestInputSchema = z
   .object({
-    racketId: z.string().min(1, 'Pick a racket'),
+    racketId: z.string().min(1, { error: () => m.request_racket_required() }),
     stringSource: z.enum(STRING_SOURCES),
     clubStringId: z.string().nullable().default(null),
     ownStringName: optionalText(120),
@@ -52,11 +67,11 @@ export const requestInputSchema = z
   })
   // A request names exactly one string: a catalogue entry or the member's own.
   .refine((v) => v.stringSource !== 'CLUB' || !!v.clubStringId, {
-    message: 'Pick a string from the club catalogue',
+    error: () => m.request_club_string_required(),
     path: ['clubStringId'],
   })
   .refine((v) => v.stringSource !== 'MEMBER' || !!v.ownStringName, {
-    message: 'Name the string you are bringing',
+    error: () => m.request_own_string_required(),
     path: ['ownStringName'],
   })
   .transform((v) => ({
@@ -79,7 +94,7 @@ export const completeInputSchema = z.object({
   usedStringName: z
     .string()
     .trim()
-    .min(1, 'What did you string it with?')
+    .min(1, { error: () => m.request_used_string_required() })
     .max(120),
   usedTensionMain: tension,
   usedTensionCross: tension.nullable().default(null),
@@ -89,7 +104,11 @@ export const completeInputSchema = z.object({
 })
 
 export const clubStringInputSchema = z.object({
-  name: z.string().trim().min(1, 'Name the string').max(80),
+  name: z
+    .string()
+    .trim()
+    .min(1, { error: () => m.admin_string_name_required() })
+    .max(80),
   gauge: optionalText(10),
   priceCents: z.coerce
     .number()
@@ -130,7 +149,11 @@ export const localeInputSchema = z.object({ locale: z.enum(locales) })
 
 export const trainingPersonInputSchema = z
   .object({
-    name: z.string().trim().min(1, 'Give the person a name').max(80),
+    name: z
+      .string()
+      .trim()
+      .min(1, { error: () => m.training_person_name_required() })
+      .max(80),
     kind: z.enum(PERSON_KINDS),
     ball: z.enum(BALLS).nullable().default(null),
     strength: z.coerce
@@ -144,11 +167,11 @@ export const trainingPersonInputSchema = z
   // Ball and strength are what the solver groups on, so a trainee without them
   // could never be placed. Trainers are graded by neither.
   .refine((v) => v.kind !== 'TRAINEE' || v.ball !== null, {
-    message: 'Pick the ball this player trains with',
+    error: () => m.training_ball_required(),
     path: ['ball'],
   })
   .refine((v) => v.kind !== 'TRAINEE' || v.strength !== null, {
-    message: 'Rate the player from 0 to 5',
+    error: () => m.training_strength_required(),
     path: ['strength'],
   })
   .transform((v) => ({
@@ -163,7 +186,7 @@ const slotFields = {
   endMin: z.coerce.number().int().min(1).max(1440),
 }
 const endAfterStart = {
-  message: 'The end has to come after the start',
+  error: () => m.training_slot_end_after_start(),
   path: ['endMin'],
 }
 
@@ -183,7 +206,11 @@ export const setAvailabilitySchema = z.object({
 
 export const solvePlanSchema = z
   .object({
-    name: z.string().trim().min(1, 'Name the plan').max(80),
+    name: z
+      .string()
+      .trim()
+      .min(1, { error: () => m.training_plan_name_required() })
+      .max(80),
     minGroupSize: z.coerce.number().int().min(1).max(20),
     maxGroupSize: z.coerce.number().int().min(1).max(20),
     strengthSpread: z.coerce.number().min(0).max(5),
@@ -192,7 +219,7 @@ export const solvePlanSchema = z
     courtCount: z.coerce.number().int().min(1).max(20),
   })
   .refine((v) => v.maxGroupSize >= v.minGroupSize, {
-    message: 'The maximum cannot be below the minimum',
+    error: () => m.training_plan_max_below_min(),
     path: ['maxGroupSize'],
   })
 

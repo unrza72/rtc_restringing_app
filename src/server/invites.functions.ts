@@ -7,6 +7,7 @@ import { prisma } from '#/db'
 import { operatorMiddleware } from '#/lib/auth-middleware'
 import { isInviteActive } from '#/lib/invites'
 import { checkInviteSchema, createInviteSchema, idSchema } from '#/lib/schemas'
+import { m } from '#/paraglide/messages'
 
 /**
  * Invite links are how /signup is gated — see src/lib/auth.ts's
@@ -46,7 +47,7 @@ export const revokeInvite = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const invite = await prisma.invite.findUnique({ where: { id: data.id } })
     if (!invite) throw notFound()
-    if (invite.usedAt) throw new Error('This invite has already been used')
+    if (invite.usedAt) throw new Error(m.invites_already_used())
 
     await prisma.invite.updateMany({
       where: { id: data.id, revokedAt: null },

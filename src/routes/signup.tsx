@@ -60,12 +60,15 @@ function SignupPage() {
         inviteToken: search.token,
       })
       if (error) {
+        // better-auth's own error.message is raw, unlocalized English — never
+        // shown directly. Named codes get their own translated copy; anything
+        // else falls back to the generic message rather than leaking it.
         setFormError(
           error.code?.includes('EMAIL')
             ? m.auth_email_taken()
             : error.code?.includes('invite')
               ? m.auth_invite_invalid()
-              : (error.message ?? m.common_error_generic()),
+              : m.common_error_generic(),
         )
         return
       }

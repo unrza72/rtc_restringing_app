@@ -6,6 +6,7 @@ import { prisma } from '#/db'
 import { memberMiddleware } from '#/lib/auth-middleware'
 import { idSchema, racketInputSchema } from '#/lib/schemas'
 import { isOpen } from '#/lib/status'
+import { m } from '#/paraglide/messages'
 
 /**
  * Rackets are strictly owner-scoped: every query and mutation filters by the
@@ -82,9 +83,7 @@ export const setRacketArchived = createServerFn({ method: 'POST' })
     if (!racket) throw notFound()
 
     if (data.archived && racket.requests.some((r) => isOpen(r.status))) {
-      throw new Error(
-        'Finish or cancel the open requests for this racket first',
-      )
+      throw new Error(m.racket_archive_blocked())
     }
 
     await prisma.racket.update({
@@ -104,9 +103,7 @@ export const deleteRacket = createServerFn({ method: 'POST' })
     })
     if (!racket) throw notFound()
     if (racket._count.requests > 0) {
-      throw new Error(
-        'This racket has restringing history — archive it instead',
-      )
+      throw new Error(m.racket_delete_blocked())
     }
 
     await prisma.racket.delete({ where: { id: data.id } })

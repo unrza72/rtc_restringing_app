@@ -246,6 +246,23 @@ work with the route tree, which only knows the plain paths:
   falls back to the base locale during SSR and the output rewrite strips the prefix —
   turning every English URL into a redirect to its German twin.
 
+  Server function calls (`/_serverFn/...`) are the exception: that endpoint carries no
+  locale prefix of its own, so the `url` strategy has nothing to read there. The
+  middleware passes `effectiveRequestUrl` pointing at the `Referer` header for those
+  requests specifically (`handlerType === 'serverFn'`), since that's the calling page's
+  URL and does carry the prefix. Without this, every `m.*()` call made inside a server
+  function's handler — a business-rule error, a Zod validation message — would always
+  render in the base locale, regardless of which locale the calling page was actually
+  in. This only steers locale detection; `next()` still dispatches the real, untouched
+  request either way.
+
+  Every user-facing error thrown from a server function, and every validation message
+  in `src/lib/schemas.ts`, goes through `m.*()` for exactly this reason. Schemas are
+  built once at module load and reused across every request, so a plain string (or an
+  `m.foo()` call made directly at the schema definition) would freeze into whichever
+  locale was active at that first import — `schemas.ts` uses Zod's `{ error: () => m.foo() }`
+  function form instead, which defers the call to parse time.
+
 **Per-account language.** `User.locale` (`en` | `de` | `null`) follows a signed-in
 member across devices:
 
