@@ -7,6 +7,7 @@
   "language_switch_to": "Switch to {locale}",
   "current_locale": "Current locale: {locale}",
   "nav_dashboard": "Dashboard",
+  "breadcrumb_nav_label": "Breadcrumb",
   "nav_rackets": "My rackets",
   "nav_requests": "My requests",
   "nav_queue": "Queue",

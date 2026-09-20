@@ -216,6 +216,16 @@ and controller are independent specialties rather than one ranked above the othe
 Every server function re-checks — the route guard is UX, the server function is
 the security boundary.
 
+`src/components/breadcrumbs.tsx` renders a trail under the header on every authed
+page, driven by TanStack Router's `useMatches()` rather than a hand-maintained tree:
+a `LABELS` map keyed by route id supplies the crumb text (a static message, or a
+function reading the match's own `loaderData` for a detail page's entity name), and
+the link target is always the match's own `pathname` — never hand-typed. A route id
+mapped to `null`, or missing from the map entirely, contributes no crumb, which is
+how pathless layouts (`/billing`, `/queue`, `/admin`) and the public shell stay out of
+the trail without special-casing them. Absent on the dashboard itself and on `/`,
+`/login`, `/signup`, `/pending` — a one-item trail points nowhere useful.
+
 ## 7. Out of scope for v1
 
 Push/email notifications, actual payment/settlement (a price is recorded per job, nothing

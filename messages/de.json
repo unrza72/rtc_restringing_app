@@ -7,6 +7,7 @@
   "language_switch_to": "Zu {locale} wechseln",
   "current_locale": "Aktuelle Sprache: {locale}",
   "nav_dashboard": "Übersicht",
+  "breadcrumb_nav_label": "Navigationspfad",
   "nav_rackets": "Meine Schläger",
   "nav_requests": "Meine Aufträge",
   "nav_queue": "Warteschlange",
