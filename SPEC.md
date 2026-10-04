@@ -1,8 +1,12 @@
-# RTC Restringing App — Spec (v1.0, built)
+# RTC Restringing App — Spec (v1.1, built)
 
 Racket restringing requests for a local tennis club. Members register rackets and
 request a restring; operators (members who string) work the queue and mark jobs done.
 New accounts are unusable until an admin approves them.
+
+Since v1.0 the app has grown a billing/payout side (§2, §4), invite-gated signup (§9),
+a training planner (§13), a light theme (§14) and developer tooling (§15). **What the
+spec promises but the code does not yet do is collected in §12** — start there.
 
 ## 1. Stack (already scaffolded)
 
@@ -14,6 +18,7 @@ New accounts are unusable until an admin approves them.
 | UI        | Tailwind 4 + shadcn/ui (new-york, zinc), lucide icons; light theme, see §14        |
 | Forms     | TanStack Form + Zod schemas shared client/server                                   |
 | i18n      | Paraglide (`de` base, `en`) — all user-facing strings via messages                 |
+| Tests     | HTTP-level e2e script plus two pure unit-check scripts — see §11                   |
 
 ## 2. Roles
 
@@ -45,7 +50,12 @@ to create an account without one.
 3. They are signed in but every app route guard bounces them to `/pending`
    ("waiting for approval") — they can only sign out.
 4. Admin approves at `/admin/members` → `status = APPROVED`, full access.
-   Rejecting sets `status = REJECTED` (kept for audit, cannot sign in).
+   Rejecting sets `status = REJECTED` (kept for audit) and deletes the member's
+   sessions, so they are signed out at once. **As built, a rejected member can still
+   sign in again** — they are then confined to `/pending`, which shows "account not
+   approved" instead of "waiting". v1.0 said "cannot sign in"; see §12.
+5. Admins cannot change their own approval status or drop their own admin role, and
+   the last approved admin cannot be demoted — the club always keeps one.
 
 The first user created by the seed script is `admin` + `APPROVED` (bootstrap) —
 seeding bypasses better-auth (and so the invite gate) entirely; see §9.
@@ -122,6 +132,8 @@ model StringingRequest {
   collectedAt   DateTime?
   operatorNotes String?
   usedStringName String? // what was actually used, prefilled on complete
+  usedTensionMain  Float? // what was actually strung, prefilled from tensionMain
+  usedTensionCross Float?
   stringPriceCents Int?  // materials, prefilled from ClubString.priceCents
   labourPriceCents Int?  // the stringing fee, entered by the operator
 
@@ -140,6 +152,7 @@ model RequestEvent {
   requestId String
   request   StringingRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
   actorId   String
+  actor     User     @relation(fields: [actorId], references: [id])
   fromStatus String?
   toStatus   String
   note      String?
@@ -161,9 +174,13 @@ model Reimbursement {
 }
 ```
 
+`Invite` is specified in §9 and the six training-planner models in §13; both live in the
+same `prisma/schema.prisma`.
+
 Deleting a racket that has requests is blocked → archive instead, so history stays intact.
-Same for a `ClubString` that has been used: deactivate (`active = false`) rather than delete,
-so past jobs keep showing what was strung.
+Archiving is in turn blocked while the racket still has an open request. Same for a
+`ClubString` that has been used: "remove" deactivates it (`active = false`) rather than
+deleting, so past jobs keep showing what was strung; an unused one is deleted outright.
 
 **String selection invariant** (enforced in the Zod schema and re-checked server-side):
 `stringSource = CLUB` → `clubStringId` set, `ownStringName` null;
@@ -178,43 +195,64 @@ REQUESTED --accept(operator)--> ACCEPTED --complete(operator)--> DONE --collect-
 ```
 
 - Only `REQUESTED` and `ACCEPTED` can be cancelled; the owner can cancel their own,
-  admins can cancel any.
+  admins can cancel any. **The admin half is server-side only** — no screen offers
+  the button to anyone but the owner (§12).
+- Cancelling asks for confirmation in a dialog. The server accepts an optional reason
+  (stored as the event's `note`); the dialog does not ask for one yet (§12).
 - `accept` claims the job for that operator; an operator can release back to `REQUESTED`.
-- `complete` requires the actually used string + tension and a price (all prefilled —
-  string and tension from the request, price from `ClubString.priceCents`; the operator
-  can correct any of them, e.g. when they had to substitute a string).
+  Release and complete are limited to the claiming operator — admins may act on any job.
+- `complete` requires the actually used string and main tension (both prefilled from the
+  request; the operator can correct them, e.g. when they had to substitute a string).
+  String and labour price are prefilled — string price from `ClubString.priceCents` —
+  but **optional**: v1.0 said "requires a price", the code accepts none (§12).
 - `collect` can be triggered by the operator (handed over) or the member (picked up).
-- Every transition writes a `RequestEvent`.
+- Every transition writes a `RequestEvent`. The current status is part of the update's
+  `where` clause, so two operators racing for one job resolve to exactly one winner;
+  the loser gets a localized "someone else changed this request" error.
+- Paid state (§2, controller) is deliberately **not** a transition: it is set/reset on
+  `DONE` or `COLLECTED` jobs only, and never moves the status.
 
 ## 6. Routes
 
-| Route                                         | Access                  | Purpose                                                                                 |
-| --------------------------------------------- | ----------------------- | --------------------------------------------------------------------------------------- |
-| `/`                                           | public                  | Landing → redirects to `/dashboard` when signed in                                      |
-| `/login`                                      | public                  | email + password                                                                        |
-| `/signup`                                     | public, needs `?token=` | invite-gated — see §9                                                                   |
-| `/pending`                                    | authed, PENDING         | "waiting for approval"                                                                  |
-| `/dashboard`                                  | member                  | my open requests + quick "new request"                                                  |
-| `/rackets`, `/rackets/new`, `/rackets/$id`    | member                  | manage own rackets                                                                      |
-| `/requests`, `/requests/new`, `/requests/$id` | member                  | own requests + detail/timeline                                                          |
-| `/queue`                                      | operator                | open + own claimed jobs, filter by status, sortable/searchable table                    |
-| `/queue/$id`                                  | operator                | accept / complete / collect                                                             |
-| `/billing`                                    | operator OR controller  | every restrung racket: string/labour/total price, paid state, sortable/searchable table |
-| `/billing/payouts`                            | controller              | labour earned/reimbursed/outstanding per stringer, reimbursement ledger                 |
-| `/invites`                                    | operator OR admin       | create/list/revoke invite links — see §9                                                |
-| `/training`                                   | coach                   | redirects to the roster                                                                 |
-| `/training/people`, `/training/people/$id`    | coach                   | trainee/trainer roster + weekly availability                                            |
-| `/training/plans`, `/training/plans/$id`      | coach                   | solver knobs, saved runs, groups and who was left out                                   |
-| `/admin/members`                              | admin                   | approve, reject, set roles                                                              |
-| `/admin/strings`                              | admin                   | club string catalogue: add, edit price, deactivate                                      |
-| `/api/auth/$`                                 | public                  | better-auth handler (exists)                                                            |
+| Route                                         | Access                    | Purpose                                                                                            |
+| --------------------------------------------- | ------------------------- | -------------------------------------------------------------------------------------------------- |
+| `/`                                           | public                    | Landing → redirects to `/dashboard` when signed in                                                 |
+| `/login`                                      | public                    | email + password                                                                                   |
+| `/signup`                                     | public, needs `?token=`   | invite-gated — see §9                                                                              |
+| `/pending`                                    | authed, PENDING           | "waiting for approval"                                                                             |
+| `/dashboard`                                  | member                    | my open requests + quick "new request"; operator (jobs waiting) and admin (pending members) panels |
+| `/rackets`, `/rackets/new`, `/rackets/$id`    | member                    | manage own rackets                                                                                 |
+| `/requests`, `/requests/new`, `/requests/$id` | member                    | own requests + detail/timeline                                                                     |
+| `/queue`                                      | operator                  | open + own claimed jobs, filter by status, sortable/searchable table                               |
+| `/queue/$id`                                  | operator                  | accept / complete / collect                                                                        |
+| `/billing`                                    | operator OR controller    | every restrung racket: string/labour/total price, paid state, sortable/searchable table            |
+| `/billing/payouts`                            | controller                | labour earned/reimbursed/outstanding per stringer, reimbursement ledger                            |
+| `/invites`                                    | operator (admin inherits) | create/list/revoke invite links — see §9                                                           |
+| `/training`                                   | coach                     | redirects to the roster                                                                            |
+| `/training/people`, `/training/people/$id`    | coach                     | trainee/trainer roster + weekly availability                                                       |
+| `/training/plans`, `/training/plans/$id`      | coach                     | solver knobs, saved runs, groups and who was left out                                              |
+| `/admin/members`                              | admin                     | approve, reject, set roles                                                                         |
+| `/admin/strings`                              | admin                     | club string catalogue: add, edit price, deactivate                                                 |
+| `/api/auth/$`                                 | public                    | better-auth handler (exists)                                                                       |
 
 Guards live in one place: `beforeLoad` on a `_authed` pathless layout route that loads
 the session, checks `status === APPROVED`, and a `requireRole()` helper for
-`/queue` and `/admin`. `/billing` uses `requireAnyRole()` instead, since operator
-and controller are independent specialties rather than one ranked above the other.
-Every server function re-checks — the route guard is UX, the server function is
-the security boundary.
+`/queue`, `/admin`, `/invites`, `/training` and `/billing/payouts`. `/billing` uses
+`requireAnyRole()` instead, since operator and controller are independent specialties
+rather than one ranked above the other. Every server function re-checks — the route
+guard is UX, the server function is the security boundary. The server-side
+middlewares in `src/lib/auth-middleware.ts` are `authed` (any session, even PENDING —
+used only for the locale functions), `member`, `operator`, `controller`, `coach`,
+`admin` and `billingView` (operator **or** controller).
+
+**CSRF.** Server functions are same-origin RPC endpoints, and every mutation is one.
+`src/start.ts` registers TanStack Start's CSRF middleware, scoped to
+`handlerType === 'serverFn'`: Start only adds it by default when an app declares no
+start instance of its own, and this one does (for the locale middleware, §8). Ordinary
+document navigations and the better-auth API routes are not affected.
+
+Owner-scoped reads (rackets, own requests) answer a foreign id with a `404`, never a
+`403` — a guessed id should not even confirm that the row exists.
 
 `src/components/breadcrumbs.tsx` renders a trail under the header on every authed
 page, driven by TanStack Router's `useMatches()` rather than a hand-maintained tree:
@@ -228,9 +266,10 @@ the trail without special-casing them. Absent on the dashboard itself and on `/`
 
 ## 7. Out of scope for v1
 
-Push/email notifications, actual payment/settlement (a price is recorded per job, nothing
-more), stock levels for club strings, photos of rackets, statistics/exports, password reset
-by email, tracking physical drop-off/handover of the racket, multi-club/tenant support.
+Push/email notifications, actual payment/settlement (the app records prices, a paid flag
+and stringer payouts — money itself changes hands outside it), stock levels for club
+strings, photos of rackets, statistics/exports, password reset by email, tracking physical
+drop-off/handover of the racket, multi-club/tenant support, a dark mode.
 
 ## 8. Locale routing
 
@@ -341,41 +380,159 @@ worth remembering if this ever needs to change.
 | String choice   | Club catalogue (`ClubString`, admin-maintained) **or** own string as free text                                         |
 | Email at signup | Required — real address, enables notifications/reset later                                                             |
 | Language        | Keep `en` + `de` switchable; `de` is the base locale, per-account preference persists                                  |
-| Price           | Tracked per job (`priceCents`), prefilled from the catalogue                                                           |
+| Price           | Tracked per job, split into `stringPriceCents` (prefilled from the catalogue) and `labourPriceCents`; both optional    |
+| Payment         | A paid flag per job (controller), plus an append-only labour payout ledger per stringer — no real settlement           |
+| Light theme     | Committed light-only palette; no dark mode or user toggle                                                              |
 | Racket handover | Not tracked in the app                                                                                                 |
 | Signup access   | Invite-link only, single-use, expiry configurable (default 24h) — custom, not better-auth's `organization` invitations |
 
 ## 11. What is built
 
-All of it. `pnpm test:e2e` drives the real HTTP stack (better-auth + the server
-function RPC endpoints) and covers the approval gate, ownership isolation,
-role enforcement, the full request lifecycle, and rejection revoking access.
+Everything in §2–§10, §13 and §14, except the items listed in §12. All feature and
+spike branches are merged into `main`.
 
-| Area                  | Files                                                                                   |
-| --------------------- | --------------------------------------------------------------------------------------- |
-| Auth config           | `src/lib/auth.ts`, `src/lib/auth-client.ts`                                             |
-| Session (server-only) | `src/lib/auth.server.ts` — split out so Prisma never reaches the client bundle          |
-| Server fn guards      | `src/lib/auth-middleware.ts` (`member` / `operator` / `admin`)                          |
-| Route guards          | `src/lib/guards.ts`, `src/routes/_authed.tsx`, `_authed/queue.tsx`, `_authed/admin.tsx` |
-| Domain rules          | `src/lib/status.ts` (state machine), `src/lib/schemas.ts` (Zod)                         |
-| Server functions      | `src/server/*.functions.ts`                                                             |
-| Screens               | `src/routes/**`                                                                         |
-| i18n                  | `messages/{en,de}.json`, `src/lib/labels.ts`                                            |
+### Beyond the v1.0 spec
 
-## 12. Known gaps
+| Added                        | Where / notes                                                                                                      |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Controller role, paid state  | §2, §5 — `/billing`; `setRequestPaid` only on `DONE`/`COLLECTED`                                                   |
+| Labour payout ledger         | §4 `Reimbursement` — `/billing/payouts`; balance recomputed server-side so a stale screen can't pay out twice      |
+| Invite-gated signup          | §9 — replaces open signup                                                                                          |
+| Coach role, training planner | §13 — roster, availability timetable, standalone solver, saved plans with a week view                              |
+| Per-account language         | §8 — German default, preference follows the member across devices                                                  |
+| Localized errors             | §8 — server-thrown errors and Zod messages follow the calling page's locale, not just the UI chrome                |
+| Sortable, searchable tables  | `/queue` and `/billing` — shared `src/components/sortable-table.tsx`; missing values sort last in either direction |
+| Breadcrumbs                  | §6 — on every authed page, derived from the route matches                                                          |
+| Confirmation dialogs         | Radix `Dialog` (cancel request), anchored below the header rather than centred — §14                               |
+| Light theme                  | §14 — replaces the prototype's dark workshop look                                                                  |
+| Simplified racket form       | Name only by default; brand/model/head size/pattern/grip behind "add more details"                                 |
+| Dashboard panels             | Jobs waiting (operators), members awaiting approval (admins)                                                       |
+| Developer tooling            | §15 — seeded demo data, data reset, dev quick-login                                                                |
 
-- No automated unit tests; `scripts/e2e-flow.ts` is the safety net and needs a
-  running dev server.
-- Cancel takes an optional reason server-side, but the UI does not ask for one.
-- An operator who substitutes a different string just overwrites `usedStringName`;
-  the member finds out on the detail page rather than being asked first.
-- `fetchSession` runs on every navigation. Correct and always fresh, but it is one
-  RPC per navigation — worth caching if the club ever outgrows it.
+### Tests
 
-## 13. Training planner (spike)
+None of these run in CI — there is no CI configuration in the repo.
+
+| Command               | What it covers                                                                                                                                                                                                                                     |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm test:e2e`       | Real HTTP stack (better-auth + server-function RPC) against a **running dev server**: auth, invite gate, approval, rackets, strings, request lifecycle, paid state, payout ledger, locale persistence, training planner, rejection revoking access |
+| `pnpm test:solver`    | The grouping solver in isolation — hard rules, determinism, unplaced reasons                                                                                                                                                                       |
+| `pnpm test:timetable` | Timetable cell⇄slot conversion, configurable window, out-of-window preservation, lane packing                                                                                                                                                      |
+
+The e2e script mutates the dev database; run `pnpm db:reset-data && pnpm db:seed`
+before a second run, or balance assertions in the payout section fail on leftovers.
+
+### Code map
+
+| Area                  | Files                                                                                                                  |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Auth config           | `src/lib/auth.ts`, `src/lib/auth-client.ts`                                                                            |
+| Session (server-only) | `src/lib/auth.server.ts` — split out so Prisma never reaches the client bundle                                         |
+| Server fn guards      | `src/lib/auth-middleware.ts` (`authed` / `member` / `operator` / `controller` / `coach` / `admin` / `billingView`)     |
+| Route guards          | `src/lib/guards.ts`, `src/routes/_authed.tsx` and the `queue`, `admin`, `billing`, `invites`, `training` layout routes |
+| Request middleware    | `src/start.ts` — CSRF + per-request locale                                                                             |
+| Roles                 | `src/lib/roles.ts` (cascade)                                                                                           |
+| Domain rules          | `src/lib/status.ts` (state machine), `src/lib/schemas.ts` (Zod), `src/lib/training.ts` (timetable maths)               |
+| Solver                | `src/solver/` — framework-free                                                                                         |
+| Server functions      | `src/server/*.functions.ts`                                                                                            |
+| Screens               | `src/routes/**`, shared pieces in `src/components/`                                                                    |
+| i18n                  | `messages/{en,de}.json`, `src/lib/labels.ts`                                                                           |
+| Theme                 | `src/styles.css`                                                                                                       |
+
+## 12. Still missing
+
+### Spec and code disagree
+
+Each needs a decision: change the code to match the spec, or accept the code and drop
+the sentence from the spec.
+
+| Spec says                             | Code does                                                                                                 | Where                                 |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| Admins can cancel any request (§5)    | Server allows it; **no screen shows the button** — `/requests/$id` only for the owner, `/queue/$id` never | `requests/$id.tsx`, `queue/$id.tsx`   |
+| A rejected member cannot sign in (§3) | Sessions are deleted, but they **can sign in again** and land on `/pending`'s "not approved" screen       | `members.functions.ts`, `pending.tsx` |
+| `complete` requires a price (§5)      | String and labour price are **optional**                                                                  | `schemas.ts` `completeInputSchema`    |
+
+### Not built yet
+
+- **Cancel reason.** The server stores an optional reason on the cancel event; the
+  dialog does not ask for one.
+- **Substitute-string consent.** An operator who uses a different string just
+  overwrites `usedStringName`; the member finds out on the detail page rather than
+  being asked first.
+- **Invite revocation still uses the browser's native `confirm()`** (`invites.tsx`),
+  unlike cancel, which moved to a localized Radix dialog.
+- **Dashboard panels for controllers and coaches.** Operators and admins get a panel;
+  the other two roles get only their own requests.
+- **CI.** All three test scripts are manual; e2e additionally needs a running server.
+- **Seed is not deployment-safe.** `pnpm db:seed` always inserts a demo training roster
+  (trainers and trainees with availability), not only when dev quick-login is enabled
+  like the other demo data. Running it on a real club database adds fake people to the
+  planner.
+- **Email-based features.** §10 requires a real email address "to enable
+  notifications/reset later"; both remain out of scope (§7), so the address is
+  collected but unused.
+
+### Known limitations
+
+- `fetchSession` runs on every navigation. Correct and always fresh, but it is one RPC
+  per navigation — worth caching if the club ever outgrows it.
+- The solver is greedy: deterministic and explainable, not guaranteed optimal (§13).
+- Plan week view counts lanes per weekday, so one clash on a day draws every group
+  that day at half width (§13).
+- The availability timetable makes every cell a tab stop (196 at the default
+  08:00–22:00 window); the exact-times form is the keyboard path. A roving tabindex
+  would fix it.
+- Server-side Zod rejections (only reachable by bypassing the forms) arrive wrapped in
+  the framework's JSON issue envelope rather than as a plain sentence; the message
+  inside is localized.
+- `pnpm format` runs prettier over the whole repo, including the vendored skill docs
+  in `.agents/` — `.prettierignore` only lists lockfiles.
+
+### Spike decisions pending
+
+§13 and §14 were built as spikes to evaluate, then merged. Open questions:
+
+- **Availability editors.** The timetable and the exact-times form both sit on the
+  person page so they can be compared. Keep both, or drop one?
+- **Timetable interaction.** Drag-painting uses pointer capture and
+  `touch-action: none`. The conversion logic is unit-checked and the rendered markup was
+  inspected, but no test drives an actual drag — mouse or touch.
+- **Light theme.** Every palette pair passes WCAG AA by calculation; no test checks how
+  it renders, so it needs a review by eye.
+
+## 13. Training planner
+
+Built as a spike, now merged into `main`; the evaluation questions still open are in §12.
 
 A second, largely independent section: plan weekly group training and assign
 trainees to trainers. Coaches only (§2); admins inherit the role.
+
+```prisma
+model TrainingPerson {        // standalone — not a User
+  id String @id @default(cuid())
+  name String
+  kind String                 // TRAINEE | TRAINER
+  ball String?                // RED | ORANGE | GREEN | YELLOW — trainees only
+  strength Float?             // 0 (beginner) … 5 — trainees only
+  notes String?
+  archived Boolean @default(false)
+}
+model TrainingAvailability {  // weekly recurring, cascades with the person
+  personId String
+  weekday  Int                // 0 = Monday … 6 = Sunday
+  startMin Int                // minutes from midnight
+  endMin   Int
+}
+model TrainingPlan {          // one solver run, with the knobs it ran on
+  name String
+  createdById String          // → User
+  minGroupSize Int  maxGroupSize Int  strengthSpread Float
+  sessionMinutes Int  slotStepMinutes Int  courtCount Int
+}
+model TrainingGroup        { planId String  trainerId String  weekday Int  startMin Int  endMin Int  ball String  court Int }
+model TrainingGroupMember  { groupId String  personId String }              // @@unique([groupId, personId])
+model TrainingPlanUnplaced { planId String  personId String  reason String } // @@unique([planId, personId])
+```
 
 ### Roster
 
@@ -455,7 +612,9 @@ part a coach has to act on.
 
 Every solve is saved (`TrainingPlan` + `TrainingGroup` + `TrainingGroupMember` +
 `TrainingPlanUnplaced`), so two sets of knobs can be compared rather than one
-overwriting the other. Plans are immutable: re-solving writes a new one.
+overwriting the other. Plans are immutable: re-solving writes a new one. A coach can
+delete a plan; its groups and unplaced list cascade with it. Archived people are left
+out of new solves but still named in old plans.
 
 A plan is shown twice: as a week timetable
 (`src/components/schedule-timetable.tsx`) over the same configurable window, and as the
@@ -467,10 +626,11 @@ simultaneous meetings; lanes are counted per weekday, so a day with one clash dr
 of its groups at half width. Anything outside the window is counted in a note above the
 grid — the list below is always complete.
 
-## 14. Look and feel (spike)
+## 14. Look and feel
 
-A bright, near-white surface with the tennis-ball lime kept as the one loud accent.
-Everything lives in `src/styles.css`:
+Built as a spike, now merged into `main` — it replaced the prototype's dark workshop
+look. A bright, near-white surface with the tennis-ball lime kept as the one loud
+accent. The palette lives in `src/styles.css`:
 
 - **Tokens over utilities.** Components reach for `bg-card`, `text-muted-foreground`,
   `border-border` rather than raw `slate-*`, so the next change of mind is a change to
@@ -489,3 +649,36 @@ Everything lives in `src/styles.css`:
 
 Every foreground/background pair in the palette clears WCAG AA (4.5:1 for text, 3:1 for
 UI marks); the tightest are muted text at 4.55:1 and the collected-status badge at 4.55:1.
+
+### Interaction patterns
+
+- **Dialogs** use the shared Radix `Dialog` primitive (`src/components/ui/dialog.tsx`),
+  anchored a fixed distance below the header (`top-20`) rather than vertically centred,
+  so a dialog does not jump as its own content changes height. A max height with
+  scrolling keeps tall dialogs on screen. Confirmations go through a dialog, never the
+  browser's `confirm()` — one holdout remains (§12).
+- **Tables** that list many rows (`/queue`, `/billing`) sort by clicking a column header
+  and filter through a free-text search box, both client-side over the loaded rows.
+  Sort state is local to the page and resets on navigation.
+- **Breadcrumbs** under the header on every authed page (§6).
+
+## 15. Developer tooling
+
+| Command              | What it does                                                                                                                                                       |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm db:seed`       | Idempotent. Bootstrap admin, club string catalogue and a demo training roster — always. The dev roster and demo rackets/requests only with dev quick-login enabled |
+| `pnpm db:reset-data` | Deletes every user, racket, request, invite, payout and training row; keeps the string catalogue. Follow with `pnpm db:seed`                                       |
+| `pnpm test:*`        | See §11                                                                                                                                                            |
+
+**Bootstrap admin.** `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` / `SEED_ADMIN_NAME`,
+defaulting to `admin@rtc.local` / `changeme123` / `Club Admin`. Change the password on
+any real deployment.
+
+**Dev quick-login.** With `DEV_QUICK_LOGIN_ENABLED=true`, `/login` shows one-click
+sign-in for a fixed seeded roster — admin, two stringers, a coach and three members —
+sharing `DEV_QUICK_LOGIN_PASSWORD`. The server function re-checks the flag itself, so a
+hidden button is not the only barrier. Never enable it on a deployment.
+
+**Agent tooling.** `AGENTS.md` describes loading TanStack's intent skills before larger
+changes; `.agents/skills/` vendors the Prisma skill docs (see the formatting caveat in
+§12).

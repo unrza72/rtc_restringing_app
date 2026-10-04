@@ -203,7 +203,7 @@
   "status_CANCELLED": "Storniert",
   "role_member": "Mitglied",
   "role_operator": "Besaiter",
-  "role_controller": "Kontrolleur",
+  "role_controller": "Kassier",
   "role_coach": "Trainer",
   "role_admin": "Admin",
   "member_status_PENDING": "Wartet",
