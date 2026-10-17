@@ -15,7 +15,17 @@ import {
   requestInputSchema,
   setPaidSchema,
 } from '#/lib/schemas'
-import { REQUEST_STATUSES, canTransition, nextStatus } from '#/lib/status'
+import {
+  REQUEST_STATUSES,
+  canTransition,
+  isOpen,
+  nextStatus,
+} from '#/lib/status'
+import {
+  getTokenCount,
+  isRacketTokensEnabled,
+} from '#/lib/racket-tokens.server'
+import { Prisma } from '#/generated/prisma/client'
 import type { RequestAction, RequestStatus } from '#/lib/status'
 import { m } from '#/paraglide/messages'
 
@@ -110,7 +120,7 @@ export const createRequest = createServerFn({ method: 'POST' })
   .middleware([memberMiddleware])
   .validator(requestInputSchema)
   .handler(async ({ context, data }) => {
-    const { racketId, ...fields } = data
+    const { racketId, tokenNumber, ...fields } = data
 
     // A named racket must be the caller's own, visible and still in use.
     if (racketId) {
@@ -134,44 +144,75 @@ export const createRequest = createServerFn({ method: 'POST' })
       if (!clubString) throw new Error(m.request_string_unavailable())
     }
 
-    return prisma.$transaction(async (tx) => {
-      // No racket named: the member hasn't added one yet. File the request
-      // under their hidden stand-in, created on first use and reused after,
-      // so asking for a restring never has to wait on filling in a racket.
-      const targetRacketId =
-        racketId ??
-        (
-          (await tx.racket.findFirst({
-            where: { ownerId: context.user.id, hidden: true },
-            select: { id: true },
-          })) ??
-          (await tx.racket.create({
-            data: {
-              ownerId: context.user.id,
-              label: m.racket_default_label(),
-              hidden: true,
-            },
-            select: { id: true },
-          }))
-        ).id
+    // The carabiner the racket hangs on in the clubhouse. Only collected while
+    // the feature is on; ignored entirely otherwise.
+    const token = isRacketTokensEnabled() ? tokenNumber : null
+    if (isRacketTokensEnabled()) {
+      if (token === null) throw new Error(m.request_token_required())
+      const count = await getTokenCount()
+      if (token > count) {
+        throw new Error(m.request_token_out_of_range({ count }))
+      }
+      const taken = await prisma.stringingRequest.findUnique({
+        where: { activeToken: token },
+        select: { id: true },
+      })
+      if (taken) throw new Error(m.request_token_in_use({ token }))
+    }
 
-      const created = await tx.stringingRequest.create({
-        data: {
-          ...fields,
-          racketId: targetRacketId,
-          requesterId: context.user.id,
-          status: 'REQUESTED',
-        },
+    return prisma
+      .$transaction(async (tx) => {
+        // No racket named: the member hasn't added one yet. File the request
+        // under their hidden stand-in, created on first use and reused after,
+        // so asking for a restring never has to wait on filling in a racket.
+        const targetRacketId =
+          racketId ??
+          (
+            (await tx.racket.findFirst({
+              where: { ownerId: context.user.id, hidden: true },
+              select: { id: true },
+            })) ??
+            (await tx.racket.create({
+              data: {
+                ownerId: context.user.id,
+                label: m.racket_default_label(),
+                hidden: true,
+              },
+              select: { id: true },
+            }))
+          ).id
+
+        const created = await tx.stringingRequest.create({
+          data: {
+            ...fields,
+            racketId: targetRacketId,
+            requesterId: context.user.id,
+            status: 'REQUESTED',
+            tokenNumber: token,
+            activeToken: token,
+          },
+        })
+        await tx.requestEvent.create({
+          data: {
+            requestId: created.id,
+            actorId: context.user.id,
+            toStatus: 'REQUESTED',
+          },
+        })
+        return created
       })
-      await tx.requestEvent.create({
-        data: {
-          requestId: created.id,
-          actorId: context.user.id,
-          toStatus: 'REQUESTED',
-        },
+      .catch((error: unknown) => {
+        // The check above can lose a race against another member submitting
+        // the same number at the same moment; the unique column catches that.
+        if (
+          token !== null &&
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002'
+        ) {
+          throw new Error(m.request_token_in_use({ token }))
+        }
+        throw error
       })
-      return created
-    })
   })
 
 // ---------------------------------------------------------------------------
@@ -219,7 +260,13 @@ async function transition({
 
     const { count } = await tx.stringingRequest.updateMany({
       where: { id: requestId, status: current.status, ...guard },
-      data: { ...data, status: to },
+      // Leaving the open states frees the carabiner for the next racket; the
+      // number itself stays in tokenNumber as a record.
+      data: {
+        ...data,
+        status: to,
+        ...(isOpen(to) ? {} : { activeToken: null }),
+      },
     })
     if (count === 0) {
       throw new Error(m.queue_conflict())

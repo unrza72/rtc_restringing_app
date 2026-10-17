@@ -179,6 +179,21 @@ model Reimbursement {
 `Invite` is specified in §9 and the six training-planner models in §13; both live in the
 same `prisma/schema.prisma`.
 
+**Racket tokens** (`RACKET_TOKENS_ENABLED=true`, off by default). Rackets are left in the
+clubhouse with a numbered carabiner clipped on, so the stringer can tell whose is whose.
+With the switch on, the request form requires the carabiner number, picked from a
+dropdown of 1..N in which numbers in use are listed but disabled ("7 — vergeben"); with it off, the field disappears and any number sent is ignored.
+
+- Carabiners are numbered 1..N. An admin sets N on the "Saiten" page (default 20, kept
+  in the one-row `ClubSettings` table). Lowering N below a number in use is refused.
+- A number is **in use** from "Beauftragt" until the racket is collected or the request
+  cancelled, and then free for anyone — the same member included.
+- `StringingRequest.activeToken` holds the number only while the request is open and is
+  `@unique`, so the database refuses a second open request on a number even when two
+  members submit at the same instant. `tokenNumber` keeps it afterwards as a record.
+- The stringer's queue gets a sortable "Karabiner" column (shown whenever a listed job
+  has one), and the search box matches the number.
+
 **Requesting without a racket.** A member who has not added a racket can still request a
 restring: the form drops the racket picker, and `createRequest` files the request under
 that member's `hidden` stand-in racket (labelled "Mein Schläger" / "My racket"), creating
@@ -453,12 +468,13 @@ before a second run, or balance assertions in the payout section fail on leftove
   from `messages/de.json` through `t()` — wording changes don't break tests, and a
   mistyped key fails the type check.
 
-| Workflow                                                                                       | File                                       |
-| ---------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| Newcomer joins via invite link, gets approved, adds a racket, requests a restring              | `new-member-onboarding.spec.ts`            |
-| Stringer finds a job in the queue, accepts it, completes it with prices and notes              | `stringer-completes-a-job.spec.ts`         |
-| Controller marks a job paid, is refused an overpayment, pays the stringer part of their labour | `controller-reimburses-a-stringer.spec.ts` |
-| Member with no racket requests a restring; the stand-in never shows under "my rackets"         | `request-without-a-racket.spec.ts`         |
+| Workflow                                                                                                 | File                                       |
+| -------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| Newcomer joins via invite link, gets approved, adds a racket, requests a restring                        | `new-member-onboarding.spec.ts`            |
+| Stringer finds a job in the queue, accepts it, completes it with prices and notes                        | `stringer-completes-a-job.spec.ts`         |
+| Controller marks a job paid, is refused an overpayment, pays the stringer part of their labour           | `controller-reimburses-a-stringer.spec.ts` |
+| Member with no racket requests a restring; the stand-in never shows under "my rackets"                   | `request-without-a-racket.spec.ts`         |
+| Carabiner in use is refused, the admin can't lower the count below it, and it is free again after pickup | `racket-tokens.spec.ts`                    |
 
 Only the onboarding test creates people through the UI. The others start from a state
 written straight into the database by `tests/ui/fixtures.ts` — "a stringer exists, a

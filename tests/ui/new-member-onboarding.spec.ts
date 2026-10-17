@@ -1,7 +1,15 @@
 import { expect, test } from '@playwright/test'
 
 import { ADMIN } from './env'
-import { currentCrumb, header, newMember, signIn, t } from './support'
+import { freeToken } from './fixtures'
+import {
+  currentCrumb,
+  header,
+  newMember,
+  pickToken,
+  signIn,
+  t,
+} from './support'
 
 test('a newcomer joins through an invite link, adds a racket and requests a restring', async ({
   page: admin,
@@ -125,6 +133,7 @@ test('a newcomer joins through an invite link, adds a racket and requests a rest
     await newcomer
       .getByLabel(t('request_notes'), { exact: true })
       .fill('Bitte bis Samstag, danke!')
+    await pickToken(newcomer, await freeToken())
     await newcomer.getByRole('button', { name: t('request_submit') }).click()
   })
 

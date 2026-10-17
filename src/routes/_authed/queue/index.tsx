@@ -38,7 +38,8 @@ export const Route = createFileRoute('/_authed/queue/')({
   component: QueuePage,
 })
 
-type SortKey = 'racket' | 'requester' | 'stringer' | 'neededBy' | 'status'
+type SortKey =
+  'token' | 'racket' | 'requester' | 'stringer' | 'neededBy' | 'status'
 
 // Pipeline order, not alphabetical — REQUESTED before ACCEPTED before DONE
 // is what "sorted by status" should mean when the open view mixes all three.
@@ -52,11 +53,20 @@ function QueuePage() {
   const [query, setQuery] = useState('')
   const { sortKey, sortDir, toggleSort } = useTableSort<SortKey>('neededBy')
 
+  // Shown whenever a listed job carries a carabiner — which also keeps old
+  // numbers visible if the feature is switched off later.
+  const showTokens = requests.some((r) => r.tokenNumber != null)
+
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase()
     const filtered = q
       ? requests.filter((r) =>
-          [r.racket.label, r.requester.name, r.operator?.name]
+          [
+            r.racket.label,
+            r.requester.name,
+            r.operator?.name,
+            r.tokenNumber?.toString(),
+          ]
             .filter((v): v is string => !!v)
             .some((v) => v.toLowerCase().includes(q)),
         )
@@ -75,6 +85,13 @@ function QueuePage() {
           return (
             dir * (a.operator?.name ?? '').localeCompare(b.operator?.name ?? '')
           )
+        case 'token': {
+          // No carabiner sorts last either way, like a missing due date.
+          if (a.tokenNumber == null && b.tokenNumber == null) return 0
+          if (a.tokenNumber == null) return 1
+          if (b.tokenNumber == null) return -1
+          return dir * (a.tokenNumber - b.tokenNumber)
+        }
         case 'status':
           return (
             dir *
@@ -153,6 +170,15 @@ function QueuePage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  {showTokens && (
+                    <SortableHead
+                      label={m.queue_col_token()}
+                      sortKey="token"
+                      active={sortKey === 'token'}
+                      dir={sortDir}
+                      onSort={toggleSort}
+                    />
+                  )}
                   <SortableHead
                     label={m.request_racket()}
                     sortKey="racket"
@@ -193,6 +219,11 @@ function QueuePage() {
               <TableBody>
                 {rows.map((request) => (
                   <TableRow key={request.id}>
+                    {showTokens && (
+                      <TableCell className="font-mono text-base font-semibold">
+                        {request.tokenNumber ?? m.common_none()}
+                      </TableCell>
+                    )}
                     <TableCell>
                       <Link
                         to="/queue/$id"

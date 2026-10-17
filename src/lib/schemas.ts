@@ -70,6 +70,14 @@ export const requestInputSchema = z
     tensionCross: tension.nullable().default(null),
     neededBy: z.coerce.date().nullable().default(null),
     memberNotes: optionalText(500),
+    // The carabiner number. Required only while RACKET_TOKENS_ENABLED is on —
+    // which the schema can't know, so createRequest enforces that part.
+    tokenNumber: z.coerce
+      .number()
+      .int({ error: () => m.request_token_invalid() })
+      .min(1, { error: () => m.request_token_invalid() })
+      .nullable()
+      .default(null),
   })
   // A request names exactly one string: a catalogue entry or the member's own.
   .refine((v) => v.stringSource !== 'CLUB' || !!v.clubStringId, {
@@ -145,6 +153,14 @@ export const recordReimbursementSchema = z.object({
   operatorId: z.string().min(1),
   amountCents: z.coerce.number().int().min(1).max(1000000),
   note: optionalText(300),
+})
+
+export const tokenCountSchema = z.object({
+  tokenCount: z.coerce
+    .number()
+    .int({ error: () => m.admin_token_count_invalid() })
+    .min(1, { error: () => m.admin_token_count_invalid() })
+    .max(999, { error: () => m.admin_token_count_invalid() }),
 })
 
 export const localeInputSchema = z.object({ locale: z.enum(locales) })

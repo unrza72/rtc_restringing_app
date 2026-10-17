@@ -175,6 +175,13 @@ model StringingRequest {
   tensionCross  Float?
   neededBy      DateTime?
   memberNotes   String?
+  /// Number on the carabiner the member clips to the racket in the clubhouse
+  /// (RACKET_TOKENS_ENABLED). Kept after pickup, as a record.
+  tokenNumber   Int?
+  /// The same number, but only while the request is open — cleared on
+  /// COLLECTED or CANCELLED. Unique, so the database itself refuses a second
+  /// open request on a carabiner that is already in use, even under a race.
+  activeToken   Int?     @unique
 
   operatorId     String?
   operator       User?     @relation("operator", fields: [operatorId], references: [id])
@@ -203,6 +210,15 @@ model StringingRequest {
   @@index([requesterId])
   @@index([operatorId])
   @@index([racketId])
+}
+
+/// Club-wide settings an admin can change. One row, id 1; read with the
+/// defaults below when it does not exist yet.
+model ClubSettings {
+  id         Int      @id @default(1)
+  /// Carabiners available for tagging rackets, numbered 1..tokenCount.
+  tokenCount Int      @default(20)
+  updatedAt  DateTime @updatedAt
 }
 
 model RequestEvent {

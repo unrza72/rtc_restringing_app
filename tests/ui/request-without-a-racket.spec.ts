@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 
-import { createApprovedUser } from './fixtures'
-import { currentCrumb, header, signIn, t } from './support'
+import { createApprovedUser, freeToken } from './fixtures'
+import { currentCrumb, header, pickToken, signIn, t } from './support'
 
 test('a member with no racket yet requests a restring, and the stand-in racket stays out of sight', async ({
   page,
@@ -27,6 +27,7 @@ test('a member with no racket yet requests a restring, and the stand-in racket s
     await page.getByLabel(t('request_club_string'), { exact: true }).click()
     await page.getByRole('option', { name: /Luxilon ALU Power/ }).click()
     await page.getByLabel(t('request_tension_main'), { exact: true }).fill('24')
+    await pickToken(page, await freeToken())
     await page.getByRole('button', { name: t('request_submit') }).click()
 
     await expect(page).toHaveURL(/\/requests\/(?!new$)[\w-]+$/)

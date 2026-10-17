@@ -9,7 +9,9 @@ import {
   removeClubString,
   updateClubString,
 } from '#/server/strings.functions'
-import { clubStringInputSchema } from '#/lib/schemas'
+import { getTokenStatus, setTokenCount } from '#/server/tokens.functions'
+import { clubStringInputSchema, tokenCountSchema } from '#/lib/schemas'
+import { formatTokenRanges } from '#/lib/tokens'
 import { formatPrice } from '#/lib/labels'
 import { m } from '#/paraglide/messages'
 import { Badge } from '#/components/ui/badge'
@@ -19,12 +21,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
 import { Field, FormError, fieldErrors } from '#/components/form-field'
 
 export const Route = createFileRoute('/_authed/admin/strings')({
-  loader: async () => ({ strings: await listAllStrings() }),
+  loader: async () => ({
+    strings: await listAllStrings(),
+    tokens: await getTokenStatus(),
+  }),
   component: StringsPage,
 })
 
 function StringsPage() {
-  const { strings } = Route.useLoaderData()
+  const { strings, tokens } = Route.useLoaderData()
   const router = useRouter()
   const update = useServerFn(updateClubString)
   const remove = useServerFn(removeClubString)
@@ -47,6 +52,14 @@ function StringsPage() {
       </h1>
 
       <FormError>{error}</FormError>
+
+      {tokens.enabled && (
+        <TokenCountCard
+          count={tokens.count}
+          inUse={tokens.inUse}
+          onSaved={() => router.invalidate()}
+        />
+      )}
 
       <Card>
         <CardContent className="py-2">
@@ -238,6 +251,105 @@ function NewStringCard({
             )}
           </form.Subscribe>
         </form>
+      </CardContent>
+    </Card>
+  )
+}
+
+/**
+ * How many numbered carabiners the clubhouse has. Lowering it below one that
+ * is on a racket right now is refused by setTokenCount.
+ */
+function TokenCountCard({
+  count,
+  inUse,
+  onSaved,
+}: {
+  count: number
+  inUse: Array<number>
+  onSaved: () => Promise<void>
+}) {
+  const save = useServerFn(setTokenCount)
+  const [error, setError] = useState<string | null>(null)
+  const [saved, setSaved] = useState(false)
+
+  const form = useForm({
+    defaultValues: { tokenCount: String(count) },
+    onSubmit: async ({ value }) => {
+      setError(null)
+      setSaved(false)
+      // safeParse: a thrown ZodError's message is its raw issue list.
+      const parsed = tokenCountSchema.safeParse(value)
+      if (!parsed.success) {
+        setError(parsed.error.issues[0]?.message ?? m.common_error_generic())
+        return
+      }
+      try {
+        await save({ data: parsed.data })
+        setSaved(true)
+        await onSaved()
+      } catch (e) {
+        setError(e instanceof Error ? e.message : m.common_error_generic())
+      }
+    },
+  })
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">{m.admin_tokens_title()}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form
+          className="flex flex-wrap items-end gap-3"
+          onSubmit={(e) => {
+            e.preventDefault()
+            void form.handleSubmit()
+          }}
+        >
+          <form.Field name="tokenCount">
+            {(field) => (
+              <Field
+                id={field.name}
+                label={m.admin_token_count()}
+                className="w-full sm:w-auto"
+                hint={
+                  inUse.length > 0
+                    ? m.admin_token_count_hint({
+                        inUse: formatTokenRanges(inUse),
+                      })
+                    : m.admin_token_count_none_in_use()
+                }
+              >
+                <Input
+                  id={field.name}
+                  type="number"
+                  inputMode="numeric"
+                  className="w-32"
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => {
+                    setSaved(false)
+                    field.handleChange(e.target.value)
+                  }}
+                />
+              </Field>
+            )}
+          </form.Field>
+          <form.Subscribe selector={(s) => s.isSubmitting}>
+            {(isSubmitting) => (
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? m.common_saving() : m.common_save()}
+              </Button>
+            )}
+          </form.Subscribe>
+          {saved && (
+            <span role="status" className="text-sm text-emerald-700">
+              {m.admin_token_count_saved()}
+            </span>
+          )}
+        </form>
+        <FormError>{error}</FormError>
       </CardContent>
     </Card>
   )

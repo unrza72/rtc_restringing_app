@@ -28,6 +28,8 @@ await prisma.racket.deleteMany()
 await prisma.session.deleteMany()
 await prisma.account.deleteMany()
 await prisma.user.deleteMany()
+// Back to the default carabiner count, so runs don't inherit an old setting.
+await prisma.clubSettings.deleteMany()
 
 console.log('🧹 app data cleared — run `pnpm db:seed` to recreate the admin')
 await prisma.$disconnect()

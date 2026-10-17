@@ -67,3 +67,9 @@ export function newMember() {
     password: 'e2e-member-password',
   }
 }
+
+/** Picks a carabiner number in the request form's dropdown. */
+export async function pickToken(page: Page, token: number) {
+  await page.getByLabel(t('request_token'), { exact: true }).click()
+  await page.getByRole('option', { name: String(token), exact: true }).click()
+}

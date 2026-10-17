@@ -22,6 +22,7 @@ export type RequestDetailData = {
   tensionCross: number | null
   neededBy: Date | string | null
   memberNotes: string | null
+  tokenNumber: number | null
   createdAt: Date | string
   usedStringName: string | null
   usedTensionMain: number | null
@@ -85,6 +86,10 @@ export function RequestSummary({
           <Row label={m.request_tension_main()}>
             {formatTension(request.tensionMain, request.tensionCross)}
           </Row>
+
+          {request.tokenNumber != null && (
+            <Row label={m.request_token()}>{request.tokenNumber}</Row>
+          )}
 
           <Row label={m.request_label_created()}>
             {formatDate(request.createdAt)}

@@ -79,6 +79,8 @@ export async function createOpenRequest(
     clubString: string
     tensionMain: number
     tensionCross?: number
+    /** Carabiner number; occupied while the request is open. */
+    token?: number
   },
 ) {
   const db = prisma()
@@ -97,6 +99,8 @@ export async function createOpenRequest(
       clubStringId: clubString.id,
       tensionMain: options.tensionMain,
       tensionCross: options.tensionCross ?? null,
+      tokenNumber: options.token ?? null,
+      activeToken: options.token ?? null,
       events: { create: { actorId: member.id, toStatus: 'REQUESTED' } },
     },
     include: { clubString: true },
@@ -143,4 +147,43 @@ export async function createFinishedJob(
       },
     },
   })
+}
+
+/**
+ * The lowest carabiner number nobody is using. Open requests outlive a run in
+ * `--ui` mode (the database is only reset when the UI opens), so after enough
+ * re-runs every number could be taken — then the count is raised to make room,
+ * rather than failing on leftovers from earlier runs.
+ */
+export async function freeToken() {
+  const db = prisma()
+  const settings = await db.clubSettings.findUnique({ where: { id: 1 } })
+  const count = settings?.tokenCount ?? 20
+  const inUse = new Set(
+    (
+      await db.stringingRequest.findMany({
+        where: { activeToken: { not: null } },
+        select: { activeToken: true },
+      })
+    ).map((r) => r.activeToken!),
+  )
+  for (let n = 1; n <= count; n++) if (!inUse.has(n)) return n
+
+  const next = Math.max(count, ...inUse) + 1
+  await db.clubSettings.upsert({
+    where: { id: 1 },
+    create: { id: 1, tokenCount: next + 9 },
+    update: { tokenCount: next + 9 },
+  })
+  return next
+}
+
+/** The highest carabiner number currently on a racket, or 0 if none is. */
+export async function highestTokenInUse() {
+  const top = await prisma().stringingRequest.findFirst({
+    where: { activeToken: { not: null } },
+    orderBy: { activeToken: 'desc' },
+    select: { activeToken: true },
+  })
+  return top?.activeToken ?? 0
 }

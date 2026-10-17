@@ -6,9 +6,11 @@ import { useState } from 'react'
 import { listRackets } from '#/server/rackets.functions'
 import { listActiveStrings } from '#/server/strings.functions'
 import { createRequest } from '#/server/requests.functions'
+import { getTokenStatus } from '#/server/tokens.functions'
 import { requestInputSchema } from '#/lib/schemas'
 import { schemaValidator } from '#/lib/form'
 import { formatPrice } from '#/lib/labels'
+import { freeTokens } from '#/lib/tokens'
 import { m } from '#/paraglide/messages'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
@@ -29,12 +31,14 @@ export const Route = createFileRoute('/_authed/requests/new')({
   loader: async () => ({
     rackets: await listRackets({ data: { includeArchived: false } }),
     strings: await listActiveStrings(),
+    tokens: await getTokenStatus(),
   }),
   component: NewRequestPage,
 })
 
 function NewRequestPage() {
-  const { rackets, strings } = Route.useLoaderData()
+  const { rackets, strings, tokens } = Route.useLoaderData()
+  const free = freeTokens(tokens.count, tokens.inUse)
   const router = useRouter()
   const create = useServerFn(createRequest)
   const [formError, setFormError] = useState<string | null>(null)
@@ -48,6 +52,7 @@ function NewRequestPage() {
       tensionMain: '24',
       tensionCross: '',
       memberNotes: '',
+      tokenNumber: '',
     },
     validators: {
       // Surfaces the cross-field rules (own string vs catalogue) on the field
@@ -122,6 +127,61 @@ function NewRequestPage() {
                             {racket.label}
                           </SelectItem>
                         ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                )}
+              </form.Field>
+            )}
+
+            {tokens.enabled && (
+              <form.Field
+                name="tokenNumber"
+                validators={{
+                  // Taken numbers can't be picked, but one may be taken by
+                  // someone else after the page loaded — createRequest
+                  // re-checks, and its message lands in the form error.
+                  onSubmit: ({ value }) =>
+                    value === '' ? m.request_token_required() : undefined,
+                }}
+              >
+                {(field) => (
+                  <Field
+                    id={field.name}
+                    label={m.request_token()}
+                    className="sm:w-1/2"
+                    hint={
+                      free.length > 0
+                        ? m.request_token_hint()
+                        : m.request_token_none_free()
+                    }
+                    errors={fieldErrors(field.state.meta)}
+                  >
+                    <Select
+                      value={field.state.value}
+                      onValueChange={field.handleChange}
+                    >
+                      <SelectTrigger id={field.name} className="w-full">
+                        <SelectValue
+                          placeholder={m.request_token_placeholder()}
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Array.from({ length: tokens.count }, (_, i) => {
+                          const token = i + 1
+                          const taken = tokens.inUse.includes(token)
+                          return (
+                            <SelectItem
+                              key={token}
+                              value={String(token)}
+                              disabled={taken}
+                            >
+                              {taken
+                                ? m.request_token_option_taken({ token })
+                                : token}
+                            </SelectItem>
+                          )
+                        })}
                       </SelectContent>
                     </Select>
                   </Field>
@@ -299,10 +359,12 @@ function normalise(value: {
   tensionMain: string
   tensionCross: string
   memberNotes: string
+  tokenNumber: string
 }) {
   return {
     ...value,
     racketId: value.racketId || null,
+    tokenNumber: value.tokenNumber.trim() === '' ? null : value.tokenNumber,
     clubStringId: value.clubStringId || null,
     ownStringName: value.ownStringName || null,
     tensionCross: value.tensionCross === '' ? null : value.tensionCross,

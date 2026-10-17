@@ -1,33 +1,38 @@
 import { execFileSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
+import { DatabaseSync } from 'node:sqlite'
 
-import { SERVER_ENV } from './env'
+import { DATABASE_URL, SERVER_ENV } from './env'
 
 /**
- * Brings `e2e.sqlite` to a known state before a run: schema pushed, every row
- * wiped, then the seed — the bootstrap admin plus the club string catalogue.
+ * Brings `e2e.sqlite` to a known state before a run: every table dropped, the
+ * schema pushed from scratch, then the seed — the bootstrap admin plus the club
+ * string catalogue.
  *
- * Rows are deleted rather than the file being replaced, because in `--ui` mode
- * the dev server stays up between runs and keeps its database handle open; a
- * fresh file would leave it reading the old, unlinked one.
+ * Dropping the tables rather than migrating them means a schema change never
+ * meets existing rows or columns, so `db push` never stops to ask about data
+ * loss (it would, for example, on any new unique constraint). This database
+ * exists only for these tests and is emptied every run regardless.
+ *
+ * The file itself stays: in `--ui` mode the server is already running and keeps
+ * its handle open, and a replaced file would leave it reading the old one.
  */
 export default function globalSetup() {
+  const db = new DatabaseSync(fileURLToPath(DATABASE_URL))
+  db.exec('PRAGMA foreign_keys = OFF')
+  const tables = db
+    .prepare(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+    )
+    .all() as Array<{ name: string }>
+  for (const { name } of tables) db.exec(`DROP TABLE "${name}"`)
+  db.close()
+
   const run = (command: string, args: Array<string>) =>
     execFileSync('pnpm', ['exec', command, ...args], {
       stdio: 'inherit',
       env: { ...process.env, ...SERVER_ENV },
     })
-
-  // Empty the tables before pushing the schema, so a schema change never has
-  // data to lose and a plain `db push` goes through without
-  // `--accept-data-loss` — which Prisma refuses to run unattended. On a first
-  // run, or after a new model, some tables don't exist yet; the wipe after the
-  // push catches those.
-  try {
-    run('tsx', ['scripts/reset-dev-data.ts'])
-  } catch {
-    console.log('↷ nothing to wipe before the schema push')
-  }
   run('prisma', ['db', 'push'])
-  run('tsx', ['scripts/reset-dev-data.ts'])
   run('tsx', ['prisma/seed.ts'])
 }

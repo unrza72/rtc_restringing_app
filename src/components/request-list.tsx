@@ -13,6 +13,7 @@ export type RequestRow = {
   tensionMain: number
   tensionCross: number | null
   neededBy: Date | string | null
+  tokenNumber?: number | null
   createdAt: Date | string
   racket: { label: string }
   clubString: { name: string; gauge: string | null } | null
@@ -59,6 +60,11 @@ export function RequestList({
             )}
 
             <span className="ml-auto flex items-center gap-3">
+              {request.tokenNumber != null && (
+                <span className="text-[11px] font-medium text-muted-foreground">
+                  {m.request_token_label({ token: request.tokenNumber })}
+                </span>
+              )}
               {request.neededBy && (
                 <span className="text-[11px] text-amber-400">
                   {m.queue_needed_by({ date: formatDate(request.neededBy) })}

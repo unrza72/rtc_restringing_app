@@ -339,10 +339,123 @@ check(
   notAdmin.error,
 )
 
+console.log('\n— racket tokens —')
+const TOKENS = '/src/server/tokens.functions.ts'
+type TokenStatus = { enabled: boolean; count: number; inUse: Array<number> }
+const tokenStatus = async () =>
+  (await member.call(TOKENS, 'getTokenStatus', undefined, 'GET'))
+    .result as TokenStatus
+const tokensOn = (await tokenStatus()).enabled
+
+/**
+ * A carabiner number for the next request: the lowest free one while
+ * RACKET_TOKENS_ENABLED is on (raising the count if every one is taken by
+ * leftovers of earlier runs), and null while it is off.
+ */
+async function nextToken(): Promise<number | null> {
+  if (!tokensOn) return null
+  const { count, inUse } = await tokenStatus()
+  for (let n = 1; n <= count; n++) if (!inUse.includes(n)) return n
+  await admin.call(TOKENS, 'setTokenCount', { tokenCount: count + 10 })
+  return count + 1
+}
+
+const tokenRequest = (
+  who: Session,
+  tokenNumber: number | null,
+  racketForRequest: string | null,
+) =>
+  who.call(REQUESTS, 'createRequest', {
+    racketId: racketForRequest,
+    stringSource: 'CLUB',
+    clubStringId,
+    ownStringName: null,
+    tensionMain: 24,
+    tensionCross: null,
+    neededBy: null,
+    memberNotes: null,
+    tokenNumber,
+  })
+const idOfRequest = (r: { result?: unknown }) =>
+  (r.result as { id?: string } | undefined)?.id
+
+if (!tokensOn) {
+  const ignored = await tokenRequest(member, 5, racketId ?? null)
+  check(
+    'with tokens switched off, a number is ignored',
+    ignored.ok &&
+      (ignored.result as { tokenNumber?: number | null }).tokenNumber === null,
+    ignored.result,
+  )
+  const id = idOfRequest(ignored)
+  if (id) await member.call(REQUESTS, 'cancelRequest', { id })
+} else {
+  const missing = await tokenRequest(member, null, racketId ?? null)
+  check('a request needs a carabiner number', !missing.ok, missing.result)
+
+  const { count } = await tokenStatus()
+  const tooHigh = await tokenRequest(member, count + 1, racketId ?? null)
+  check(
+    'a number the club does not have is refused',
+    !tooHigh.ok && (tooHigh.error ?? '').includes(String(count)),
+    tooHigh.error,
+  )
+
+  // Two members submit the same free number at the same instant.
+  const contested = (await nextToken())!
+  const [a, b] = await Promise.all([
+    tokenRequest(member, contested, racketId ?? null),
+    tokenRequest(admin, contested, null),
+  ])
+  check(
+    'two members racing for one carabiner: exactly one gets it',
+    [a, b].filter((r) => r.ok).length === 1,
+    [a.error, b.error],
+  )
+  const loser = a.ok ? b : a
+  check(
+    'and the other is told it is taken',
+    (loser.error ?? '').includes(String(contested)),
+    loser.error,
+  )
+
+  const winner = a.ok ? a : b
+  const winnerSession = a.ok ? member : admin
+  await winnerSession.call(REQUESTS, 'cancelRequest', {
+    id: idOfRequest(winner),
+  })
+  const reused = await tokenRequest(admin, contested, null)
+  check('a cancelled request frees its carabiner', reused.ok, reused.error)
+
+  // Hold the top number, then try to shrink the count below it.
+  const top = (await tokenStatus()).count
+  const holding = (await tokenStatus()).inUse.includes(top)
+    ? null
+    : await tokenRequest(member, top, racketId ?? null)
+  const shrink = await admin.call(TOKENS, 'setTokenCount', {
+    tokenCount: Math.max(top - 1, 1),
+  })
+  check(
+    'the count cannot drop below a carabiner in use',
+    top === 1 || !shrink.ok,
+    shrink.error,
+  )
+  const memberSets = await member.call(TOKENS, 'setTokenCount', {
+    tokenCount: 50,
+  })
+  check('a member cannot set the count', !memberSets.ok, memberSets.result)
+
+  // Out of the way of the checks below.
+  await admin.call(REQUESTS, 'cancelRequest', { id: idOfRequest(reused) })
+  if (holding?.ok) {
+    await member.call(REQUESTS, 'cancelRequest', { id: idOfRequest(holding) })
+  }
+}
+
 console.log('\n— request without a racket —')
 {
   // The admin has no racket of their own here (admin implies member).
-  const withoutRacket = () =>
+  const withoutRacket = async () =>
     admin.call(REQUESTS, 'createRequest', {
       racketId: null,
       stringSource: 'CLUB',
@@ -352,6 +465,7 @@ console.log('\n— request without a racket —')
       tensionCross: null,
       neededBy: null,
       memberNotes: null,
+      tokenNumber: await nextToken(),
     })
   const first = await withoutRacket()
   check('a request needs no racket', first.ok, first.error)
@@ -390,6 +504,7 @@ console.log('\n— request without a racket —')
     tensionCross: null,
     neededBy: null,
     memberNotes: null,
+    tokenNumber: await nextToken(),
   })
   check('nor be picked by id for a request', !named.ok, named.result)
 
@@ -410,6 +525,7 @@ const req = await member.call(REQUESTS, 'createRequest', {
   tensionCross: 23,
   neededBy: null,
   memberNotes: 'Slight top-spin setup',
+  tokenNumber: await nextToken(),
 })
 check('member creates a request', req.ok, req.error)
 const requestId = (req.result as { id: string } | undefined)?.id
@@ -423,6 +539,7 @@ const badTension = await member.call(REQUESTS, 'createRequest', {
   tensionCross: null,
   neededBy: null,
   memberNotes: null,
+  tokenNumber: await nextToken(),
 })
 check('an absurd tension is rejected', !badTension.ok, badTension.error)
 
@@ -435,6 +552,7 @@ const noStringNamed = await member.call(REQUESTS, 'createRequest', {
   tensionCross: null,
   neededBy: null,
   memberNotes: null,
+  tokenNumber: await nextToken(),
 })
 check(
   'own-string request must name the string',
