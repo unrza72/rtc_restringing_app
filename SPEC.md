@@ -496,6 +496,10 @@ the sentence from the spec.
 
 ### Not built yet
 
+- **"Needed by" date on new requests.** Taken off the request form for launch; members
+  can't set it. The `neededBy` column, the server schema, and the displays (request
+  detail, request list, the queue's "Benötigt bis" column and its default sort) are all
+  still in place, so adding the field back to `requests/new.tsx` is all it takes.
 - **Cancel reason.** The server stores an optional reason on the cancel event; the
   dialog does not ask for one.
 - **Substitute-string consent.** An operator who uses a different string just

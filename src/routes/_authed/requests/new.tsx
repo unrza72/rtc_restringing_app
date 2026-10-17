@@ -47,7 +47,6 @@ function NewRequestPage() {
       ownStringName: '',
       tensionMain: '24',
       tensionCross: '',
-      neededBy: '',
       memberNotes: '',
     },
     validators: {
@@ -259,24 +258,6 @@ function NewRequestPage() {
               </form.Field>
             </div>
 
-            <form.Field name="neededBy">
-              {(field) => (
-                <Field
-                  id={field.name}
-                  label={m.request_needed_by()}
-                  errors={fieldErrors(field.state.meta)}
-                >
-                  <Input
-                    id={field.name}
-                    type="date"
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                  />
-                </Field>
-              )}
-            </form.Field>
-
             <form.Field name="memberNotes">
               {(field) => (
                 <Field
@@ -317,7 +298,6 @@ function normalise(value: {
   ownStringName: string
   tensionMain: string
   tensionCross: string
-  neededBy: string
   memberNotes: string
 }) {
   return {
@@ -326,7 +306,6 @@ function normalise(value: {
     clubStringId: value.clubStringId || null,
     ownStringName: value.ownStringName || null,
     tensionCross: value.tensionCross === '' ? null : value.tensionCross,
-    neededBy: value.neededBy === '' ? null : value.neededBy,
     memberNotes: value.memberNotes || null,
   }
 }
