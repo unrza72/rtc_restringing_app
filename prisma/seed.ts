@@ -2,7 +2,6 @@ import { randomUUID } from 'node:crypto'
 
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
 import { hashPassword } from 'better-auth/crypto'
-import { createLocalAccountIssuer } from 'better-auth/db'
 
 import { PrismaClient } from '../src/generated/prisma/client.js'
 import { DEV_LOGIN_ROSTER } from '../src/lib/dev-quick-login.js'
@@ -76,8 +75,7 @@ async function createApprovedUser({
         create: {
           id: randomUUID(),
           // better-auth stores password logins under the "credential" provider,
-          // keyed by the user's own id and scoped by issuer (1.7+).
-          issuer: createLocalAccountIssuer('credential'),
+          // keyed by the user's own id.
           accountId: userId,
           providerId: 'credential',
           password: await hashPassword(password),

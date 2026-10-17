@@ -79,9 +79,9 @@ model Session {
 
 model Account {
   id                    String    @id
-  // better-auth 1.7 scopes account identity by issuer ("local:credential" for
-  // email/password logins).
-  issuer                String
+  // No `issuer` column: better-auth added one in 1.7.0–1.7.2 and removed it
+  // again in 1.7.3. Left in place it is required but never written, so every
+  // signup fails. See the 1.7 upgrade guide.
   accountId             String
   providerId            String
   userId                String
@@ -97,7 +97,6 @@ model Account {
   updatedAt             DateTime  @updatedAt
 
   @@index([userId])
-  @@index([issuer, accountId])
   @@map("account")
 }
 
