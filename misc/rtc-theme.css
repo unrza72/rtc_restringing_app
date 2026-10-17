@@ -1,0 +1,79 @@
+/* Royal Tennisclub Bezau — Tailwind CSS v4 theme
+ * Usage: in your main CSS file
+ *   @import "tailwindcss";
+ *   @import "./rtc-theme.css";
+ * Then use classes like bg-terracotta-600, text-sage-700, bg-cream, text-brand.
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Jost:wght@400;500;600&display=swap");
+
+@theme {
+  /* ---- Exact logo colors (use these for the logo and key brand moments) ---- */
+  --color-brand: #B4574A;          /* terracotta: RTC letters, primary buttons */
+  --color-brand-light: #E9A493;    /* terracotta on dark backgrounds */
+  --color-leaf: #7F9682;           /* sage: laurel wreath, dividers */
+  --color-leaf-light: #A9BCA9;     /* sage on dark backgrounds */
+  --color-crown: #7A2E26;          /* the small crown */
+  --color-court: #26352D;          /* deep green: footer, dark mode surfaces */
+  --color-cream: #F7F2EA;          /* page background */
+  --color-sand: #EDE7DC;           /* section / card background */
+
+  /* ---- Terracotta scale (base #B4574A sits between 500 and 600) ---- */
+  --color-terracotta-50: oklch(97% 0.044 29.6);
+  --color-terracotta-100: oklch(94% 0.050 29.6);
+  --color-terracotta-200: oklch(88% 0.062 29.6);
+  --color-terracotta-300: oklch(80% 0.078 29.6);
+  --color-terracotta-400: oklch(71% 0.096 29.6);
+  --color-terracotta-500: oklch(62% 0.113 29.6);
+  --color-terracotta-600: oklch(56.8% 0.124 29.6); /* = #B4574A */
+  --color-terracotta-700: oklch(46% 0.102 29.6);
+  --color-terracotta-800: oklch(38% 0.086 29.6);
+  --color-terracotta-900: oklch(30% 0.071 29.6);
+  --color-terracotta-950: oklch(22% 0.055 29.6);
+
+  /* ---- Sage scale (base #7F9682 ≈ 500) ---- */
+  --color-sage-50: oklch(97% 0.019 148.8);
+  --color-sage-100: oklch(94% 0.021 148.8);
+  --color-sage-200: oklch(88% 0.025 148.8);
+  --color-sage-300: oklch(80% 0.030 148.8);
+  --color-sage-400: oklch(71% 0.036 148.8);
+  --color-sage-500: oklch(64.9% 0.039 148.8); /* = #7F9682 */
+  --color-sage-600: oklch(54% 0.034 148.8);
+  --color-sage-700: oklch(46% 0.030 148.8);
+  --color-sage-800: oklch(38% 0.027 148.8);
+  --color-sage-900: oklch(30% 0.025 148.8);
+  --color-sage-950: oklch(22% 0.020 148.8);
+
+  /* ---- Court green scale (base #26352D ≈ 900), for text and dark UI ---- */
+  --color-court-50: oklch(97% 0.006 161.3);
+  --color-court-100: oklch(94% 0.008 161.3);
+  --color-court-200: oklch(88% 0.010 161.3);
+  --color-court-300: oklch(80% 0.012 161.3);
+  --color-court-400: oklch(71% 0.014 161.3);
+  --color-court-500: oklch(62% 0.016 161.3);
+  --color-court-600: oklch(54% 0.018 161.3);
+  --color-court-700: oklch(46% 0.020 161.3);
+  --color-court-800: oklch(38% 0.022 161.3);
+  --color-court-900: oklch(31.3% 0.025 161.3); /* = #26352D */
+  --color-court-950: oklch(22% 0.021 161.3);
+
+  /* ---- Typography ---- */
+  --font-display: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --font-sans: "Jost", ui-sans-serif, system-ui, sans-serif;
+
+  /* ---- Shape ---- */
+  --radius-card: 1rem;
+}
+
+/* Sensible defaults */
+@layer base {
+  html { background-color: var(--color-cream); color: var(--color-court-900); font-family: var(--font-sans); }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 600; letter-spacing: 0.04em; }
+}
+
+/* Contrast notes (WCAG AA, normal text):
+ *   white on brand (#B4574A)        4.8:1  ok for buttons
+ *   brand on cream                  4.3:1  use for text ≥ 18px / bold, else terracotta-700
+ *   court-900 on cream             12:1    body text
+ *   sage-500 on cream               2.9:1  decoration only; use sage-700 for text
+ */
