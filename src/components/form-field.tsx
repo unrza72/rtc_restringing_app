@@ -24,7 +24,10 @@ export function Field({
 }) {
   const error = errors[0]
   return (
-    <div className={cn('grid gap-1.5', className)}>
+    // content-start: beside a taller field (one with a hint or an error), the
+    // grid row stretches this one too — without it, label and input would
+    // spread apart and the input would sit lower than its neighbour's.
+    <div className={cn('grid content-start gap-1.5', className)}>
       <Label htmlFor={id}>{label}</Label>
       {children}
       {error ? (
