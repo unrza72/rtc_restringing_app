@@ -74,17 +74,17 @@ test('a newcomer joins through an invite link, adds a racket and requests a rest
     ).toBeVisible()
   })
 
-  await test.step('Newcomer wants a restring, but needs a racket first', async () => {
+  await test.step('Newcomer adds a racket', async () => {
+    await header(newcomer)
+      .getByRole('link', { name: t('nav_rackets') })
+      .click()
+    await expect(newcomer.getByText(t('racket_empty'))).toBeVisible()
     await newcomer
       .getByRole('main')
-      .getByRole('link', { name: t('dash_new_request') })
+      .getByRole('link', { name: t('racket_add') })
       .click()
-    await expect(newcomer.getByText(t('request_no_rackets'))).toBeVisible()
-    await newcomer.getByRole('link', { name: t('dash_add_racket') }).click()
     await expect(newcomer).toHaveURL(/\/rackets\/new$/)
-  })
 
-  await test.step('Newcomer adds a racket', async () => {
     await newcomer
       .getByLabel(t('racket_label'), { exact: true })
       .fill(racket.label)

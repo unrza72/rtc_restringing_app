@@ -11,6 +11,10 @@ import { m } from '#/paraglide/messages'
 /**
  * Rackets are strictly owner-scoped: every query and mutation filters by the
  * session user's id, so a guessed racket id gets a 404, not someone else's data.
+ *
+ * They also all skip the `hidden` stand-in a member gets when requesting a
+ * restring with no racket of their own (see `createRequest`): it exists only
+ * to carry those requests, and is never shown, edited, archived or deleted.
  */
 
 export const listRackets = createServerFn({ method: 'GET' })
@@ -20,6 +24,7 @@ export const listRackets = createServerFn({ method: 'GET' })
     return prisma.racket.findMany({
       where: {
         ownerId: context.user.id,
+        hidden: false,
         ...(data.includeArchived ? {} : { archived: false }),
       },
       orderBy: [{ archived: 'asc' }, { createdAt: 'asc' }],
@@ -34,7 +39,7 @@ export const getRacket = createServerFn({ method: 'GET' })
   .validator(idSchema)
   .handler(async ({ context, data }) => {
     const racket = await prisma.racket.findFirst({
-      where: { id: data.id, ownerId: context.user.id },
+      where: { id: data.id, ownerId: context.user.id, hidden: false },
       include: {
         requests: {
           orderBy: { createdAt: 'desc' },
@@ -61,7 +66,7 @@ export const updateRacket = createServerFn({ method: 'POST' })
   .handler(async ({ context, data }) => {
     const { id, ...fields } = data
     const { count } = await prisma.racket.updateMany({
-      where: { id, ownerId: context.user.id },
+      where: { id, ownerId: context.user.id, hidden: false },
       data: fields,
     })
     if (count === 0) throw notFound()
@@ -77,7 +82,7 @@ export const setRacketArchived = createServerFn({ method: 'POST' })
   .validator(idSchema.extend({ archived: z.boolean() }))
   .handler(async ({ context, data }) => {
     const racket = await prisma.racket.findFirst({
-      where: { id: data.id, ownerId: context.user.id },
+      where: { id: data.id, ownerId: context.user.id, hidden: false },
       include: { requests: { select: { status: true } } },
     })
     if (!racket) throw notFound()
@@ -98,7 +103,7 @@ export const deleteRacket = createServerFn({ method: 'POST' })
   .validator(idSchema)
   .handler(async ({ context, data }) => {
     const racket = await prisma.racket.findFirst({
-      where: { id: data.id, ownerId: context.user.id },
+      where: { id: data.id, ownerId: context.user.id, hidden: false },
       include: { _count: { select: { requests: true } } },
     })
     if (!racket) throw notFound()

@@ -74,23 +74,6 @@ function NewRequestPage() {
     },
   })
 
-  if (rackets.length === 0) {
-    return (
-      <Card className="mx-auto max-w-2xl">
-        <CardContent className="grid gap-4 py-8 text-center">
-          <p className="text-sm text-muted-foreground">
-            {m.request_no_rackets()}
-          </p>
-          <div>
-            <Button asChild>
-              <Link to="/rackets/new">{m.dash_add_racket()}</Link>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
   return (
     <div className="mx-auto max-w-2xl">
       <Card>
@@ -107,31 +90,45 @@ function NewRequestPage() {
           >
             <FormError>{formError}</FormError>
 
-            <form.Field name="racketId">
-              {(field) => (
-                <Field
-                  id={field.name}
-                  label={m.request_racket()}
-                  errors={fieldErrors(field.state.meta)}
+            {/* No racket of their own yet: no picker at all — the server files
+                the request under a hidden stand-in racket instead. */}
+            {rackets.length === 0 ? (
+              <p className="rounded-lg border border-border bg-surface-sunken px-3 py-2 text-sm text-muted-foreground">
+                {m.request_no_racket_hint()}{' '}
+                <Link
+                  to="/rackets/new"
+                  className="font-medium text-primary-ink underline-offset-4 hover:underline"
                 >
-                  <Select
-                    value={field.state.value}
-                    onValueChange={field.handleChange}
+                  {m.dash_add_racket()}
+                </Link>
+              </p>
+            ) : (
+              <form.Field name="racketId">
+                {(field) => (
+                  <Field
+                    id={field.name}
+                    label={m.request_racket()}
+                    errors={fieldErrors(field.state.meta)}
                   >
-                    <SelectTrigger id={field.name} className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {rackets.map((racket) => (
-                        <SelectItem key={racket.id} value={racket.id}>
-                          {racket.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-              )}
-            </form.Field>
+                    <Select
+                      value={field.state.value}
+                      onValueChange={field.handleChange}
+                    >
+                      <SelectTrigger id={field.name} className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {rackets.map((racket) => (
+                          <SelectItem key={racket.id} value={racket.id}>
+                            {racket.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                )}
+              </form.Field>
+            )}
 
             <form.Field name="stringSource">
               {(field) => (
@@ -325,6 +322,7 @@ function normalise(value: {
 }) {
   return {
     ...value,
+    racketId: value.racketId || null,
     clubStringId: value.clubStringId || null,
     ownStringName: value.ownStringName || null,
     tensionCross: value.tensionCross === '' ? null : value.tensionCross,

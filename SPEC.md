@@ -89,6 +89,7 @@ model Racket {
   gripSize      String?
   notes         String?
   archived      Boolean  @default(false)
+  hidden        Boolean  @default(false)  // stand-in for a request with no racket — see below
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   requests      StringingRequest[]
@@ -177,6 +178,14 @@ model Reimbursement {
 
 `Invite` is specified in §9 and the six training-planner models in §13; both live in the
 same `prisma/schema.prisma`.
+
+**Requesting without a racket.** A member who has not added a racket can still request a
+restring: the form drops the racket picker, and `createRequest` files the request under
+that member's `hidden` stand-in racket (labelled "Mein Schläger" / "My racket"), creating
+it on first use and reusing it after. Every racket server function skips hidden rackets,
+so it never appears under "my rackets", cannot be opened, edited, archived or deleted,
+and cannot be picked by id. Once the member adds a real racket, the picker offers only
+that; requests already filed keep the stand-in.
 
 Deleting a racket that has requests is blocked → archive instead, so history stays intact.
 Archiving is in turn blocked while the racket still has an open request. Same for a
@@ -449,6 +458,7 @@ before a second run, or balance assertions in the payout section fail on leftove
 | Newcomer joins via invite link, gets approved, adds a racket, requests a restring              | `new-member-onboarding.spec.ts`            |
 | Stringer finds a job in the queue, accepts it, completes it with prices and notes              | `stringer-completes-a-job.spec.ts`         |
 | Controller marks a job paid, is refused an overpayment, pays the stringer part of their labour | `controller-reimburses-a-stringer.spec.ts` |
+| Member with no racket requests a restring; the stand-in never shows under "my rackets"         | `request-without-a-racket.spec.ts`         |
 
 Only the onboarding test creates people through the UI. The others start from a state
 written straight into the database by `tests/ui/fixtures.ts` — "a stringer exists, a
@@ -497,7 +507,7 @@ the sentence from the spec.
   the other two roles get only their own requests.
 - **CI.** All test scripts are manual; the HTTP e2e script additionally needs a
   running dev server.
-- **Browser tests cover three workflows so far** (onboarding, stringer completing a
+- **Browser tests cover four workflows so far** (onboarding, request without a racket, stringer completing a
   job, controller reimbursing a stringer). Still to write: member collects or
   cancels, admin rejects a member, coach builds a roster and solves a plan, locale
   switching.

@@ -128,6 +128,9 @@ model Racket {
   gripSize      String?
   notes         String?
   archived      Boolean  @default(false)
+  /// The stand-in created when a member requests a restring before adding any
+  /// racket of their own. Never listed under "my rackets"; one per member.
+  hidden        Boolean  @default(false)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

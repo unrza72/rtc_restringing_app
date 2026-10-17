@@ -24,6 +24,8 @@ export default [
       'src/paraglide/**',
       'src/generated/**',
       'src/routeTree.gen.ts',
+      'playwright-report/**',
+      'test-results/**',
     ],
   },
 ]

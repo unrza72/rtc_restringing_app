@@ -56,7 +56,13 @@ const tension = z.coerce
 
 export const requestInputSchema = z
   .object({
-    racketId: z.string().min(1, { error: () => m.request_racket_required() }),
+    // null = a member with no racket of their own yet; the server files the
+    // request under their hidden stand-in racket instead (see createRequest).
+    racketId: z
+      .string()
+      .min(1, { error: () => m.request_racket_required() })
+      .nullable()
+      .default(null),
     stringSource: z.enum(STRING_SOURCES),
     clubStringId: z.string().nullable().default(null),
     ownStringName: optionalText(120),

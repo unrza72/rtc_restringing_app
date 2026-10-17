@@ -110,12 +110,21 @@ export const createRequest = createServerFn({ method: 'POST' })
   .middleware([memberMiddleware])
   .validator(requestInputSchema)
   .handler(async ({ context, data }) => {
-    // The racket must be the caller's, and still in use.
-    const racket = await prisma.racket.findFirst({
-      where: { id: data.racketId, ownerId: context.user.id, archived: false },
-      select: { id: true },
-    })
-    if (!racket) throw notFound()
+    const { racketId, ...fields } = data
+
+    // A named racket must be the caller's own, visible and still in use.
+    if (racketId) {
+      const racket = await prisma.racket.findFirst({
+        where: {
+          id: racketId,
+          ownerId: context.user.id,
+          archived: false,
+          hidden: false,
+        },
+        select: { id: true },
+      })
+      if (!racket) throw notFound()
+    }
 
     if (data.clubStringId) {
       const clubString = await prisma.clubString.findFirst({
@@ -126,8 +135,33 @@ export const createRequest = createServerFn({ method: 'POST' })
     }
 
     return prisma.$transaction(async (tx) => {
+      // No racket named: the member hasn't added one yet. File the request
+      // under their hidden stand-in, created on first use and reused after,
+      // so asking for a restring never has to wait on filling in a racket.
+      const targetRacketId =
+        racketId ??
+        (
+          (await tx.racket.findFirst({
+            where: { ownerId: context.user.id, hidden: true },
+            select: { id: true },
+          })) ??
+          (await tx.racket.create({
+            data: {
+              ownerId: context.user.id,
+              label: m.racket_default_label(),
+              hidden: true,
+            },
+            select: { id: true },
+          }))
+        ).id
+
       const created = await tx.stringingRequest.create({
-        data: { ...data, requesterId: context.user.id, status: 'REQUESTED' },
+        data: {
+          ...fields,
+          racketId: targetRacketId,
+          requesterId: context.user.id,
+          status: 'REQUESTED',
+        },
       })
       await tx.requestEvent.create({
         data: {

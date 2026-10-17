@@ -339,6 +339,67 @@ check(
   notAdmin.error,
 )
 
+console.log('\n— request without a racket —')
+{
+  // The admin has no racket of their own here (admin implies member).
+  const withoutRacket = () =>
+    admin.call(REQUESTS, 'createRequest', {
+      racketId: null,
+      stringSource: 'CLUB',
+      clubStringId,
+      ownStringName: null,
+      tensionMain: 24,
+      tensionCross: null,
+      neededBy: null,
+      memberNotes: null,
+    })
+  const first = await withoutRacket()
+  check('a request needs no racket', first.ok, first.error)
+  const second = await withoutRacket()
+  const standIn = (first.result as { racketId?: string } | undefined)?.racketId
+  check(
+    'both are filed under the same stand-in racket',
+    !!standIn &&
+      standIn ===
+        (second.result as { racketId?: string } | undefined)?.racketId,
+    [first.result, second.result],
+  )
+
+  const listed = await admin.call(
+    RACKETS,
+    'listRackets',
+    { includeArchived: true },
+    'GET',
+  )
+  check(
+    'the stand-in is not listed among the member’s rackets',
+    listed.ok &&
+      !((listed.result ?? []) as Array<{ id: string }>).some(
+        (r) => r.id === standIn,
+      ),
+    listed.result,
+  )
+  const opened = await admin.call(RACKETS, 'getRacket', { id: standIn }, 'GET')
+  check('the stand-in cannot be opened as a racket', !opened.ok, opened.result)
+  const named = await admin.call(REQUESTS, 'createRequest', {
+    racketId: standIn,
+    stringSource: 'CLUB',
+    clubStringId,
+    ownStringName: null,
+    tensionMain: 24,
+    tensionCross: null,
+    neededBy: null,
+    memberNotes: null,
+  })
+  check('nor be picked by id for a request', !named.ok, named.result)
+
+  // Out of the way of the queue and billing checks below.
+  for (const created of [first, second]) {
+    const id = (created.result as { id?: string } | undefined)?.id
+    if (id) await admin.call(REQUESTS, 'cancelRequest', { id })
+  }
+}
+
 console.log('\n— request lifecycle —')
 const req = await member.call(REQUESTS, 'createRequest', {
   racketId,
