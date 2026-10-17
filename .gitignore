@@ -19,5 +19,11 @@ todos.json
 *.db-shm
 *.sqlite
 
+# Playwright output
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
 # generated Prisma client (recreate with `pnpm db:generate`)
 src/generated/

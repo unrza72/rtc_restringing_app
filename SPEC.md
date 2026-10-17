@@ -10,15 +10,15 @@ spec promises but the code does not yet do is collected in §12** — start ther
 
 ## 1. Stack (already scaffolded)
 
-| Concern   | Choice                                                                             |
-| --------- | ---------------------------------------------------------------------------------- |
-| Framework | TanStack Start (file routes in `src/routes`, `createServerFn` for mutations/loads) |
-| DB        | Prisma 7 + SQLite (`@prisma/adapter-better-sqlite3`)                               |
-| Auth      | better-auth 1.7 — `admin` plugin, `prismaAdapter`; email + password                |
-| UI        | Tailwind 4 + shadcn/ui (new-york, zinc), lucide icons; light theme, see §14        |
-| Forms     | TanStack Form + Zod schemas shared client/server                                   |
-| i18n      | Paraglide (`de` base, `en`) — all user-facing strings via messages                 |
-| Tests     | HTTP-level e2e script plus two pure unit-check scripts — see §11                   |
+| Concern   | Choice                                                                                |
+| --------- | ------------------------------------------------------------------------------------- |
+| Framework | TanStack Start (file routes in `src/routes`, `createServerFn` for mutations/loads)    |
+| DB        | Prisma 7 + SQLite (`@prisma/adapter-better-sqlite3`)                                  |
+| Auth      | better-auth 1.7 — `admin` plugin, `prismaAdapter`; email + password                   |
+| UI        | Tailwind 4 + shadcn/ui (new-york, zinc), lucide icons; light theme, see §14           |
+| Forms     | TanStack Form + Zod schemas shared client/server                                      |
+| i18n      | Paraglide (`de` base, `en`) — all user-facing strings via messages                    |
+| Tests     | Playwright browser tests, an HTTP-level e2e script, two pure unit-check scripts — §11 |
 
 ## 2. Roles
 
@@ -64,8 +64,9 @@ seeding bypasses better-auth (and so the invite gate) entirely; see §9.
 
 ```prisma
 // better-auth managed: User, Session, Account, Verification
-// NOTE: 1.7 scopes account identity by `issuer` — Account.issuer is required
-// ("local:credential" for password logins). The CLI lags the library, so
+// NOTE: no Account.issuer. better-auth 1.7.0–1.7.2 added one and 1.7.3
+// removed it; a leftover required column is never written, so every signup
+// fails. Dropped when upgrading to 1.7.7. The CLI lags the library, so
 // regenerate field lists from the installed package, not `@better-auth/cli`.
 // User extended with:
 //   role         String   @default("member")   (admin plugin)
@@ -415,12 +416,43 @@ None of these run in CI — there is no CI configuration in the repo.
 
 | Command               | What it covers                                                                                                                                                                                                                                     |
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm test:ui`        | Playwright, in a real browser, through the screens a person uses. Add `--ui` to watch a run step by step. See "Browser tests" below                                                                                                                |
 | `pnpm test:e2e`       | Real HTTP stack (better-auth + server-function RPC) against a **running dev server**: auth, invite gate, approval, rackets, strings, request lifecycle, paid state, payout ledger, locale persistence, training planner, rejection revoking access |
 | `pnpm test:solver`    | The grouping solver in isolation — hard rules, determinism, unplaced reasons                                                                                                                                                                       |
 | `pnpm test:timetable` | Timetable cell⇄slot conversion, configurable window, out-of-window preservation, lane packing                                                                                                                                                      |
 
 The e2e script mutates the dev database; run `pnpm db:reset-data && pnpm db:seed`
 before a second run, or balance assertions in the payout section fail on leftovers.
+
+### Browser tests
+
+`tests/ui/`, configured in `playwright.config.ts`. Each workflow is one test, split into
+`test.step`s so `pnpm test:ui --ui` reads as an outline you can step through.
+
+- **Isolated.** Its own server on :4100 and its own `e2e.sqlite`, so it never touches
+  `pnpm dev` on :4000 or `dev.sqlite`, and both can run at once (`tests/ui/env.ts`).
+- **Production build.** The web server runs `pnpm build`, then the built server — no
+  Vite dependency optimiser reloading the page mid-test, and it tests what ships. After
+  editing `src/`, restart `--ui` to rebuild.
+- **Known state.** `tests/ui/global-setup.ts` empties the tables, pushes the schema,
+  then seeds the bootstrap admin and the string catalogue. Rows are wiped before the
+  push so a schema change never has data to lose — Prisma refuses
+  `--accept-data-loss` when an AI agent runs it.
+- **Re-runnable.** Each test invents its own members (`newMember()`), since in `--ui`
+  mode the database is reset when the UI opens, not on every re-run.
+- **Copy-proof selectors.** Controls are found by role and label, with the text read
+  from `messages/de.json` through `t()` — wording changes don't break tests, and a
+  mistyped key fails the type check.
+
+| Workflow                                                                                       | File                                       |
+| ---------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| Newcomer joins via invite link, gets approved, adds a racket, requests a restring              | `new-member-onboarding.spec.ts`            |
+| Stringer finds a job in the queue, accepts it, completes it with prices and notes              | `stringer-completes-a-job.spec.ts`         |
+| Controller marks a job paid, is refused an overpayment, pays the stringer part of their labour | `controller-reimburses-a-stringer.spec.ts` |
+
+Only the onboarding test creates people through the UI. The others start from a state
+written straight into the database by `tests/ui/fixtures.ts` — "a stringer exists, a
+member has an open request" — so each drives only the part it is about.
 
 ### Code map
 
@@ -463,7 +495,12 @@ the sentence from the spec.
   unlike cancel, which moved to a localized Radix dialog.
 - **Dashboard panels for controllers and coaches.** Operators and admins get a panel;
   the other two roles get only their own requests.
-- **CI.** All three test scripts are manual; e2e additionally needs a running server.
+- **CI.** All test scripts are manual; the HTTP e2e script additionally needs a
+  running dev server.
+- **Browser tests cover three workflows so far** (onboarding, stringer completing a
+  job, controller reimbursing a stringer). Still to write: member collects or
+  cancels, admin rejects a member, coach builds a roster and solves a plan, locale
+  switching.
 - **Seed is not deployment-safe.** `pnpm db:seed` always inserts a demo training roster
   (trainers and trainees with availability), not only when dev quick-login is enabled
   like the other demo data. Running it on a real club database adds fake people to the
