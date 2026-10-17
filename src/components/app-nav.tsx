@@ -1,11 +1,13 @@
 import { Link, useRouteContext, useRouter } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
 import {
+  CircleHelp,
   Clock,
   GraduationCap,
   HandCoins,
   Languages,
   Layers,
+  LifeBuoy,
   LogOut,
   Menu,
   Plus,
@@ -23,6 +25,8 @@ import { setMyLocale } from '#/server/locale.functions'
 import { m } from '#/paraglide/messages'
 import { getLocale, locales, setLocale } from '#/paraglide/runtime'
 import { cn } from '#/lib/utils'
+import { ClubLogo } from '#/components/club-logo'
+import { openOnboardingTour } from '#/components/onboarding-tour'
 
 /**
  * Sticky header: mark on the left, tabs in the middle, actions on the right.
@@ -99,6 +103,7 @@ export function AppNav() {
               },
             ]
           : []),
+        { to: '/help', label: m.nav_help(), icon: LifeBuoy },
       ]
     : []
 
@@ -111,26 +116,14 @@ export function AppNav() {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur-md">
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
-        <div className="flex h-14 items-center gap-3">
+        <div className="flex h-16 items-center gap-3">
           <Link
             to={approved ? '/dashboard' : '/'}
-            className="flex shrink-0 items-center gap-2.5 select-none"
+            aria-label={m.club_name()}
+            className="shrink-0"
           >
-            <span className="ball-tile flex size-8 items-center justify-center rounded-lg text-base">
-              🎾
-            </span>
-            <span className="text-base font-bold tracking-tight text-foreground">
-              {m.app_name()}
-            </span>
+            <ClubLogo />
           </Link>
-
-          {items.length > 0 && (
-            <nav className="ml-4 hidden items-center gap-0.5 lg:flex">
-              {items.map((item) => (
-                <NavTab key={item.to} {...item} />
-              ))}
-            </nav>
-          )}
 
           <div className="ml-auto flex items-center gap-1.5">
             {approved && (
@@ -138,8 +131,8 @@ export function AppNav() {
                 to="/requests/new"
                 title={m.dash_new_request()}
                 className={cn(
-                  'flex items-center gap-1.5 rounded-lg bg-lime-400 px-3 py-1.5',
-                  'text-xs font-bold text-slate-950 transition-colors hover:bg-lime-300',
+                  'flex min-h-9 items-center gap-1.5 rounded-full bg-primary px-4',
+                  'text-xs font-medium text-primary-foreground transition-colors hover:bg-primary-hover',
                 )}
               >
                 <Plus className="size-3.5 stroke-[3]" />
@@ -159,6 +152,16 @@ export function AppNav() {
                     {user.name}
                   </span>
                 </span>
+                {approved && (
+                  // On small screens the same entry lives in the menu below.
+                  <span className="hidden lg:inline-flex">
+                    <IconButton
+                      label={m.onboarding_replay()}
+                      icon={CircleHelp}
+                      onClick={openOnboardingTour}
+                    />
+                  </span>
+                )}
                 <IconButton
                   label={m.nav_sign_out()}
                   icon={LogOut}
@@ -169,7 +172,7 @@ export function AppNav() {
               <Link
                 to="/login"
                 search={{ redirect: undefined }}
-                className="rounded-lg px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-slate-100 hover:text-foreground"
+                className="rounded-lg px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-sand hover:text-foreground"
               >
                 {m.nav_sign_in()}
               </Link>
@@ -188,6 +191,16 @@ export function AppNav() {
           </div>
         </div>
 
+        {/* Tabs get a row of their own: a staff account carries up to nine,
+            which never fit beside the club wordmark in a 6xl container. */}
+        {items.length > 0 && (
+          <nav className="-mx-3 hidden items-center gap-0.5 overflow-x-auto pb-2 lg:flex">
+            {items.map((item) => (
+              <NavTab key={item.to} {...item} />
+            ))}
+          </nav>
+        )}
+
         {open && items.length > 0 && (
           <nav className="flex flex-col gap-0.5 border-t border-border py-2 lg:hidden">
             {items.map((item) => (
@@ -197,6 +210,21 @@ export function AppNav() {
                 onNavigate={() => setOpen(false)}
               />
             ))}
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false)
+                openOnboardingTour()
+              }}
+              className={cn(
+                'flex items-center gap-2 rounded-lg px-3 py-1.5 text-left',
+                'text-xs font-medium text-muted-foreground transition-colors',
+                'hover:bg-sand hover:text-foreground',
+              )}
+            >
+              <CircleHelp className="size-3.5" />
+              {m.onboarding_replay()}
+            </button>
           </nav>
         )}
       </div>
@@ -217,11 +245,11 @@ function NavTab({
       onClick={onNavigate}
       activeOptions={{ exact }}
       className={cn(
-        'flex items-center gap-2 rounded-lg px-3 py-1.5',
+        'flex items-center gap-2 rounded-lg px-3 py-1.5 whitespace-nowrap',
         'text-xs font-medium text-muted-foreground transition-colors',
-        'hover:bg-slate-100 hover:text-foreground',
+        'hover:bg-sand hover:text-foreground',
       )}
-      activeProps={{ className: 'bg-slate-200 text-foreground font-semibold' }}
+      activeProps={{ className: 'bg-sand text-foreground font-semibold' }}
     >
       <Icon className="size-3.5" />
       {label}
@@ -247,7 +275,7 @@ function IconButton({
       title={label}
       aria-label={label}
       aria-expanded={expanded}
-      className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-slate-100 hover:text-foreground"
+      className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-sand hover:text-foreground"
     >
       <Icon className="size-4" />
     </button>

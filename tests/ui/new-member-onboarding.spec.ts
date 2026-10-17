@@ -11,7 +11,7 @@ import {
   t,
 } from './support'
 
-test('a newcomer joins through an invite link, adds a racket and requests a restring', async ({
+test('a newcomer joins through an invite link, is shown around, adds a racket and requests a restring', async ({
   page: admin,
   browser,
 }) => {
@@ -72,14 +72,85 @@ test('a newcomer joins through an invite link, adds a racket and requests a rest
     await expect(entry).toContainText(t('member_status_APPROVED'))
   })
 
-  await test.step('Newcomer is let in', async () => {
+  await test.step('Newcomer is let in and welcomed with a tour', async () => {
     await newcomer.reload()
     await expect(newcomer).toHaveURL(/\/dashboard$/)
+
+    // While the tour is open the page behind it is hidden from the
+    // accessibility tree, so the dashboard heading is checked after it.
+    const tour = newcomer.getByRole('dialog')
+    const heading = (key: Parameters<typeof t>[0]) =>
+      tour.getByRole('heading', { name: t(key) })
+    await expect(heading('onboarding_welcome_title')).toBeVisible()
+    await tour.getByRole('button', { name: t('onboarding_start') }).click()
+
+    await expect(heading('onboarding_request_title')).toBeVisible()
+    // Carabiners are switched on for these tests, so the tour mentions them.
+    await expect(tour).toContainText(t('onboarding_request_step_token'))
+    await tour.getByRole('button', { name: t('onboarding_next') }).click()
+
+    await expect(heading('onboarding_handover_title')).toBeVisible()
+    await expect(tour).toContainText(t('status_DONE'))
+    await tour.getByRole('button', { name: t('onboarding_next') }).click()
+
+    await expect(heading('onboarding_offer_title')).toBeVisible()
+    await tour
+      .getByRole('button', { name: t('onboarding_offer_accept') })
+      .click()
+
+    await expect(heading('onboarding_rackets_title')).toBeVisible()
+    // Closing records the tour as seen in the background; wait for that
+    // write before the reload below checks it stuck.
+    const recorded = newcomer.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        response.url().includes('/_serverFn/'),
+    )
+    await tour
+      .getByRole('button', { name: t('onboarding_finish'), exact: true })
+      .click()
+    await expect(tour).toBeHidden()
+    expect((await recorded).ok()).toBe(true)
+
     await expect(
       newcomer.getByRole('heading', {
         name: t('dash_title', { name: member.name }),
       }),
     ).toBeVisible()
+  })
+
+  await test.step('The tour stays closed, but can be replayed', async () => {
+    await newcomer.reload()
+    await expect(
+      newcomer.getByRole('heading', {
+        name: t('dash_title', { name: member.name }),
+      }),
+    ).toBeVisible()
+    await expect(newcomer.getByRole('dialog')).toHaveCount(0)
+
+    await newcomer
+      .getByRole('main')
+      .getByRole('button', { name: t('onboarding_replay') })
+      .click()
+    const tour = newcomer.getByRole('dialog')
+    await expect(
+      tour.getByRole('heading', { name: t('onboarding_welcome_title') }),
+    ).toBeVisible()
+    await newcomer.keyboard.press('Escape')
+    await expect(tour).toBeHidden()
+
+    // The header offers it on every page, not only the dashboard.
+    await header(newcomer)
+      .getByRole('link', { name: t('nav_requests') })
+      .click()
+    await header(newcomer)
+      .getByRole('button', { name: t('onboarding_replay') })
+      .click()
+    await expect(
+      tour.getByRole('heading', { name: t('onboarding_welcome_title') }),
+    ).toBeVisible()
+    await tour.getByRole('button', { name: t('onboarding_skip') }).click()
+    await expect(tour).toBeHidden()
   })
 
   await test.step('Newcomer adds a racket', async () => {

@@ -94,7 +94,7 @@ export function GridWindowPicker() {
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+      <span className="text-[11px] font-medium tracking-[0.16em] text-muted-foreground uppercase">
         {m.training_grid_window()}
       </span>
       <Input

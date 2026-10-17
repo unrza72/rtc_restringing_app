@@ -20,6 +20,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     role?: string | null
     banned?: boolean | null
     locale?: string | null
+    onboardedAt?: Date | null
   }
 
   return {
@@ -30,5 +31,6 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     roles: parseRoles(user.role),
     banned: user.banned ?? false,
     locale: isLocale(user.locale) ? user.locale : null,
+    onboarded: user.onboardedAt != null,
   }
 }

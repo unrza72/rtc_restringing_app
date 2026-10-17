@@ -12,6 +12,8 @@ export type SessionUser = {
   banned: boolean
   /** null if never recorded — see recordInitialLocale. */
   locale: Locale | null
+  /** Has seen the welcome tour — see completeOnboarding. */
+  onboarded: boolean
 }
 
 export class AuthError extends Error {

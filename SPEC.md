@@ -15,7 +15,7 @@ spec promises but the code does not yet do is collected in §12** — start ther
 | Framework | TanStack Start (file routes in `src/routes`, `createServerFn` for mutations/loads)    |
 | DB        | Prisma 7 + SQLite (`@prisma/adapter-better-sqlite3`)                                  |
 | Auth      | better-auth 1.7 — `admin` plugin, `prismaAdapter`; email + password                   |
-| UI        | Tailwind 4 + shadcn/ui (new-york, zinc), lucide icons; light theme, see §14           |
+| UI        | Tailwind 4 + shadcn/ui (new-york), lucide icons; club brand theme, see §14            |
 | Forms     | TanStack Form + Zod schemas shared client/server                                      |
 | i18n      | Paraglide (`de` base, `en`) — all user-facing strings via messages                    |
 | Tests     | Playwright browser tests, an HTTP-level e2e script, two pure unit-check scripts — §11 |
@@ -54,7 +54,19 @@ to create an account without one.
    sessions, so they are signed out at once. **As built, a rejected member can still
    sign in again** — they are then confined to `/pending`, which shows "account not
    approved" instead of "waiting". v1.0 said "cannot sign in"; see §12.
-5. Admins cannot change their own approval status or drop their own admin role, and
+5. On their first visit after approval, the member gets a **welcome tour** — a dialog
+   hosted by the `_authed` layout, so it opens on whichever page they land on. It walks
+   through requesting a restring, dropping the racket off (with the carabiner, when
+   racket tokens are on) and the status a request moves through, then offers an
+   optional chapter on adding and managing rackets. Closing it in any way — finishing,
+   skipping, ✕, Escape — sets `User.onboardedAt` via `completeOnboarding`, so it never
+   reopens on its own; "How it works" replays it — a button on the dashboard, and an
+   entry in the header (an icon on wide screens, a line in the menu on narrow ones), so
+   it is reachable from every page. Seeded users (the bootstrap admin, the dev roster)
+   start out onboarded. Members who existed before the column was added have
+   `onboardedAt = null` and get the tour once on their next visit too — deliberately,
+   since none of them have seen it.
+6. Admins cannot change their own approval status or drop their own admin role, and
    the last approved admin cannot be demoted — the club always keeps one.
 
 The first user created by the seed script is `admin` + `APPROVED` (bootstrap) —
@@ -76,6 +88,7 @@ seeding bypasses better-auth (and so the invite gate) entirely; see §9.
 //   approvedById String?
 //   locale       String?  // "en" | "de" — see §8, Locale routing
 //   inviteToken  String?  // the invite this account was created with — see §9
+//   onboardedAt  DateTime? // welcome tour seen (finished or dismissed) — see §3
 
 model Racket {
   id            String   @id @default(cuid())
@@ -258,6 +271,7 @@ REQUESTED --accept(operator)--> ACCEPTED --complete(operator)--> DONE --collect-
 | `/training/plans`, `/training/plans/$id`      | coach                     | solver knobs, saved runs, groups and who was left out                                              |
 | `/admin/members`                              | admin                     | approve, reject, set roles                                                                         |
 | `/admin/strings`                              | admin                     | club string catalogue: add, edit price, deactivate                                                 |
+| `/help`                                       | member                    | every feature explained, filtered to the reader's roles; restarts the tour                         |
 | `/api/auth/$`                                 | public                    | better-auth handler (exists)                                                                       |
 
 Guards live in one place: `beforeLoad` on a `_authed` pathless layout route that loads
@@ -433,6 +447,8 @@ spike branches are merged into `main`.
 | Simplified racket form       | Name only by default; brand/model/head size/pattern/grip behind "add more details"                                 |
 | Dashboard panels             | Jobs waiting (operators), members awaiting approval (admins)                                                       |
 | Developer tooling            | §15 — seeded demo data, data reset, dev quick-login                                                                |
+| Welcome tour                 | §3 — first-visit walkthrough of requesting a restring, optional racket chapter; replayable from the dashboard      |
+| Help page                    | §6 — `/help`: sections per feature, shown only for the roles that can use them; carabiner topics only when on      |
 
 ### Tests
 
@@ -468,13 +484,14 @@ before a second run, or balance assertions in the payout section fail on leftove
   from `messages/de.json` through `t()` — wording changes don't break tests, and a
   mistyped key fails the type check.
 
-| Workflow                                                                                                 | File                                       |
-| -------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| Newcomer joins via invite link, gets approved, adds a racket, requests a restring                        | `new-member-onboarding.spec.ts`            |
-| Stringer finds a job in the queue, accepts it, completes it with prices and notes                        | `stringer-completes-a-job.spec.ts`         |
-| Controller marks a job paid, is refused an overpayment, pays the stringer part of their labour           | `controller-reimburses-a-stringer.spec.ts` |
-| Member with no racket requests a restring; the stand-in never shows under "my rackets"                   | `request-without-a-racket.spec.ts`         |
-| Carabiner in use is refused, the admin can't lower the count below it, and it is free again after pickup | `racket-tokens.spec.ts`                    |
+| Workflow                                                                                                  | File                                        |
+| --------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| Newcomer joins via invite link, gets approved, walks the welcome tour, adds a racket, requests a restring | `new-member-onboarding.spec.ts`             |
+| Help shows a member, a stringer and an admin only the sections their roles can use                        | `help-shows-what-your-roles-can-do.spec.ts` |
+| Stringer finds a job in the queue, accepts it, completes it with prices and notes                         | `stringer-completes-a-job.spec.ts`          |
+| Controller marks a job paid, is refused an overpayment, pays the stringer part of their labour            | `controller-reimburses-a-stringer.spec.ts`  |
+| Member with no racket requests a restring; the stand-in never shows under "my rackets"                    | `request-without-a-racket.spec.ts`          |
+| Carabiner in use is refused, the admin can't lower the count below it, and it is free again after pickup  | `racket-tokens.spec.ts`                     |
 
 Only the onboarding test creates people through the UI. The others start from a state
 written straight into the database by `tests/ui/fixtures.ts` — "a stringer exists, a
@@ -695,27 +712,44 @@ grid — the list below is always complete.
 
 ## 14. Look and feel
 
-Built as a spike, now merged into `main` — it replaced the prototype's dark workshop
-look. A bright, near-white surface with the tennis-ball lime kept as the one loud
-accent. The palette lives in `src/styles.css`:
+The app wears the Royal Tennisclub Bezau brand. `misc/BRAND.md` is the source of truth;
+`misc/rtc-theme.css` holds its palette and font tokens and is imported by
+`src/styles.css`, which maps them onto the shadcn tokens in `:root`.
 
+- **Palette.** Cream page (`--background`), sand cards (`--card`), court-green text
+  (`court-900`), sage for secondary text and borders, terracotta (`--color-brand`) as the
+  one accent and crown red for destructive actions. No gradients, no emoji.
+- **Type.** Headings and card titles are Cormorant Garamond 600, uppercase, letter-spaced
+  — set once in the base layer, so a heading needs no weight or tracking utilities. UI text
+  is Jost. Small labels are uppercase with 0.16em tracking. Both fonts load from Google
+  Fonts through `<link>`s in `__root.tsx`; an `@import` inside the theme file would sit
+  behind Tailwind's own rules and be dropped.
+- **Logo.** `src/components/club-logo.tsx`: the badge (`misc/rtc-racket-badge.svg`, the
+  Restringing service mark) left of "ROYAL TENNISCLUB BEZAU" in terracotta Cormorant;
+  stacked and centred on the sign-in screens. The same SVG is the favicon. Swap the one
+  import once there is an SVG of the full crest.
 - **Tokens over utilities.** Components reach for `bg-card`, `text-muted-foreground`,
-  `border-border` rather than raw `slate-*`, so the next change of mind is a change to
-  the `:root` block alone. The one deliberate exception is a saturated fill that carries
-  its own text, such as the amber "active filter" tab.
-- **Fill vs ink.** `--primary` is lime-500, which reads well as a button fill under
-  near-black text (10.2:1) but is nearly invisible _as_ a mark on white (2.0:1). Anything
-  drawn thin — a link, a radio dot, a slider edge — uses `--primary-ink` (lime-700,
-  5.0:1) instead. Reaching for `text-primary` on a light surface is almost always wrong.
-- **Depth from shadow.** A dark theme separates surfaces by making them lighter; a light
-  one cannot, so cards carry a soft two-stage shadow instead.
-- **Badges are tints, not fills.** Status and ball badges pair a pale background with
-  saturated text. Solid colour blocks shout far louder than a status deserves on white.
+  `border-border`, `bg-primary`, `hover:bg-primary-hover` rather than raw colours. Where
+  a palette step is meant (status badges, callouts) it is a brand scale — `terracotta-*`,
+  `sage-*`, `court-*`, `crown` — never a stock Tailwind colour. The one exception is the
+  training ball badges, which show the real ball colours.
+- **Fill vs ink.** `--primary` (terracotta) is a fill under white text (4.8:1). Terracotta
+  as text on cream is only allowed large or bold, so links and highlights use
+  `--primary-ink` (terracotta-700). Muted text is sage-700; sage-500 is never text.
+- **Buttons** are pills (`rounded-full`), at least 44px tall for the primary action.
+  Cards are `rounded-2xl` on sand with a hairline shadow.
+- **Meaning, not colour.** Status badges are tints: requested court, on the machine
+  terracotta, ready sage, collected neutral, cancelled crown. "Good" callouts are sage,
+  "attention" terracotta, "negative" crown on a terracotta tint.
+- **Header.** Logo bar, with the nav tabs on a second row on desktop — a staff account
+  carries up to nine tabs, which never fit beside the wordmark. Below `lg` they collapse
+  into the menu button.
 - **Base size** is 104.2% (16.67px), half a point above the browser default, as a
   percentage so a reader who has already raised their own base size keeps the increase.
 
-Every foreground/background pair in the palette clears WCAG AA (4.5:1 for text, 3:1 for
-UI marks); the tightest are muted text at 4.55:1 and the collected-status badge at 4.55:1.
+Every text pair clears WCAG AA: muted sage-700 on sand 5.7:1, white on terracotta 4.8:1,
+terracotta-700 links on sand 6.1:1. Input borders are sage-600 (≥4:1) for the 3:1 UI-mark
+rule.
 
 ### Interaction patterns
 

@@ -48,7 +48,7 @@ export function RequestList({
 
             <span className="text-xs text-muted-foreground">
               {describeString(request)} ·{' '}
-              <span className="font-semibold text-lime-400">
+              <span className="font-semibold text-foreground">
                 {formatTension(request.tensionMain, request.tensionCross)}
               </span>
             </span>
@@ -66,7 +66,7 @@ export function RequestList({
                 </span>
               )}
               {request.neededBy && (
-                <span className="text-[11px] text-amber-400">
+                <span className="text-[11px] font-medium text-primary-ink">
                   {m.queue_needed_by({ date: formatDate(request.neededBy) })}
                 </span>
               )}

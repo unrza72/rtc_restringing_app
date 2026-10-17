@@ -43,10 +43,10 @@ function invitePath(token: string) {
 }
 
 const STATUS_BADGE: Record<InviteStatus, string> = {
-  ACTIVE: 'border-emerald-300 bg-emerald-50 text-emerald-800',
+  ACTIVE: 'border-sage-300 bg-sage-100 text-sage-800',
   USED: 'border-border bg-muted text-foreground',
   EXPIRED: 'border-border bg-muted text-muted-foreground',
-  REVOKED: 'border-rose-300 bg-rose-50 text-rose-700',
+  REVOKED: 'border-terracotta-300 bg-terracotta-100 text-crown',
 }
 
 const STATUS_LABEL: Record<InviteStatus, () => string> = {
@@ -95,15 +95,13 @@ function InvitesPage() {
 
   return (
     <div className="grid gap-6">
-      <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
-        {m.invites_title()}
-      </h1>
+      <h1 className="text-3xl text-foreground">{m.invites_title()}</h1>
 
       <FormError>{error}</FormError>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">{m.invites_create()}</CardTitle>
+          <CardTitle className="text-lg">{m.invites_create()}</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4">
           <form

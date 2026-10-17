@@ -122,9 +122,7 @@ function BillingPage() {
   return (
     <div className="grid gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
-          {m.billing_title()}
-        </h1>
+        <h1 className="text-3xl text-foreground">{m.billing_title()}</h1>
         <div className="relative w-full sm:w-64">
           <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -249,7 +247,7 @@ function BillingPage() {
                         variant="outline"
                         className={cn(
                           request.paidAt
-                            ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
+                            ? 'border-sage-300 bg-sage-100 text-sage-800'
                             : 'border-border bg-muted text-foreground',
                         )}
                       >

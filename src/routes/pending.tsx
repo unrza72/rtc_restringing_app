@@ -29,8 +29,8 @@ function PendingPage() {
           className={
             'flex size-11 items-center justify-center rounded-xl border ' +
             (rejected
-              ? 'border-rose-300 bg-rose-50 text-rose-700'
-              : 'border-amber-300 bg-amber-50 text-amber-800')
+              ? 'border-terracotta-300 bg-terracotta-100 text-crown'
+              : 'border-terracotta-200 bg-terracotta-50 text-terracotta-800')
           }
         >
           <Icon className="size-5" />

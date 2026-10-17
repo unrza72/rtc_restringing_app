@@ -91,7 +91,7 @@ function SignupPage() {
           <Link
             to="/login"
             search={{ redirect: undefined }}
-            className="text-sm font-semibold text-lime-700 hover:text-lime-800"
+            className="text-sm font-semibold text-primary-ink hover:text-terracotta-800"
           >
             {m.auth_to_sign_in()}
           </Link>

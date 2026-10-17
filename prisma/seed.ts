@@ -69,6 +69,10 @@ async function createApprovedUser({
       role,
       status: 'APPROVED',
       approvedAt: now,
+      // The welcome tour is for members finding their way in; the bootstrap
+      // admin and the dev roster skip it (it can be replayed from the
+      // dashboard).
+      onboardedAt: now,
       createdAt: now,
       updatedAt: now,
       accounts: {

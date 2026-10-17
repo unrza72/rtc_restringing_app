@@ -55,7 +55,7 @@ export function ScheduleTimetable({
         {WEEKDAYS.map((day) => (
           <div
             key={day}
-            className="pb-1.5 text-center text-[11px] font-bold tracking-wide text-muted-foreground uppercase"
+            className="pb-1.5 text-center text-[11px] font-medium tracking-[0.16em] text-muted-foreground uppercase"
           >
             {m[`training_weekday_short_${day}`]()}
           </div>

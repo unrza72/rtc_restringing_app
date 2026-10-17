@@ -1,94 +1,64 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
+/* The club's own palette, scales and fonts — kept as delivered in misc/, so a
+   new version from the club is a drop-in replacement. */
+@import '../misc/rtc-theme.css';
 
 /*
- * Daylight refresh of the tennis-workshop look: a bright, near-white surface
- * with the tennis-ball lime kept as the one loud accent, emerald for the member
- * side and amber for the stringer's bench.
+ * Royal Tennisclub Bezau, following misc/BRAND.md: cream page, sand cards,
+ * court-green text, terracotta for the one primary action per screen, sage for
+ * dividers and quiet accents. No gradients, no emoji.
  *
- * The palette is light-only by design — a half-converted theme reads worse than
- * a committed one, so the shadcn tokens are defined on :root rather than split
- * across .dark. Components should reach for these tokens (bg-card, text-muted-
- * foreground, border-border) instead of raw slate utilities, so the next change
- * of mind is a change to this block alone.
+ * Light-only. Components reach for the semantic tokens below (bg-card,
+ * text-muted-foreground, border-border) rather than raw palette utilities, so a
+ * change of mind is a change to this block alone.
  */
 
 :root {
-  /* raw palette — Tailwind's slate/lime/emerald/amber, kept as hex so the
-     values stay greppable against the utility classes */
-  --white: #ffffff;
-  --slate-50: #f8fafc;
-  --slate-100: #f1f5f9;
-  --slate-200: #e2e8f0;
-  --slate-300: #cbd5e1;
-  --slate-400: #94a3b8;
-  --slate-500: #64748b;
-  --slate-600: #475569;
-  --slate-700: #334155;
-  --slate-800: #1e293b;
-  --slate-900: #0f172a;
-  --slate-950: #020617;
-
-  --lime-300: #bef264;
-  --lime-400: #a3e635;
-  --lime-500: #84cc16;
-  --lime-600: #65a30d;
-  --lime-700: #4d7c0f;
-  --emerald-500: #10b981;
-  --emerald-600: #059669;
-  --emerald-700: #047857;
-  --amber-500: #f59e0b;
-  --amber-600: #d97706;
-  --amber-700: #b45309;
-  --rose-400: #fb7185;
-  --rose-600: #e11d48;
-
-  /* shadcn semantic tokens — every Card/Button/Input inherits from here */
-  --background: var(--slate-50);
-  --foreground: var(--slate-900);
-  --card: var(--white);
-  --card-foreground: var(--slate-900);
-  --popover: var(--white);
-  --popover-foreground: var(--slate-900);
-  /* Lime-500 rather than 400: the brighter one dissolves into a white card,
-     and it still carries near-black text at full contrast. */
-  --primary: var(--lime-500);
-  --primary-foreground: var(--slate-950);
-  --secondary: var(--slate-100);
-  --secondary-foreground: var(--slate-900);
-  --muted: var(--slate-100);
-  --muted-foreground: var(--slate-500);
-  --accent: var(--slate-100);
-  --accent-foreground: var(--slate-900);
-  --destructive: var(--rose-600);
-  --destructive-foreground: var(--white);
-  --border: var(--slate-200);
-  --input: var(--slate-300);
-  /* Lime as ink rather than as a fill. The bright lime works under dark
-     text but is nearly invisible *as* a mark on white, so anything drawn
-     thin — a link, a radio dot, a slider edge — uses the darker one. */
-  --primary-ink: var(--lime-700);
-  --ring: var(--lime-500);
+  --background: var(--color-cream);
+  --foreground: var(--color-court-900);
+  --card: var(--color-sand);
+  --card-foreground: var(--color-court-900);
+  /* Menus and dialogs float above sand cards, so they take the lighter cream. */
+  --popover: var(--color-cream);
+  --popover-foreground: var(--color-court-900);
+  --primary: var(--color-brand);
+  --primary-foreground: #ffffff;
+  --primary-hover: var(--color-terracotta-700);
+  --secondary: var(--color-sage-100);
+  --secondary-foreground: var(--color-court-900);
+  --muted: var(--color-sage-100);
+  /* sage-500 is decoration only (2.9:1 on cream); text uses sage-700. */
+  --muted-foreground: var(--color-sage-700);
+  --accent: var(--color-sage-100);
+  --accent-foreground: var(--color-court-900);
+  --destructive: var(--color-crown);
+  --destructive-foreground: #ffffff;
+  /* Dividers are decoration; a field's outline is not — it has to show where
+     the field is, so inputs get the darker sage (4:1 on sand). */
+  --border: var(--color-sage-200);
+  --input: var(--color-sage-600);
+  /* Terracotta as ink rather than as a fill: below 18px or non-bold it only
+     reaches 4.3:1 on cream, so links and thin marks use the darker step. */
+  --primary-ink: var(--color-terracotta-700);
+  --ring: var(--color-brand);
   --radius: 0.75rem;
 
-  /* Surfaces a hair off the page, for rows and wells inside a white card. */
-  --surface-sunken: var(--slate-50);
-  --surface-raised: var(--white);
+  /* Wells inside a sand card sit on the lighter page colour. */
+  --surface-sunken: var(--color-cream);
+  --surface-raised: var(--color-sand);
 
-  --sidebar: var(--white);
-  --sidebar-foreground: var(--slate-900);
-  --sidebar-primary: var(--lime-500);
-  --sidebar-primary-foreground: var(--slate-950);
-  --sidebar-accent: var(--slate-100);
-  --sidebar-accent-foreground: var(--slate-900);
-  --sidebar-border: var(--slate-200);
-  --sidebar-ring: var(--lime-500);
+  --sidebar: var(--color-sand);
+  --sidebar-foreground: var(--color-court-900);
+  --sidebar-primary: var(--color-brand);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--color-sage-100);
+  --sidebar-accent-foreground: var(--color-court-900);
+  --sidebar-border: var(--color-sage-200);
+  --sidebar-ring: var(--color-brand);
 }
 
 @theme inline {
-  --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
-
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -124,6 +94,7 @@
   --color-sidebar-ring: var(--sidebar-ring);
 
   --color-primary-ink: var(--primary-ink);
+  --color-primary-hover: var(--primary-hover);
 
   --color-surface-sunken: var(--surface-sunken);
   --color-surface-raised: var(--surface-raised);
@@ -150,61 +121,28 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* A single lime bloom behind the header, so the top of the page carries the
-   accent without every card having to. Stronger than the dark theme's wash:
-   a tint this faint simply disappears against white. */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(
-      900px 420px at 12% -12%,
-      rgba(132, 204, 22, 0.16),
-      transparent 62%
-    ),
-    radial-gradient(
-      760px 400px at 92% -8%,
-      rgba(16, 185, 129, 0.12),
-      transparent 60%
-    );
-}
-
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
 
-  /* The prototype leans on tight, heavy headings — carry that over globally
-     rather than repeating the utilities on every page title. */
+  /* Headings in the club's display face: Cormorant Garamond 600, uppercase,
+     tracked out — the same voice as the club name in the header. */
   h1,
   h2,
-  h3 {
-    letter-spacing: -0.02em;
+  h3,
+  [data-slot='card-title'] {
+    font-family: var(--font-display);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
   }
 }
 
-/* The one shape the prototype repeats everywhere: the tennis-ball tile. */
-.ball-tile {
-  background-image: linear-gradient(
-    to bottom right,
-    var(--lime-400),
-    var(--emerald-600)
-  );
-  color: var(--slate-950);
-  box-shadow: 0 8px 20px -6px rgb(132 204 22 / 0.45);
-}
-
-/*
- * Light UI needs its depth from shadow rather than from a lighter fill, so
- * cards get a soft two-stage shadow instead of the dark theme's flat surface.
- */
+/* Sand on cream already reads as a raised surface; a hairline shadow is all
+   the depth the clean, flat style wants. */
 @layer components {
   [data-slot='card'] {
-    box-shadow:
-      0 1px 2px rgb(15 23 42 / 0.04),
-      0 1px 3px rgb(15 23 42 / 0.06);
+    box-shadow: 0 1px 2px rgb(38 53 45 / 0.06);
   }
 }

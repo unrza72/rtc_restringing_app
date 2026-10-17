@@ -13,6 +13,11 @@ import { AppNav } from '#/components/app-nav'
 import { Breadcrumbs } from '#/components/breadcrumbs'
 
 import appCss from '../styles.css?url'
+import badgeUrl from '../../misc/rtc-racket-badge.svg?url'
+
+// Cormorant Garamond for display, Jost for UI — see misc/BRAND.md.
+const FONTS_URL =
+  'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Jost:wght@400;500;600&display=swap'
 
 export const Route = createRootRoute({
   beforeLoad: async ({ location }) => {
@@ -41,9 +46,19 @@ export const Route = createRootRoute({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'RTC Restringing' },
+      { title: 'Royal Tennisclub Bezau' },
     ],
-    links: [{ rel: 'stylesheet', href: appCss }],
+    links: [
+      { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+      {
+        rel: 'preconnect',
+        href: 'https://fonts.gstatic.com',
+        crossOrigin: 'anonymous',
+      },
+      { rel: 'stylesheet', href: FONTS_URL },
+      { rel: 'stylesheet', href: appCss },
+      { rel: 'icon', type: 'image/svg+xml', href: badgeUrl },
+    ],
   }),
   shellComponent: RootDocument,
 })
@@ -54,7 +69,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body className="min-h-screen bg-surface-sunken text-foreground antialiased">
+      <body className="min-h-screen bg-background text-foreground antialiased">
         <AppNav />
         <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 md:py-10">
           <Breadcrumbs />

@@ -41,6 +41,9 @@ model User {
   // signUp.email() call can carry the token through, typed, with no extra
   // server round trip. See src/lib/auth.ts's validateUserInfo.
   inviteToken     String?
+  // When the member finished (or dismissed) the welcome tour shown on their
+  // first visit. null = not seen yet, so the tour opens on its own.
+  onboardedAt     DateTime?
   sessions        Session[]
   accounts        Account[]
 

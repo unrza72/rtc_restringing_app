@@ -72,7 +72,7 @@ function PlanPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex flex-wrap items-center gap-3 text-base">
+          <CardTitle className="flex flex-wrap items-center gap-3 text-lg">
             {plan.name}
             <span className="text-xs font-normal text-muted-foreground">
               {formatDate(plan.createdAt)} ·{' '}
@@ -115,7 +115,7 @@ function PlanPage() {
       </Card>
 
       <section className="grid gap-3">
-        <h2 className="text-lg font-bold tracking-tight text-foreground">
+        <h2 className="text-xl text-foreground">
           {m.training_groups_title()}{' '}
           <span className="text-sm font-normal text-muted-foreground">
             {m.training_plan_group_count({ count: plan.groups.length })}
@@ -133,7 +133,7 @@ function PlanPage() {
             <Card>
               <CardContent className="grid gap-3 py-4">
                 {hidden > 0 && (
-                  <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  <p className="rounded-md border border-terracotta-200 bg-terracotta-50 px-3 py-2 text-xs text-terracotta-800">
                     {m.training_schedule_outside({ count: hidden })}
                   </p>
                 )}
@@ -147,7 +147,7 @@ function PlanPage() {
             {days.map(({ day, groups }) => (
               <Card key={day}>
                 <CardHeader>
-                  <CardTitle className="text-base">
+                  <CardTitle className="text-lg">
                     {m[`training_weekday_${day}`]()}
                   </CardTitle>
                 </CardHeader>
@@ -201,7 +201,7 @@ function PlanPage() {
       </section>
 
       <section className="grid gap-3">
-        <h2 className="text-lg font-bold tracking-tight text-foreground">
+        <h2 className="text-xl text-foreground">
           {m.training_unplaced_title()}{' '}
           <span className="text-sm font-normal text-muted-foreground">
             {m.training_plan_unplaced_count({ count: plan.unplaced.length })}
@@ -231,7 +231,7 @@ function PlanPage() {
                         {m[`training_ball_${entry.person.ball as Ball}`]()}
                       </Badge>
                     )}
-                    <span className="ml-auto text-xs text-amber-400">
+                    <span className="ml-auto text-xs text-primary-ink">
                       {m[`training_reason_${entry.reason as UnplacedReason}`]()}
                     </span>
                   </li>

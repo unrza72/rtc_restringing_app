@@ -45,17 +45,13 @@ function MembersPage() {
 
   return (
     <div className="grid gap-6">
-      <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
-        {m.admin_members_title()}
-      </h1>
+      <h1 className="text-3xl text-foreground">{m.admin_members_title()}</h1>
 
       <FormError>{error}</FormError>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">
-            {m.admin_members_pending()}
-          </CardTitle>
+          <CardTitle className="text-lg">{m.admin_members_pending()}</CardTitle>
         </CardHeader>
         <CardContent>
           {pending.length === 0 ? (
@@ -112,7 +108,7 @@ function MembersPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">{m.admin_members_all()}</CardTitle>
+          <CardTitle className="text-lg">{m.admin_members_all()}</CardTitle>
         </CardHeader>
         <CardContent>
           <ul className="divide-y">

@@ -94,9 +94,7 @@ function PersonPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">
-            {m.training_person_edit()}
-          </CardTitle>
+          <CardTitle className="text-lg">{m.training_person_edit()}</CardTitle>
         </CardHeader>
         <CardContent>
           <form
@@ -301,7 +299,7 @@ function TimetableCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex flex-wrap items-baseline gap-3 text-base">
+        <CardTitle className="flex flex-wrap items-baseline gap-3 text-lg">
           {m.training_grid_title()}
           <span className="text-xs font-normal text-muted-foreground">
             {m.training_grid_total({ hours })}
@@ -324,7 +322,7 @@ function TimetableCard({
         )}
 
         {!fitsGrid(plain, gridWindow) && (
-          <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          <p className="rounded-md border border-terracotta-200 bg-terracotta-50 px-3 py-2 text-xs text-terracotta-800">
             {m.training_grid_offgrid()}
           </p>
         )}
@@ -396,7 +394,7 @@ function AvailabilityCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">{m.training_exact_title()}</CardTitle>
+        <CardTitle className="text-lg">{m.training_exact_title()}</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-4">
         <FormError>{error}</FormError>

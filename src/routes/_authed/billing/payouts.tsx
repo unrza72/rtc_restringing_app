@@ -62,9 +62,7 @@ function PayoutsPage() {
 
   return (
     <div className="grid gap-6">
-      <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
-        {m.payouts_title()}
-      </h1>
+      <h1 className="text-3xl text-foreground">{m.payouts_title()}</h1>
 
       {balances.length === 0 ? (
         <Card>
@@ -126,7 +124,7 @@ function PayoutsPage() {
 
       <Card>
         <CardContent className="px-0 py-2 sm:px-2">
-          <div className="px-4 pt-4 pb-2 text-[11px] font-bold tracking-wider text-muted-foreground uppercase sm:px-2">
+          <div className="px-4 pt-4 pb-2 text-xs font-medium tracking-[0.16em] text-muted-foreground uppercase sm:px-2">
             {m.payouts_history()}
           </div>
           {reimbursements.length === 0 ? (

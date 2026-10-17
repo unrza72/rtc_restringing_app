@@ -181,7 +181,7 @@ function CompleteForm({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">{m.queue_complete_title()}</CardTitle>
+        <CardTitle className="text-lg">{m.queue_complete_title()}</CardTitle>
       </CardHeader>
       <CardContent>
         <form

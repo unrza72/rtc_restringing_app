@@ -17,6 +17,7 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as AuthedAdminRouteImport } from './routes/_authed/admin'
 import { Route as AuthedBillingRouteImport } from './routes/_authed/billing'
 import { Route as AuthedDashboardRouteImport } from './routes/_authed/dashboard'
+import { Route as AuthedHelpRouteImport } from './routes/_authed/help'
 import { Route as AuthedInvitesRouteImport } from './routes/_authed/invites'
 import { Route as AuthedQueueRouteImport } from './routes/_authed/queue'
 import { Route as AuthedTrainingRouteImport } from './routes/_authed/training'
@@ -76,6 +77,11 @@ const AuthedBillingRoute = AuthedBillingRouteImport.update({
 const AuthedDashboardRoute = AuthedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedHelpRoute = AuthedHelpRouteImport.update({
+  id: '/help',
+  path: '/help',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedInvitesRoute = AuthedInvitesRouteImport.update({
@@ -194,6 +200,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthedAdminRouteWithChildren
   '/billing': typeof AuthedBillingRouteWithChildren
   '/dashboard': typeof AuthedDashboardRoute
+  '/help': typeof AuthedHelpRoute
   '/invites': typeof AuthedInvitesRoute
   '/queue': typeof AuthedQueueRouteWithChildren
   '/training': typeof AuthedTrainingRouteWithChildren
@@ -223,6 +230,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/admin': typeof AuthedAdminRouteWithChildren
   '/dashboard': typeof AuthedDashboardRoute
+  '/help': typeof AuthedHelpRoute
   '/invites': typeof AuthedInvitesRoute
   '/admin/members': typeof AuthedAdminMembersRoute
   '/admin/strings': typeof AuthedAdminStringsRoute
@@ -253,6 +261,7 @@ export interface FileRoutesById {
   '/_authed/admin': typeof AuthedAdminRouteWithChildren
   '/_authed/billing': typeof AuthedBillingRouteWithChildren
   '/_authed/dashboard': typeof AuthedDashboardRoute
+  '/_authed/help': typeof AuthedHelpRoute
   '/_authed/invites': typeof AuthedInvitesRoute
   '/_authed/queue': typeof AuthedQueueRouteWithChildren
   '/_authed/training': typeof AuthedTrainingRouteWithChildren
@@ -285,6 +294,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/billing'
     | '/dashboard'
+    | '/help'
     | '/invites'
     | '/queue'
     | '/training'
@@ -314,6 +324,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/admin'
     | '/dashboard'
+    | '/help'
     | '/invites'
     | '/admin/members'
     | '/admin/strings'
@@ -343,6 +354,7 @@ export interface FileRouteTypes {
     | '/_authed/admin'
     | '/_authed/billing'
     | '/_authed/dashboard'
+    | '/_authed/help'
     | '/_authed/invites'
     | '/_authed/queue'
     | '/_authed/training'
@@ -431,6 +443,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthedDashboardRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/help': {
+      id: '/_authed/help'
+      path: '/help'
+      fullPath: '/help'
+      preLoaderRoute: typeof AuthedHelpRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/invites': {
@@ -649,6 +668,7 @@ interface AuthedRouteChildren {
   AuthedAdminRoute: typeof AuthedAdminRouteWithChildren
   AuthedBillingRoute: typeof AuthedBillingRouteWithChildren
   AuthedDashboardRoute: typeof AuthedDashboardRoute
+  AuthedHelpRoute: typeof AuthedHelpRoute
   AuthedInvitesRoute: typeof AuthedInvitesRoute
   AuthedQueueRoute: typeof AuthedQueueRouteWithChildren
   AuthedTrainingRoute: typeof AuthedTrainingRouteWithChildren
@@ -664,6 +684,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAdminRoute: AuthedAdminRouteWithChildren,
   AuthedBillingRoute: AuthedBillingRouteWithChildren,
   AuthedDashboardRoute: AuthedDashboardRoute,
+  AuthedHelpRoute: AuthedHelpRoute,
   AuthedInvitesRoute: AuthedInvitesRoute,
   AuthedQueueRoute: AuthedQueueRouteWithChildren,
   AuthedTrainingRoute: AuthedTrainingRouteWithChildren,

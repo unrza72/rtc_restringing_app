@@ -115,9 +115,7 @@ function QueuePage() {
 
   return (
     <div className="grid gap-6">
-      <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
-        {m.queue_title()}
-      </h1>
+      <h1 className="text-3xl text-foreground">{m.queue_title()}</h1>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
@@ -245,7 +243,7 @@ function QueuePage() {
                       {request.operator?.name ?? m.request_unassigned()}
                     </TableCell>
                     <TableCell
-                      className={cn(request.neededBy && 'text-amber-400')}
+                      className={cn(request.neededBy && 'text-primary-ink')}
                     >
                       {request.neededBy
                         ? formatDate(request.neededBy)
@@ -282,8 +280,8 @@ function FilterTab({
         'rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors',
         active
           ? // The workshop is amber territory throughout the prototype.
-            'border-amber-600 bg-amber-600 text-white shadow-md'
-          : 'border-border bg-card text-muted-foreground hover:bg-slate-100 hover:text-foreground',
+            'border-primary bg-primary text-white shadow-md'
+          : 'border-border bg-card text-muted-foreground hover:bg-sage-100 hover:text-foreground',
       )}
     >
       {label}

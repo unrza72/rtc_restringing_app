@@ -66,7 +66,7 @@ function PlansPage() {
                     <span
                       className={
                         plan._count.unplaced > 0
-                          ? 'text-amber-400'
+                          ? 'text-primary-ink'
                           : 'text-muted-foreground'
                       }
                     >
@@ -121,7 +121,7 @@ function SolveCard({ onSolved }: { onSolved: (id: string) => void }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">{m.training_plan_knobs()}</CardTitle>
+        <CardTitle className="text-lg">{m.training_plan_knobs()}</CardTitle>
       </CardHeader>
       <CardContent>
         <form

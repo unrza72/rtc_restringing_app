@@ -65,6 +65,8 @@ const LABELS: Partial<Record<string, (loaderData: unknown) => string | null>> =
     '/_authed/admin': () => null,
     '/_authed/admin/members': () => m.nav_admin_members(),
     '/_authed/admin/strings': () => m.nav_admin_strings(),
+
+    '/_authed/help': () => m.nav_help(),
   }
 
 type Crumb = { label: string; to: string }
@@ -98,7 +100,7 @@ export function Breadcrumbs() {
         return (
           <Fragment key={crumb.to}>
             {i > 0 && (
-              <ChevronRight className="size-3.5 shrink-0 text-slate-400" />
+              <ChevronRight className="size-3.5 shrink-0 text-sage-500" />
             )}
             {isLast ? (
               <span

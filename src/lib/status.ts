@@ -50,18 +50,17 @@ export function isOpen(status: string) {
 }
 
 /**
- * Badge colouring, shared by every list and detail view: slate for "nothing is
- * happening yet", amber while it is on the machine, emerald once it can be
- * picked up, rose for cancelled.
+ * Badge colouring, shared by every list and detail view, from the club palette
+ * (misc/BRAND.md): court green for "nothing is happening yet", terracotta while
+ * it is on the machine, sage once it can be picked up, crown red for cancelled.
  *
- * Tinted fills with a saturated text colour, rather than the saturated fills a
- * dark surface wanted — on white, a solid colour block shouts far louder than
- * the status deserves.
+ * Tinted fills with a dark text colour — on cream, a solid colour block shouts
+ * far louder than the status deserves.
  */
 export const STATUS_BADGE: Record<RequestStatus, string> = {
-  REQUESTED: 'bg-slate-100 text-slate-700 border-slate-300',
-  ACCEPTED: 'bg-amber-50 text-amber-800 border-amber-300',
-  DONE: 'bg-emerald-50 text-emerald-800 border-emerald-300',
-  COLLECTED: 'bg-slate-50 text-slate-500 border-slate-200',
-  CANCELLED: 'bg-rose-50 text-rose-700 border-rose-300',
+  REQUESTED: 'bg-court-100 text-court-900 border-court-200',
+  ACCEPTED: 'bg-terracotta-50 text-terracotta-800 border-terracotta-200',
+  DONE: 'bg-sage-100 text-sage-800 border-sage-300',
+  COLLECTED: 'bg-background text-sage-700 border-sage-200',
+  CANCELLED: 'bg-terracotta-100 text-crown border-terracotta-300',
 }

@@ -110,7 +110,7 @@ function PersonGroup({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">
+        <CardTitle className="text-lg">
           {title}{' '}
           <span className="text-sm font-normal text-muted-foreground">
             ({people.length})
@@ -231,7 +231,7 @@ function AddPersonCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">{m.training_person_add()}</CardTitle>
+        <CardTitle className="text-lg">{m.training_person_add()}</CardTitle>
       </CardHeader>
       <CardContent>
         <form

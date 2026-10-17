@@ -18,9 +18,7 @@ function TrainingLayout() {
     <GridWindowProvider>
       <div className="grid gap-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
-            {m.training_title()}
-          </h1>
+          <h1 className="text-3xl text-foreground">{m.training_title()}</h1>
           <div className="flex flex-wrap items-center gap-3">
             <GridWindowPicker />
             <div className="flex gap-2">
@@ -42,10 +40,10 @@ function SubTab({ to, label }: { to: string; label: string }) {
       className={cn(
         'rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors',
         'border-border bg-card text-muted-foreground',
-        'hover:bg-slate-100 hover:text-foreground',
+        'hover:bg-sage-100 hover:text-foreground',
       )}
       activeProps={{
-        className: 'border-lime-500 bg-lime-500 text-slate-950 shadow-md',
+        className: 'border-primary bg-primary text-primary-foreground',
       }}
     >
       {label}

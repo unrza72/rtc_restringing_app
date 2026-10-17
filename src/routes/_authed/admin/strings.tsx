@@ -47,9 +47,7 @@ function StringsPage() {
 
   return (
     <div className="grid gap-6">
-      <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
-        {m.admin_strings_title()}
-      </h1>
+      <h1 className="text-3xl text-foreground">{m.admin_strings_title()}</h1>
 
       <FormError>{error}</FormError>
 
@@ -170,7 +168,7 @@ function NewStringCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">{m.admin_string_add()}</CardTitle>
+        <CardTitle className="text-lg">{m.admin_string_add()}</CardTitle>
       </CardHeader>
       <CardContent>
         <form
@@ -297,7 +295,7 @@ function TokenCountCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">{m.admin_tokens_title()}</CardTitle>
+        <CardTitle className="text-lg">{m.admin_tokens_title()}</CardTitle>
       </CardHeader>
       <CardContent>
         <form
@@ -344,7 +342,7 @@ function TokenCountCard({
             )}
           </form.Subscribe>
           {saved && (
-            <span role="status" className="text-sm text-emerald-700">
+            <span role="status" className="text-sm text-sage-800">
               {m.admin_token_count_saved()}
             </span>
           )}

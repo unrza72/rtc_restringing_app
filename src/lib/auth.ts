@@ -39,6 +39,12 @@ export const auth = betterAuth({
         required: false,
         input: false,
       },
+      // Set by completeOnboarding once the welcome tour has been seen.
+      onboardedAt: {
+        type: 'date',
+        required: false,
+        input: false,
+      },
       // The invite this account was created with. `input: true` so
       // signUp.email({ ..., inviteToken }) type-checks; `required: false` so a
       // missing/bad token surfaces our own message below rather than a bare

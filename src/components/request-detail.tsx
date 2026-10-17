@@ -160,7 +160,7 @@ function Row({
 }) {
   return (
     <div className={full ? 'sm:col-span-2' : undefined}>
-      <dt className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+      <dt className="text-[11px] font-medium tracking-[0.16em] text-muted-foreground uppercase">
         {label}
       </dt>
       <dd className="mt-0.5 text-sm text-foreground">{children}</dd>
@@ -182,7 +182,7 @@ export function RequestTimeline({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">{m.request_timeline()}</CardTitle>
+        <CardTitle className="text-lg">{m.request_timeline()}</CardTitle>
       </CardHeader>
       <CardContent>
         <ol className="grid gap-3">

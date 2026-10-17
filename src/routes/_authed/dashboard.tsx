@@ -1,5 +1,5 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { ArrowRight, Plus } from 'lucide-react'
+import { ArrowRight, CircleHelp, Plus } from 'lucide-react'
 
 import { listMyRequests } from '#/server/requests.functions'
 import { isOpen } from '#/lib/status'
@@ -7,6 +7,8 @@ import { m } from '#/paraglide/messages'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
 import { cn } from '#/lib/utils'
 import { RequestList } from '#/components/request-list'
+import { openOnboardingTour } from '#/components/onboarding-tour'
+import { Button } from '#/components/ui/button'
 
 export const Route = createFileRoute('/_authed/dashboard')({
   loader: async () => ({ requests: await listMyRequests() }),
@@ -21,16 +23,22 @@ function Dashboard() {
   return (
     <div className="grid gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
+        <h1 className="text-3xl text-foreground">
           {m.dash_title({ name: user.name })}
         </h1>
-        <Link
-          to="/requests/new"
-          className="flex items-center gap-1.5 rounded-xl bg-lime-400 px-3.5 py-2 text-xs font-bold text-slate-950 shadow-md shadow-lime-400/10 transition-all hover:bg-lime-300 active:scale-95"
-        >
-          <Plus className="size-3.5 stroke-[3]" />
-          {m.dash_new_request()}
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="ghost" onClick={openOnboardingTour}>
+            <CircleHelp />
+            {m.onboarding_replay()}
+          </Button>
+          <Link
+            to="/requests/new"
+            className="flex items-center gap-1.5 min-h-11 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover active:scale-95"
+          >
+            <Plus className="size-3.5 stroke-[3]" />
+            {m.dash_new_request()}
+          </Link>
+        </div>
       </div>
 
       <Card>
@@ -85,19 +93,19 @@ function ShortcutCard({
 }) {
   const tone =
     accent === 'amber'
-      ? 'hover:border-amber-400 text-amber-700'
-      : 'hover:border-emerald-400 text-emerald-700'
+      ? 'hover:border-terracotta-300 text-primary-ink'
+      : 'hover:border-sage-400 text-sage-800'
 
   return (
     <Link
       to={to}
       className={cn(
-        'group flex items-center justify-between rounded-2xl border border-border bg-muted p-5 transition-colors',
+        'group flex items-center justify-between rounded-2xl border border-border bg-card p-5 transition-colors',
         tone,
       )}
     >
       <span>
-        <span className="block text-[10px] font-bold tracking-wider uppercase">
+        <span className="block text-[11px] font-medium tracking-[0.16em] uppercase">
           {title}
         </span>
         <span className="mt-1 block text-sm font-semibold text-foreground">

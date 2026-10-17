@@ -116,7 +116,7 @@ export function AvailabilityGrid({
             {WEEKDAYS.map((day) => (
               <div
                 key={day}
-                className="pb-1.5 text-center text-[11px] font-bold tracking-wide text-muted-foreground uppercase"
+                className="pb-1.5 text-center text-[11px] font-medium tracking-[0.16em] text-muted-foreground uppercase"
               >
                 {m[`training_weekday_short_${day}`]()}
               </div>
@@ -146,10 +146,10 @@ export function AvailabilityGrid({
                         aria-label={`${m[`training_weekday_${day}`]()} ${formatMinutes(startMin)}`}
                         className={cn(
                           'h-5 rounded-[3px] transition-colors',
-                          onTheHour && 'border-t border-t-slate-300',
+                          onTheHour && 'border-t border-t-sage-300',
                           on
-                            ? 'bg-lime-400 hover:bg-lime-500'
-                            : 'bg-slate-100 hover:bg-slate-200',
+                            ? 'bg-sage-500 hover:bg-sage-600'
+                            : 'bg-background hover:bg-sage-100',
                         )}
                       />
                     )

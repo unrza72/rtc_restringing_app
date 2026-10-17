@@ -54,6 +54,8 @@ export async function createApprovedUser(
       role,
       status: 'APPROVED',
       approvedAt: now,
+      // Past the welcome tour — only the onboarding test walks through it.
+      onboardedAt: now,
       accounts: {
         create: {
           id: randomUUID(),
