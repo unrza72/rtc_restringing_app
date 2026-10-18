@@ -119,7 +119,7 @@ function CompleteForm({
 }: {
   request: {
     id: string
-    tensionMain: number
+    tensionMain: number | null
     tensionCross: number | null
     stringSource: string
     ownStringName: string | null
@@ -140,14 +140,14 @@ function CompleteForm({
     // differed, e.g. a substituted string or a corrected price.
     defaultValues: {
       usedStringName: describeString(request),
-      usedTensionMain: String(request.tensionMain),
+      usedTensionMain:
+        request.tensionMain == null ? '' : String(request.tensionMain),
       usedTensionCross:
         request.tensionCross == null ? '' : String(request.tensionCross),
       stringPriceCents:
         request.clubString?.priceCents == null
           ? ''
           : (request.clubString.priceCents / 100).toFixed(2),
-      labourPriceCents: '',
       operatorNotes: '',
     },
     onSubmit: async ({ value }) => {
@@ -164,10 +164,6 @@ function CompleteForm({
               value.stringPriceCents === ''
                 ? null
                 : Math.round(Number(value.stringPriceCents) * 100),
-            labourPriceCents:
-              value.labourPriceCents === ''
-                ? null
-                : Math.round(Number(value.labourPriceCents) * 100),
             operatorNotes: value.operatorNotes || null,
           }),
         })
@@ -254,25 +250,6 @@ function CompleteForm({
                 <Field
                   id={field.name}
                   label={m.queue_string_price()}
-                  errors={fieldErrors(field.state.meta)}
-                >
-                  <Input
-                    id={field.name}
-                    type="number"
-                    step="0.01"
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                  />
-                </Field>
-              )}
-            </form.Field>
-
-            <form.Field name="labourPriceCents">
-              {(field) => (
-                <Field
-                  id={field.name}
-                  label={m.queue_labour_price()}
                   errors={fieldErrors(field.state.meta)}
                 >
                   <Input

@@ -25,6 +25,7 @@ import {
   getTokenCount,
   isRacketTokensEnabled,
 } from '#/lib/racket-tokens.server'
+import { getClubPricing } from '#/lib/pricing.server'
 import { Prisma } from '#/generated/prisma/client'
 import type { RequestAction, RequestStatus } from '#/lib/status'
 import { m } from '#/paraglide/messages'
@@ -130,6 +131,7 @@ export const createRequest = createServerFn({ method: 'POST' })
           ownerId: context.user.id,
           archived: false,
           hidden: false,
+          deletedAt: null,
         },
         select: { id: true },
       })
@@ -320,6 +322,13 @@ export const completeRequest = createServerFn({ method: 'POST' })
   .validator(completeInputSchema)
   .handler(async ({ context, data }) => {
     const { id, operatorNotes, ...used } = data
+    const [pricing, request] = await Promise.all([
+      getClubPricing(),
+      prisma.stringingRequest.findUnique({
+        where: { id },
+        select: { stringSource: true },
+      }),
+    ])
     return transition({
       requestId: id,
       actorId: context.user.id,
@@ -327,7 +336,14 @@ export const completeRequest = createServerFn({ method: 'POST' })
       guard: context.user.roles.includes('admin')
         ? {}
         : { operatorId: context.user.id },
-      data: { ...used, operatorNotes, completedAt: new Date() },
+      data: {
+        ...used,
+        labourPriceCents: pricing.labourPriceCents,
+        ownStringFeeCents:
+          request?.stringSource === 'MEMBER' ? pricing.ownStringFeeCents : null,
+        operatorNotes,
+        completedAt: new Date(),
+      },
       note: operatorNotes,
     })
   })

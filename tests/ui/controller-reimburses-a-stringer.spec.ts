@@ -9,7 +9,7 @@ test('a controller settles a job and pays the stringer out of their labour', asy
   const accountant = await createApprovedUser('controller', 'Kassenwart')
   const stringer = await createApprovedUser('operator', 'Besaiter')
   const member = await createApprovedUser('member', 'Mitglied')
-  // Head Velocity MLT costs 19,00 € in the seeded catalogue: 34,00 € in all.
+  // Head Velocity MLT costs 19,00 € in the test catalogue: 34,00 € in all.
   await createFinishedJob(member, stringer, {
     racket: 'Blade 98',
     clubString: 'Head Velocity MLT',

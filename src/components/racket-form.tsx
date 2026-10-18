@@ -19,6 +19,8 @@ export type RacketFormValues = {
   headSizeCm2: string
   stringPattern: string
   gripSize: string
+  tensionMain: string
+  tensionCross: string
   notes: string
 }
 
@@ -29,6 +31,8 @@ export const emptyRacket: RacketFormValues = {
   headSizeCm2: '',
   stringPattern: '',
   gripSize: '',
+  tensionMain: '',
+  tensionCross: '',
   notes: '',
 }
 
@@ -40,6 +44,8 @@ function hasDetails(value: RacketFormValues) {
     value.headSizeCm2 !== '' ||
     value.stringPattern !== '' ||
     value.gripSize !== '' ||
+    value.tensionMain !== '' ||
+    value.tensionCross !== '' ||
     value.notes !== ''
   )
 }
@@ -214,6 +220,49 @@ export function RacketForm({
             </form.Field>
           </div>
 
+          <div className="grid gap-4 sm:grid-cols-2">
+            <form.Field name="tensionMain">
+              {(field) => (
+                <Field
+                  id={field.name}
+                  label={m.request_tension_main()}
+                  hint={m.racket_tension_hint()}
+                  errors={fieldErrors(field.state.meta)}
+                >
+                  <Input
+                    id={field.name}
+                    type="number"
+                    step="0.5"
+                    inputMode="decimal"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                  />
+                </Field>
+              )}
+            </form.Field>
+            <form.Field name="tensionCross">
+              {(field) => (
+                <Field
+                  id={field.name}
+                  label={m.request_tension_cross()}
+                  hint={m.request_tension_cross_hint()}
+                  errors={fieldErrors(field.state.meta)}
+                >
+                  <Input
+                    id={field.name}
+                    type="number"
+                    step="0.5"
+                    inputMode="decimal"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                  />
+                </Field>
+              )}
+            </form.Field>
+          </div>
+
           <form.Field name="notes">
             {(field) => (
               <Field
@@ -261,6 +310,8 @@ function normalise(value: RacketFormValues) {
     headSizeCm2: value.headSizeCm2 === '' ? null : value.headSizeCm2,
     stringPattern: value.stringPattern || null,
     gripSize: value.gripSize || null,
+    tensionMain: value.tensionMain === '' ? null : value.tensionMain,
+    tensionCross: value.tensionCross === '' ? null : value.tensionCross,
     notes: value.notes || null,
   }
 }

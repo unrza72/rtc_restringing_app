@@ -7,9 +7,10 @@ import { listRackets } from '#/server/rackets.functions'
 import { listActiveStrings } from '#/server/strings.functions'
 import { createRequest } from '#/server/requests.functions'
 import { getTokenStatus } from '#/server/tokens.functions'
+import { getPricing } from '#/server/pricing.functions'
 import { requestInputSchema } from '#/lib/schemas'
 import { schemaValidator } from '#/lib/form'
-import { formatPrice } from '#/lib/labels'
+import { formatPrice, totalPriceCents } from '#/lib/labels'
 import { freeTokens } from '#/lib/tokens'
 import { m } from '#/paraglide/messages'
 import { Button } from '#/components/ui/button'
@@ -32,25 +33,31 @@ export const Route = createFileRoute('/_authed/requests/new')({
     rackets: await listRackets({ data: { includeArchived: false } }),
     strings: await listActiveStrings(),
     tokens: await getTokenStatus(),
+    pricing: await getPricing(),
   }),
   component: NewRequestPage,
 })
 
 function NewRequestPage() {
-  const { rackets, strings, tokens } = Route.useLoaderData()
+  const { rackets, strings, tokens, pricing } = Route.useLoaderData()
+  // What the member pays, labour included, so the picker shows the real price.
+  const ownStringPrice = totalPriceCents(
+    pricing.labourPriceCents,
+    pricing.ownStringFeeCents,
+  )
   const free = freeTokens(tokens.count, tokens.inUse)
   const router = useRouter()
   const create = useServerFn(createRequest)
   const [formError, setFormError] = useState<string | null>(null)
+  const firstRacket = rackets.at(0)
 
   const form = useForm({
     defaultValues: {
-      racketId: rackets[0]?.id ?? '',
+      racketId: firstRacket?.id ?? '',
       stringSource: strings.length > 0 ? 'CLUB' : 'MEMBER',
       clubStringId: strings[0]?.id ?? '',
       ownStringName: '',
-      tensionMain: '24',
-      tensionCross: '',
+      ...racketTensions(firstRacket),
       memberNotes: '',
       tokenNumber: '',
     },
@@ -116,7 +123,18 @@ function NewRequestPage() {
                   >
                     <Select
                       value={field.state.value}
-                      onValueChange={field.handleChange}
+                      onValueChange={(id) => {
+                        field.handleChange(id)
+                        // Switching racket brings its usual tension along.
+                        const tensions = racketTensions(
+                          rackets.find((r) => r.id === id),
+                        )
+                        form.setFieldValue('tensionMain', tensions.tensionMain)
+                        form.setFieldValue(
+                          'tensionCross',
+                          tensions.tensionCross,
+                        )
+                      }}
                     >
                       <SelectTrigger id={field.name} className="w-full">
                         <SelectValue />
@@ -211,6 +229,8 @@ function NewRequestPage() {
                       <RadioGroupItem value="MEMBER" id="source-member" />
                       <Label htmlFor="source-member" className="font-normal">
                         {m.request_source_member()}
+                        {ownStringPrice != null &&
+                          ` — ${formatPrice(ownStringPrice)}`}
                       </Label>
                     </div>
                   </RadioGroup>
@@ -245,7 +265,12 @@ function NewRequestPage() {
                               <SelectItem key={s.id} value={s.id}>
                                 {[s.name, s.gauge].filter(Boolean).join(' ')}
                                 {s.priceCents != null &&
-                                  ` — ${formatPrice(s.priceCents)}`}
+                                  ` — ${formatPrice(
+                                    totalPriceCents(
+                                      s.priceCents,
+                                      pricing.labourPriceCents,
+                                    ),
+                                  )}`}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -281,6 +306,7 @@ function NewRequestPage() {
                   <Field
                     id={field.name}
                     label={m.request_tension_main()}
+                    hint={m.request_tension_main_hint()}
                     errors={fieldErrors(field.state.meta)}
                   >
                     <Input
@@ -367,7 +393,19 @@ function normalise(value: {
     tokenNumber: value.tokenNumber.trim() === '' ? null : value.tokenNumber,
     clubStringId: value.clubStringId || null,
     ownStringName: value.ownStringName || null,
+    tensionMain: value.tensionMain === '' ? null : value.tensionMain,
     tensionCross: value.tensionCross === '' ? null : value.tensionCross,
     memberNotes: value.memberNotes || null,
+  }
+}
+
+/** A racket's saved tension as form values; blank when it has none. */
+function racketTensions(
+  racket:
+    { tensionMain: number | null; tensionCross: number | null } | undefined,
+) {
+  return {
+    tensionMain: racket?.tensionMain?.toString() ?? '',
+    tensionCross: racket?.tensionCross?.toString() ?? '',
   }
 }

@@ -10,7 +10,7 @@ export type RequestRow = {
   status: string
   stringSource: string
   ownStringName: string | null
-  tensionMain: number
+  tensionMain: number | null
   tensionCross: number | null
   neededBy: Date | string | null
   tokenNumber?: number | null

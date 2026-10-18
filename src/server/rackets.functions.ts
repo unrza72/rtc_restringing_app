@@ -4,8 +4,8 @@ import { z } from 'zod'
 
 import { prisma } from '#/db'
 import { memberMiddleware } from '#/lib/auth-middleware'
-import { idSchema, racketInputSchema } from '#/lib/schemas'
-import { isOpen } from '#/lib/status'
+import { idSchema, racketInputSchema, racketUpdateSchema } from '#/lib/schemas'
+import { OPEN_STATUSES } from '#/lib/status'
 import { m } from '#/paraglide/messages'
 
 /**
@@ -15,23 +15,53 @@ import { m } from '#/paraglide/messages'
  * They also all skip the `hidden` stand-in a member gets when requesting a
  * restring with no racket of their own (see `createRequest`): it exists only
  * to carry those requests, and is never shown, edited, archived or deleted.
+ * Soft-deleted rackets are skipped the same way.
  */
+
+function visibleRacket(ownerId: string) {
+  return { ownerId, hidden: false, deletedAt: null }
+}
+
+/** Requests still in the clubhouse's hands — they lock archive and delete. */
+const openRequests = {
+  where: { status: { in: OPEN_STATUSES } },
+  select: { id: true },
+  take: 1,
+} as const
+
+/**
+ * A racket can only be archived or deleted while none of its requests is
+ * still being worked on. Throws `notFound` for anything the caller can't see.
+ */
+async function findIdleRacket(ownerId: string, id: string, blocked: string) {
+  const racket = await prisma.racket.findFirst({
+    where: { id, ...visibleRacket(ownerId) },
+    include: { requests: openRequests },
+  })
+  if (!racket) throw notFound()
+  if (racket.requests.length > 0) throw new Error(blocked)
+  return racket
+}
 
 export const listRackets = createServerFn({ method: 'GET' })
   .middleware([memberMiddleware])
   .validator(z.object({ includeArchived: z.boolean().default(false) }))
   .handler(async ({ context, data }) => {
-    return prisma.racket.findMany({
+    const rackets = await prisma.racket.findMany({
       where: {
-        ownerId: context.user.id,
-        hidden: false,
+        ...visibleRacket(context.user.id),
         ...(data.includeArchived ? {} : { archived: false }),
       },
       orderBy: [{ archived: 'asc' }, { createdAt: 'asc' }],
       include: {
         _count: { select: { requests: true } },
+        requests: openRequests,
       },
     })
+    return rackets.map(({ requests, ...racket }) => ({
+      ...racket,
+      inProgress: requests.length > 0,
+    }))
   })
 
 export const getRacket = createServerFn({ method: 'GET' })
@@ -39,7 +69,7 @@ export const getRacket = createServerFn({ method: 'GET' })
   .validator(idSchema)
   .handler(async ({ context, data }) => {
     const racket = await prisma.racket.findFirst({
-      where: { id: data.id, ownerId: context.user.id, hidden: false },
+      where: { id: data.id, ...visibleRacket(context.user.id) },
       include: {
         requests: {
           orderBy: { createdAt: 'desc' },
@@ -62,11 +92,11 @@ export const createRacket = createServerFn({ method: 'POST' })
 
 export const updateRacket = createServerFn({ method: 'POST' })
   .middleware([memberMiddleware])
-  .validator(racketInputSchema.extend({ id: z.string().min(1) }))
+  .validator(racketUpdateSchema)
   .handler(async ({ context, data }) => {
     const { id, ...fields } = data
     const { count } = await prisma.racket.updateMany({
-      where: { id, ownerId: context.user.id, hidden: false },
+      where: { id, ...visibleRacket(context.user.id) },
       data: fields,
     })
     if (count === 0) throw notFound()
@@ -74,43 +104,38 @@ export const updateRacket = createServerFn({ method: 'POST' })
   })
 
 /**
- * Archive rather than delete once a racket has history, so finished jobs keep
- * showing which racket they were for.
+ * Archive a racket the member no longer plays. Only while nothing is on the
+ * machine for it; restoring is always allowed.
  */
 export const setRacketArchived = createServerFn({ method: 'POST' })
   .middleware([memberMiddleware])
   .validator(idSchema.extend({ archived: z.boolean() }))
   .handler(async ({ context, data }) => {
-    const racket = await prisma.racket.findFirst({
-      where: { id: data.id, ownerId: context.user.id, hidden: false },
-      include: { requests: { select: { status: true } } },
-    })
-    if (!racket) throw notFound()
-
-    if (data.archived && racket.requests.some((r) => isOpen(r.status))) {
-      throw new Error(m.racket_archive_blocked())
+    if (data.archived) {
+      await findIdleRacket(context.user.id, data.id, m.racket_archive_blocked())
     }
 
-    await prisma.racket.update({
-      where: { id: data.id },
+    const { count } = await prisma.racket.updateMany({
+      where: { id: data.id, ...visibleRacket(context.user.id) },
       data: { archived: data.archived },
     })
+    if (count === 0) throw notFound()
     return { id: data.id }
   })
 
+/**
+ * Soft delete, so finished jobs keep showing which racket they were for.
+ * Blocked while any request for it is still open.
+ */
 export const deleteRacket = createServerFn({ method: 'POST' })
   .middleware([memberMiddleware])
   .validator(idSchema)
   .handler(async ({ context, data }) => {
-    const racket = await prisma.racket.findFirst({
-      where: { id: data.id, ownerId: context.user.id, hidden: false },
-      include: { _count: { select: { requests: true } } },
-    })
-    if (!racket) throw notFound()
-    if (racket._count.requests > 0) {
-      throw new Error(m.racket_delete_blocked())
-    }
+    await findIdleRacket(context.user.id, data.id, m.racket_delete_blocked())
 
-    await prisma.racket.delete({ where: { id: data.id } })
+    await prisma.racket.update({
+      where: { id: data.id },
+      data: { deletedAt: new Date() },
+    })
     return { id: data.id }
   })

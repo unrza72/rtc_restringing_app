@@ -46,9 +46,11 @@ test('a carabiner on one racket cannot be used for another until it is picked up
     const countField = admin.getByLabel(t('admin_token_count'), {
       exact: true,
     })
+    // The page has other settings with their own Save button.
+    const tokenForm = admin.locator('form').filter({ has: countField })
 
     await countField.fill(String(carabiner - 1))
-    await admin.getByRole('button', { name: t('common_save') }).click()
+    await tokenForm.getByRole('button', { name: t('common_save') }).click()
     await expect(
       admin.getByText(
         t('admin_token_count_below_in_use', { token: carabiner }),
@@ -57,10 +59,15 @@ test('a carabiner on one racket cannot be used for another until it is picked up
   })
 
   await test.step('Admin sets the number of carabiners', async () => {
+    const countField = admin.getByLabel(t('admin_token_count'), {
+      exact: true,
+    })
+    await countField.fill(String(count))
     await admin
-      .getByLabel(t('admin_token_count'), { exact: true })
-      .fill(String(count))
-    await admin.getByRole('button', { name: t('common_save') }).click()
+      .locator('form')
+      .filter({ has: countField })
+      .getByRole('button', { name: t('common_save') })
+      .click()
     await expect(
       admin
         .getByRole('status')

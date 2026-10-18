@@ -475,7 +475,7 @@ before a second run, or balance assertions in the payout section fail on leftove
   Vite dependency optimiser reloading the page mid-test, and it tests what ships. After
   editing `src/`, restart `--ui` to rebuild.
 - **Known state.** `tests/ui/global-setup.ts` empties the tables, pushes the schema,
-  then seeds the bootstrap admin and the string catalogue. Rows are wiped before the
+  then seeds the bootstrap admin and a test string catalogue (`tests/ui/seed-catalogue.ts`). Rows are wiped before the
   push so a schema change never has data to lose — Prisma refuses
   `--accept-data-loss` when an AI agent runs it.
 - **Re-runnable.** Each test invents its own members (`newMember()`), since in `--ui`
@@ -548,10 +548,6 @@ the sentence from the spec.
   job, controller reimbursing a stringer). Still to write: member collects or
   cancels, admin rejects a member, coach builds a roster and solves a plan, locale
   switching.
-- **Seed is not deployment-safe.** `pnpm db:seed` always inserts a demo training roster
-  (trainers and trainees with availability), not only when dev quick-login is enabled
-  like the other demo data. Running it on a real club database adds fake people to the
-  planner.
 - **Email-based features.** §10 requires a real email address "to enable
   notifications/reset later"; both remain out of scope (§7), so the address is
   collected but unused.
@@ -765,11 +761,11 @@ rule.
 
 ## 15. Developer tooling
 
-| Command              | What it does                                                                                                                                                       |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `pnpm db:seed`       | Idempotent. Bootstrap admin, club string catalogue and a demo training roster — always. The dev roster and demo rackets/requests only with dev quick-login enabled |
-| `pnpm db:reset-data` | Deletes every user, racket, request, invite, payout and training row; keeps the string catalogue. Follow with `pnpm db:seed`                                       |
-| `pnpm test:*`        | See §11                                                                                                                                                            |
+| Command              | What it does                                                                                                                                                    |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm db:seed`       | Idempotent. Only the bootstrap admin, plus the dev quick-login roster when that is enabled. String catalogue, prices and training roster are entered in the app |
+| `pnpm db:reset-data` | Deletes every user, racket, request, invite, payout, training row and club string, and the club settings. Follow with `pnpm db:seed`                            |
+| `pnpm test:*`        | See §11                                                                                                                                                         |
 
 **Bootstrap admin.** `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` / `SEED_ADMIN_NAME`,
 defaulting to `admin@rtc.local` / `changeme123` / `Club Admin`. Change the password on

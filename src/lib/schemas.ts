@@ -28,7 +28,33 @@ const optionalText = (max: number) =>
     .nullable()
     .default(null)
 
-export const racketInputSchema = z.object({
+const tension = z.coerce
+  .number()
+  .min(10, { error: () => m.request_tension_too_low() })
+  .max(35, { error: () => m.request_tension_too_high() })
+
+/**
+ * Mains and crosses, both optional — not every member knows what to ask for,
+ * and a blank leaves it to the stringer. Crosses alone make no sense, though.
+ */
+const optionalTensionFields = {
+  tensionMain: tension.nullable().default(null),
+  tensionCross: tension.nullable().default(null),
+}
+
+function mainsBeforeCrosses(v: {
+  tensionMain: number | null
+  tensionCross: number | null
+}) {
+  return v.tensionCross == null || v.tensionMain != null
+}
+
+const mainsBeforeCrossesError = {
+  error: () => m.request_tension_main_first(),
+  path: ['tensionMain'],
+}
+
+const racketFields = {
   label: z
     .string()
     .trim()
@@ -46,16 +72,21 @@ export const racketInputSchema = z.object({
   stringPattern: optionalText(20),
   gripSize: optionalText(10),
   notes: optionalText(500),
-})
+}
+
+export const racketInputSchema = z
+  .object({ ...racketFields, ...optionalTensionFields })
+  .refine(mainsBeforeCrosses, mainsBeforeCrossesError)
 export type RacketInput = z.infer<typeof racketInputSchema>
 
-const tension = z.coerce
-  .number()
-  .min(10, { error: () => m.request_tension_too_low() })
-  .max(35, { error: () => m.request_tension_too_high() })
+// Separate rather than `.extend()`ed: Zod refuses to extend refined objects.
+export const racketUpdateSchema = z
+  .object({ ...racketFields, ...optionalTensionFields, id: z.string().min(1) })
+  .refine(mainsBeforeCrosses, mainsBeforeCrossesError)
 
 export const requestInputSchema = z
   .object({
+    ...optionalTensionFields,
     // null = a member with no racket of their own yet; the server files the
     // request under their hidden stand-in racket instead (see createRequest).
     racketId: z
@@ -66,8 +97,6 @@ export const requestInputSchema = z
     stringSource: z.enum(STRING_SOURCES),
     clubStringId: z.string().nullable().default(null),
     ownStringName: optionalText(120),
-    tensionMain: tension,
-    tensionCross: tension.nullable().default(null),
     neededBy: z.coerce.date().nullable().default(null),
     memberNotes: optionalText(500),
     // The carabiner number. Required only while RACKET_TOKENS_ENABLED is on —
@@ -79,6 +108,7 @@ export const requestInputSchema = z
       .nullable()
       .default(null),
   })
+  .refine(mainsBeforeCrosses, mainsBeforeCrossesError)
   // A request names exactly one string: a catalogue entry or the member's own.
   .refine((v) => v.stringSource !== 'CLUB' || !!v.clubStringId, {
     error: () => m.request_club_string_required(),
@@ -113,7 +143,8 @@ export const completeInputSchema = z.object({
   usedTensionMain: tension,
   usedTensionCross: tension.nullable().default(null),
   stringPriceCents: priceInput,
-  labourPriceCents: priceInput,
+  // No labour or own-string fee: both are the club's flat prices, which
+  // completeRequest stamps on from the settings.
   operatorNotes: optionalText(500),
 })
 
@@ -161,6 +192,19 @@ export const tokenCountSchema = z.object({
     .int({ error: () => m.admin_token_count_invalid() })
     .min(1, { error: () => m.admin_token_count_invalid() })
     .max(999, { error: () => m.admin_token_count_invalid() }),
+})
+
+const clubPrice = z.coerce
+  .number()
+  .int()
+  .min(0, { error: () => m.admin_labour_price_invalid() })
+  .max(100000, { error: () => m.admin_labour_price_invalid() })
+  .nullable()
+  .default(null)
+
+export const pricingSchema = z.object({
+  labourPriceCents: clubPrice,
+  ownStringFeeCents: clubPrice,
 })
 
 export const localeInputSchema = z.object({ locale: z.enum(locales) })

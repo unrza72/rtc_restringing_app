@@ -78,17 +78,21 @@ export function formatPrice(cents: number | null | undefined) {
   }).format(cents / 100)
 }
 
-/** String + labour, or null when neither was ever entered. */
-export function totalPriceCents(
-  stringPriceCents: number | null,
-  labourPriceCents: number | null,
-) {
-  if (stringPriceCents == null && labourPriceCents == null) return null
-  return (stringPriceCents ?? 0) + (labourPriceCents ?? 0)
+/**
+ * The sum of whatever price parts are set (string, labour, own-string fee),
+ * or null when none of them ever was.
+ */
+export function totalPriceCents(...parts: Array<number | null | undefined>) {
+  const set = parts.filter((p): p is number => p != null)
+  return set.length === 0 ? null : set.reduce((a, b) => a + b, 0)
 }
 
 /** "24 / 23 kg", or just "24 kg" when the crosses match the mains. */
-export function formatTension(main: number, cross: number | null | undefined) {
+export function formatTension(
+  main: number | null,
+  cross: number | null | undefined,
+) {
+  if (main == null) return m.request_tension_open()
   return cross == null || cross === main
     ? `${main} kg`
     : `${main} / ${cross} kg`

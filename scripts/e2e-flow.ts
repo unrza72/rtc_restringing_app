@@ -118,6 +118,7 @@ class Session {
 }
 
 const RACKETS = '/src/server/rackets.functions.ts'
+const PRICING = '/src/server/pricing.functions.ts'
 const REQUESTS = '/src/server/requests.functions.ts'
 const STRINGS = '/src/server/strings.functions.ts'
 const MEMBERS = '/src/server/members.functions.ts'
@@ -316,6 +317,17 @@ check(
 )
 
 console.log('\n— club strings —')
+// The seed leaves the catalogue empty, so the admin stocks one string.
+const added = await admin.call(STRINGS, 'createClubString', {
+  name: `E2E String ${uniq}`,
+  gauge: '1.25',
+  priceCents: 1200,
+  active: true,
+  sortOrder: 0,
+})
+check('admin adds a string to the catalogue', added.ok, added.error)
+const addedId = (added.result as { id?: string } | undefined)?.id
+
 const strings = await member.call(
   STRINGS,
   'listActiveStrings',
@@ -323,8 +335,10 @@ const strings = await member.call(
   'GET',
 )
 check('member reads the catalogue', strings.ok, strings.error)
-const clubStringId = ((strings.result ?? []) as Array<{ id: string }>)[0]?.id
-check('catalogue is seeded', !!clubStringId, strings.result)
+const clubStringId = ((strings.result ?? []) as Array<{ id: string }>).find(
+  (s) => s.id === addedId,
+)?.id
+check('the new string is on offer', !!clubStringId, strings.result)
 
 const notAdmin = await member.call(STRINGS, 'createClubString', {
   name: 'Nope',
@@ -590,13 +604,33 @@ const earlyCollect = await member.call(REQUESTS, 'collectRequest', {
 })
 check('cannot collect before it is done', !earlyCollect.ok, earlyCollect.error)
 
+const memberLabour = await member.call(PRICING, 'setPricing', {
+  labourPriceCents: 1,
+  ownStringFeeCents: 1,
+})
+check(
+  'a plain member cannot set the labour price',
+  !memberLabour.ok,
+  memberLabour.result,
+)
+const labour = await admin.call(PRICING, 'setPricing', {
+  labourPriceCents: 1000,
+  ownStringFeeCents: 300,
+})
+check(
+  'admin sets the flat labour price and own-string fee',
+  labour.ok,
+  labour.error,
+)
+
 const complete = await admin.call(REQUESTS, 'completeRequest', {
   id: requestId,
   usedStringName: 'Babolat RPM Blast 1.25',
   usedTensionMain: 24,
   usedTensionCross: 23,
   stringPriceCents: 1200,
-  labourPriceCents: 1000,
+  // Ignored: labour comes from the club setting, not the stringer.
+  labourPriceCents: 9999,
   operatorNotes: 'Strung on the Wise',
 })
 check(
@@ -638,6 +672,135 @@ check(
   events,
 )
 
+console.log('\n— racket archive and delete —')
+{
+  const spare = await member.call(RACKETS, 'createRacket', {
+    label: 'Spare racket',
+    brand: null,
+    model: null,
+    headSizeCm2: null,
+    stringPattern: null,
+    gripSize: null,
+    tensionMain: 23.5,
+    tensionCross: 22,
+    notes: null,
+  })
+  const spareId = (spare.result as { id?: string } | undefined)?.id
+  check(
+    'a racket remembers its usual tension',
+    (spare.result as { tensionMain?: number } | undefined)?.tensionMain ===
+      23.5,
+    spare.error ?? spare.result,
+  )
+
+  const crossesOnly = await member.call(RACKETS, 'createRacket', {
+    label: 'Crosses only',
+    tensionMain: null,
+    tensionCross: 22,
+  })
+  check(
+    'crosses without mains are refused',
+    !crossesOnly.ok,
+    crossesOnly.result,
+  )
+  const open = await member.call(REQUESTS, 'createRequest', {
+    racketId: spareId,
+    stringSource: 'CLUB',
+    clubStringId,
+    ownStringName: null,
+    // Left to the stringer: tension is optional.
+    tensionMain: null,
+    tensionCross: null,
+    neededBy: null,
+    memberNotes: null,
+    tokenNumber: await nextToken(),
+  })
+  const openId = (open.result as { id?: string } | undefined)?.id
+  check(
+    'a request without a tension is accepted',
+    open.ok &&
+      (open.result as { tensionMain?: number | null }).tensionMain === null,
+    open.error ?? open.result,
+  )
+
+  const listed = await member.call(
+    RACKETS,
+    'listRackets',
+    { includeArchived: false },
+    'GET',
+  )
+  check(
+    'the list marks it as being restrung',
+    ((listed.result ?? []) as Array<{ id: string; inProgress: boolean }>).some(
+      (r) => r.id === spareId && r.inProgress,
+    ),
+    listed.result,
+  )
+
+  const archiveBusy = await member.call(RACKETS, 'setRacketArchived', {
+    id: spareId,
+    archived: true,
+  })
+  check('it cannot be archived meanwhile', !archiveBusy.ok, archiveBusy.result)
+  const deleteBusy = await member.call(RACKETS, 'deleteRacket', {
+    id: spareId,
+  })
+  check('nor deleted', !deleteBusy.ok, deleteBusy.result)
+
+  await member.call(REQUESTS, 'cancelRequest', { id: openId })
+
+  const foreignDelete = await admin.call(RACKETS, 'deleteRacket', {
+    id: spareId,
+  })
+  check(
+    "nobody else can delete the member's racket",
+    !foreignDelete.ok,
+    foreignDelete.result,
+  )
+
+  const deleted = await member.call(RACKETS, 'deleteRacket', { id: spareId })
+  check('once nothing is open it can be deleted', deleted.ok, deleted.error)
+
+  const after = await member.call(
+    RACKETS,
+    'listRackets',
+    { includeArchived: true },
+    'GET',
+  )
+  check(
+    'a deleted racket is gone from the list',
+    !((after.result ?? []) as Array<{ id: string }>).some(
+      (r) => r.id === spareId,
+    ),
+    after.result,
+  )
+  const reopened = await member.call(
+    RACKETS,
+    'getRacket',
+    { id: spareId },
+    'GET',
+  )
+  check('and cannot be opened', !reopened.ok, reopened.result)
+  const restored = await member.call(RACKETS, 'setRacketArchived', {
+    id: spareId,
+    archived: false,
+  })
+  check('or restored through archive', !restored.ok, restored.result)
+
+  const history = await member.call(
+    REQUESTS,
+    'getRequest',
+    { id: openId },
+    'GET',
+  )
+  check(
+    'its past request still names it (soft delete)',
+    (history.result as { racket?: { label?: string } } | undefined)?.racket
+      ?.label === 'Spare racket',
+    history.error ?? history.result,
+  )
+}
+
 const priced = detail.result as
   | {
       stringPriceCents?: number
@@ -647,13 +810,59 @@ const priced = detail.result as
     }
   | undefined
 check(
-  'string price, labour price and used string were stored',
+  'string price, the club labour price and used string were stored',
   priced?.stringPriceCents === 1200 &&
     priced.labourPriceCents === 1000 &&
     priced.usedStringName === 'Babolat RPM Blast 1.25',
   priced,
 )
 check('a freshly completed job starts unpaid', priced?.paidAt == null, priced)
+check(
+  'a club-string job carries no own-string fee',
+  (detail.result as { ownStringFeeCents?: number | null } | undefined)
+    ?.ownStringFeeCents === null,
+  detail.result,
+)
+
+{
+  // Left unpaid, so the payout ledger below is unaffected.
+  const own = await member.call(REQUESTS, 'createRequest', {
+    racketId,
+    stringSource: 'MEMBER',
+    clubStringId: null,
+    ownStringName: 'Luxilon ALU Power 1.25',
+    tensionMain: null,
+    tensionCross: null,
+    neededBy: null,
+    memberNotes: null,
+    tokenNumber: await nextToken(),
+  })
+  const ownId = (own.result as { id?: string } | undefined)?.id
+  await admin.call(REQUESTS, 'acceptRequest', { id: ownId })
+  const ownDone = await admin.call(REQUESTS, 'completeRequest', {
+    id: ownId,
+    usedStringName: 'Luxilon ALU Power 1.25',
+    usedTensionMain: 24,
+    usedTensionCross: null,
+    stringPriceCents: null,
+    operatorNotes: null,
+  })
+  check('an own-string job can be completed', ownDone.ok, ownDone.error)
+  // completeRequest answers with just id and status; read the job back.
+  const ownDetail = await member.call(
+    REQUESTS,
+    'getRequest',
+    { id: ownId },
+    'GET',
+  )
+  const ownJob = ownDetail.result as
+    { labourPriceCents?: number; ownStringFeeCents?: number } | undefined
+  check(
+    'an own-string job gets labour plus the own-string fee',
+    ownJob?.labourPriceCents === 1000 && ownJob.ownStringFeeCents === 300,
+    ownDetail.error ?? ownJob,
+  )
+}
 
 console.log('\n— controller: the paid state —')
 

@@ -18,7 +18,7 @@ export type RequestDetailData = {
   status: string
   stringSource: string
   ownStringName: string | null
-  tensionMain: number
+  tensionMain: number | null
   tensionCross: number | null
   neededBy: Date | string | null
   memberNotes: string | null
@@ -28,6 +28,7 @@ export type RequestDetailData = {
   usedTensionMain: number | null
   usedTensionCross: number | null
   stringPriceCents: number | null
+  ownStringFeeCents: number | null
   labourPriceCents: number | null
   paidAt: Date | string | null
   operatorNotes: string | null
@@ -124,11 +125,17 @@ export function RequestSummary({
               <Row label={m.request_labour_price()}>
                 {formatPrice(request.labourPriceCents)}
               </Row>
+              {request.ownStringFeeCents != null && (
+                <Row label={m.request_own_string_fee()}>
+                  {formatPrice(request.ownStringFeeCents)}
+                </Row>
+              )}
               <Row label={m.request_total_price()}>
                 {formatPrice(
                   totalPriceCents(
                     request.stringPriceCents,
                     request.labourPriceCents,
+                    request.ownStringFeeCents,
                   ),
                 )}{' '}
                 <Badge variant={request.paidAt ? 'secondary' : 'outline'}>

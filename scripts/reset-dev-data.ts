@@ -1,5 +1,6 @@
 /**
- * Wipes app data and re-runs the seed. Handy after the e2e script, which leaves
+ * Wipes app data, string catalogue included; `pnpm db:seed` then recreates
+ * the admin and the default strings. Handy after the e2e script, which leaves
  * throwaway members and requests behind. Never point this at a real database.
  */
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
@@ -24,11 +25,14 @@ await prisma.requestEvent.deleteMany()
 await prisma.reimbursement.deleteMany()
 await prisma.invite.deleteMany()
 await prisma.stringingRequest.deleteMany()
+// The seed restores the default catalogue; anything added since goes.
+await prisma.clubString.deleteMany()
 await prisma.racket.deleteMany()
 await prisma.session.deleteMany()
 await prisma.account.deleteMany()
 await prisma.user.deleteMany()
-// Back to the default carabiner count, so runs don't inherit an old setting.
+// Back to the default carabiner count and unset prices, so runs don't inherit
+// old settings.
 await prisma.clubSettings.deleteMany()
 
 console.log('🧹 app data cleared — run `pnpm db:seed` to recreate the admin')

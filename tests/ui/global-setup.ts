@@ -6,8 +6,8 @@ import { DATABASE_URL, SERVER_ENV } from './env'
 
 /**
  * Brings `e2e.sqlite` to a known state before a run: every table dropped, the
- * schema pushed from scratch, then the seed — the bootstrap admin plus the club
- * string catalogue.
+ * schema pushed from scratch, then the seed (the bootstrap admin) and the
+ * string catalogue the specs use.
  *
  * Dropping the tables rather than migrating them means a schema change never
  * meets existing rows or columns, so `db push` never stops to ask about data
@@ -35,4 +35,5 @@ export default function globalSetup() {
     })
   run('prisma', ['db', 'push'])
   run('tsx', ['prisma/seed.ts'])
+  run('tsx', ['tests/ui/seed-catalogue.ts'])
 }

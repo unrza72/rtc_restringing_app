@@ -129,11 +129,17 @@ model Racket {
   headSizeCm2   Int?
   stringPattern String?
   gripSize      String?
+  /// The member's usual tension in kg, prefilled on new requests.
+  tensionMain   Float?
+  tensionCross  Float?
   notes         String?
   archived      Boolean  @default(false)
   /// The stand-in created when a member requests a restring before adding any
   /// racket of their own. Never listed under "my rackets"; one per member.
   hidden        Boolean  @default(false)
+  /// Soft delete: the member no longer sees the racket anywhere, but finished
+  /// jobs keep pointing at it and still show its label.
+  deletedAt     DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -174,7 +180,8 @@ model StringingRequest {
   clubStringId  String?
   clubString    ClubString? @relation(fields: [clubStringId], references: [id])
   ownStringName String?
-  tensionMain   Float
+  /// Optional: null leaves the tension to the stringer.
+  tensionMain   Float?
   tensionCross  Float?
   neededBy      DateTime?
   memberNotes   String?
@@ -198,6 +205,9 @@ model StringingRequest {
   /// Split so the billing view can show what was materials vs. labour.
   stringPriceCents Int?
   labourPriceCents Int?
+  /// The club's own-string fee, stamped on MEMBER-string jobs when marked
+  /// done. Part of the member's total; not labour, so not in stringer payouts.
+  ownStringFeeCents Int?
 
   /// Set by a controller (or admin) once the member has paid; null = unpaid.
   paidAt   DateTime?
@@ -221,6 +231,12 @@ model ClubSettings {
   id         Int      @id @default(1)
   /// Carabiners available for tagging rackets, numbered 1..tokenCount.
   tokenCount Int      @default(20)
+  /// Flat labour fee per racket in cents, the same for every stringer. Copied
+  /// onto each job when it is marked done; null = not set yet.
+  labourPriceCents Int?
+  /// Extra fee in cents when the member brings their own string, on top of
+  /// labour. Goes to the club, not the stringer. null = not set yet.
+  ownStringFeeCents Int?
   updatedAt  DateTime @updatedAt
 }
 

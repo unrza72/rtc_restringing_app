@@ -151,6 +151,18 @@ export async function createFinishedJob(
   })
 }
 
+/** The club's flat prices in cents, as an admin would set them. */
+export async function setClubPricing(pricing: {
+  labourPriceCents: number | null
+  ownStringFeeCents: number | null
+}) {
+  await prisma().clubSettings.upsert({
+    where: { id: 1 },
+    create: { id: 1, ...pricing },
+    update: pricing,
+  })
+}
+
 /**
  * The lowest carabiner number nobody is using. Open requests outlive a run in
  * `--ui` mode (the database is only reset when the UI opens), so after enough

@@ -337,6 +337,11 @@ function sections(): Array<Section> {
           body: m.help_admin_strings_body(),
         },
         {
+          id: 'labour',
+          title: m.help_admin_labour_title(),
+          body: m.help_admin_labour_body(),
+        },
+        {
           id: 'tokens',
           title: m.help_admin_tokens_title(),
           body: m.help_admin_tokens_body(),

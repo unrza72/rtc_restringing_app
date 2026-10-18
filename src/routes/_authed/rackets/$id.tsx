@@ -7,6 +7,7 @@ import {
   getRacket,
   updateRacket,
 } from '#/server/rackets.functions'
+import { isOpen } from '#/lib/status'
 import { m } from '#/paraglide/messages'
 import { Button } from '#/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
@@ -27,8 +28,10 @@ function RacketDetailPage() {
   const update = useServerFn(updateRacket)
   const remove = useServerFn(deleteRacket)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const inProgress = racket.requests.some((r) => isOpen(r.status))
 
   async function handleDelete() {
+    if (!confirm(m.racket_delete_confirm())) return
     setDeleteError(null)
     try {
       await remove({ data: { id: racket.id } })
@@ -57,6 +60,8 @@ function RacketDetailPage() {
               headSizeCm2: racket.headSizeCm2?.toString() ?? '',
               stringPattern: racket.stringPattern ?? '',
               gripSize: racket.gripSize ?? '',
+              tensionMain: racket.tensionMain?.toString() ?? '',
+              tensionCross: racket.tensionCross?.toString() ?? '',
               notes: racket.notes ?? '',
             }}
             onSubmit={async (value) => {
@@ -65,16 +70,22 @@ function RacketDetailPage() {
             }}
           />
 
-          <div className="border-t pt-4">
+          <div className="grid justify-items-start gap-2 border-t pt-4">
             <FormError>{deleteError}</FormError>
             <Button
               variant="ghost"
               size="sm"
               className="text-destructive hover:text-destructive"
+              disabled={inProgress}
               onClick={() => void handleDelete()}
             >
               {m.common_delete()}
             </Button>
+            {inProgress && (
+              <p className="text-xs text-muted-foreground">
+                {m.racket_in_progress()}
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>

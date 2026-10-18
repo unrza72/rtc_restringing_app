@@ -1,12 +1,13 @@
 import { expect, test } from '@playwright/test'
 
-import { createApprovedUser, freeToken } from './fixtures'
-import { currentCrumb, header, pickToken, signIn, t } from './support'
+import { createApprovedUser, freeToken, setClubPricing } from './fixtures'
+import { currentCrumb, euros, header, pickToken, signIn, t } from './support'
 
 test('a member with no racket yet requests a restring, and the stand-in racket stays out of sight', async ({
   page,
 }) => {
   const member = await createApprovedUser('member', 'Mitglied')
+  await setClubPricing({ labourPriceCents: 1500, ownStringFeeCents: 500 })
 
   await test.step('Member opens the request form without having a racket', async () => {
     await signIn(page, member.email, member.password)
@@ -22,10 +23,20 @@ test('a member with no racket yet requests a restring, and the stand-in racket s
     ).toHaveCount(0)
   })
 
+  await test.step('Prices shown include the labour', async () => {
+    // Own string: 15,00 € labour + 5,00 € own-string fee.
+    await expect(page.getByText(t('request_source_member'))).toContainText(
+      euros(20),
+    )
+  })
+
   await test.step('Member requests a restring', async () => {
     await page.getByLabel(t('request_source_club'), { exact: true }).check()
     await page.getByLabel(t('request_club_string'), { exact: true }).click()
-    await page.getByRole('option', { name: /Luxilon ALU Power/ }).click()
+    // 25,00 € string + 15,00 € labour.
+    const luxilon = page.getByRole('option', { name: /Luxilon ALU Power/ })
+    await expect(luxilon).toContainText(euros(40))
+    await luxilon.click()
     await page.getByLabel(t('request_tension_main'), { exact: true }).fill('24')
     await pickToken(page, await freeToken())
     await page.getByRole('button', { name: t('request_submit') }).click()

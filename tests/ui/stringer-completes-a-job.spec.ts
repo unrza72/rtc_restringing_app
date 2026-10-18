@@ -1,6 +1,10 @@
 import { expect, test } from '@playwright/test'
 
-import { createApprovedUser, createOpenRequest } from './fixtures'
+import {
+  createApprovedUser,
+  createOpenRequest,
+  setClubPricing,
+} from './fixtures'
 import { euros, header, signIn, t } from './support'
 
 test('a stringer picks a job out of the queue, strings it and marks it as done', async ({
@@ -14,6 +18,8 @@ test('a stringer picks a job out of the queue, strings it and marks it as done',
     tensionMain: 25,
     tensionCross: 24,
   })
+  // The labour isn't entered per job — it's the club's flat fee.
+  await setClubPricing({ labourPriceCents: 1500, ownStringFeeCents: null })
   const notes = 'Neu bespannt, Griffband gleich mitgewechselt.'
 
   await test.step('Stringer signs in and opens the queue', async () => {
@@ -58,7 +64,7 @@ test('a stringer picks a job out of the queue, strings it and marks it as done',
     await expect(stringer.getByText(t('queue_complete_title'))).toBeVisible()
 
     // Everything the request already said comes prefilled — the stringer only
-    // corrects what actually differed and adds the labour.
+    // corrects what actually differed. Labour is the club's flat fee.
     await expect(
       stringer.getByLabel(t('queue_used_string'), { exact: true }),
     ).toHaveValue('Luxilon ALU Power 1.25')
@@ -72,9 +78,6 @@ test('a stringer picks a job out of the queue, strings it and marks it as done',
       stringer.getByLabel(t('queue_string_price'), { exact: true }),
     ).toHaveValue('25.00')
 
-    await stringer
-      .getByLabel(t('queue_labour_price'), { exact: true })
-      .fill('15')
     await stringer
       .getByLabel(t('queue_operator_notes'), { exact: true })
       .fill(notes)

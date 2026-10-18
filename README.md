@@ -12,7 +12,7 @@ See [SPEC.md](SPEC.md) for the data model, status machine and design decisions.
 pnpm install
 pnpm db:generate      # generate the Prisma client
 pnpm db:push          # create dev.db from prisma/schema.prisma
-pnpm db:seed          # bootstrap the admin + a starter string catalogue
+pnpm db:seed          # bootstrap the admin (strings, prices, roster: enter in the app)
 pnpm dev              # http://localhost:3000
 ```
 
@@ -65,7 +65,7 @@ pnpm exec tsc --noEmit   # types
 pnpm lint                # eslint
 pnpm build               # production build
 pnpm test:e2e            # end-to-end flow — needs `pnpm dev` running
-pnpm db:reset-data       # wipe app data after an e2e run, then re-seed
+pnpm db:reset-data       # wipe app data (strings included) after an e2e run, then re-seed
 ```
 
 `scripts/e2e-flow.ts` drives the real HTTP stack: better-auth sign-in/sign-up plus

@@ -35,6 +35,7 @@ type SortKey =
   | 'stringer'
   | 'stringPrice'
   | 'labourPrice'
+  | 'ownStringFee'
   | 'totalPrice'
   | 'paid'
 
@@ -105,10 +106,20 @@ function BillingPage() {
           return nullsLast(a.stringPriceCents, b.stringPriceCents)
         case 'labourPrice':
           return nullsLast(a.labourPriceCents, b.labourPriceCents)
+        case 'ownStringFee':
+          return nullsLast(a.ownStringFeeCents, b.ownStringFeeCents)
         case 'totalPrice':
           return nullsLast(
-            totalPriceCents(a.stringPriceCents, a.labourPriceCents),
-            totalPriceCents(b.stringPriceCents, b.labourPriceCents),
+            totalPriceCents(
+              a.stringPriceCents,
+              a.labourPriceCents,
+              a.ownStringFeeCents,
+            ),
+            totalPriceCents(
+              b.stringPriceCents,
+              b.labourPriceCents,
+              b.ownStringFeeCents,
+            ),
           )
         case 'paid':
           return nullsLast(
@@ -122,7 +133,11 @@ function BillingPage() {
   return (
     <div className="grid gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-3xl text-foreground">{m.billing_title()}</h1>
+        {/* "Abrechnungsübersicht" is one word wider than a phone: let the
+            browser hyphenate it (via <html lang>) rather than overflow. */}
+        <h1 className="min-w-0 text-3xl wrap-break-word hyphens-auto text-foreground">
+          {m.billing_title()}
+        </h1>
         <div className="relative w-full sm:w-64">
           <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -192,6 +207,14 @@ function BillingPage() {
                     className="text-right"
                   />
                   <SortableHead
+                    label={m.request_own_string_fee()}
+                    sortKey="ownStringFee"
+                    active={sortKey === 'ownStringFee'}
+                    dir={sortDir}
+                    onSort={toggleSort}
+                    className="text-right"
+                  />
+                  <SortableHead
                     label={m.request_total_price()}
                     sortKey="totalPrice"
                     active={sortKey === 'totalPrice'}
@@ -234,11 +257,15 @@ function BillingPage() {
                     <TableCell className="text-right">
                       {formatPrice(request.labourPriceCents)}
                     </TableCell>
+                    <TableCell className="text-right">
+                      {formatPrice(request.ownStringFeeCents)}
+                    </TableCell>
                     <TableCell className="text-right font-semibold text-foreground">
                       {formatPrice(
                         totalPriceCents(
                           request.stringPriceCents,
                           request.labourPriceCents,
+                          request.ownStringFeeCents,
                         ),
                       )}
                     </TableCell>

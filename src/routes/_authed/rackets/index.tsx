@@ -33,7 +33,7 @@ function RacketsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl text-foreground">{m.racket_list_title()}</h1>
         <div className="flex items-center gap-2">
-          <Button asChild variant="outline" size="sm">
+          <Button asChild variant="outline">
             <Link
               to="/rackets"
               search={{ archived: search.archived ? undefined : true }}
@@ -82,17 +82,25 @@ function RacketsPage() {
                         count: racket._count.requests,
                       })}
                     </span>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() =>
-                        void toggleArchived(racket.id, !racket.archived)
+                    {/* Disabled buttons swallow hover, so the reason sits on a wrapper. */}
+                    <span
+                      title={
+                        racket.inProgress ? m.racket_in_progress() : undefined
                       }
                     >
-                      {racket.archived
-                        ? m.racket_unarchive()
-                        : m.racket_archive()}
-                    </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={!racket.archived && racket.inProgress}
+                        onClick={() =>
+                          void toggleArchived(racket.id, !racket.archived)
+                        }
+                      >
+                        {racket.archived
+                          ? m.racket_unarchive()
+                          : m.racket_archive()}
+                      </Button>
+                    </span>
                   </span>
                 </CardContent>
               </Card>
