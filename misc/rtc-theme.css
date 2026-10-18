@@ -5,7 +5,7 @@
  * Then use classes like bg-terracotta-600, text-sage-700, bg-cream, text-brand.
  */
 
-/* Fonts (Cormorant Garamond 500/600/700, Jost 400/500/600) are loaded by a
+/* Fonts (Playfair Display and Inter, both variable) are loaded by a
  * <link> in the page head instead of an @import here: imported after
  * tailwindcss, as above, an @import url() lands mid-stylesheet and browsers
  * drop it, so the fonts never load. See src/routes/__root.tsx. */
@@ -61,8 +61,8 @@
   --color-court-950: oklch(22% 0.021 161.3);
 
   /* ---- Typography ---- */
-  --font-display: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
-  --font-sans: 'Jost', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
 
   /* ---- Shape ---- */
   --radius-card: 1rem;

@@ -5,7 +5,7 @@ import { cn } from '#/lib/utils'
 
 /**
  * The club mark as misc/BRAND.md lays it out for the web header: the badge,
- * then the club name in Cormorant Garamond, terracotta, uppercase. The badge
+ * then the club name in Playfair Display, terracotta, uppercase. The badge
  * is the "Restringing" service mark (wreath + strung racket) — swap the import
  * above for the full crest once there is an SVG of it.
  *

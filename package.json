@@ -16,7 +16,7 @@
     "test:e2e": "dotenv -e .env -- tsx scripts/e2e-flow.ts",
     "test:solver": "tsx scripts/solver-check.ts",
     "test:timetable": "tsx scripts/timetable-check.ts",
-    "test:ui": "playwright test",
+    "test:ui": "playwright test --ui",
     "db:generate": "dotenv -e .env -- prisma generate",
     "db:push": "dotenv -e .env -- prisma db push",
     "db:migrate": "dotenv -e .env -- prisma migrate dev",

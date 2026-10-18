@@ -126,7 +126,7 @@ body {
     @apply border-border outline-ring/50;
   }
 
-  /* Headings in the club's display face: Cormorant Garamond 600, uppercase,
+  /* Headings in the club's display face: Playfair Display 600, uppercase,
      tracked out — the same voice as the club name in the header. */
   h1,
   h2,

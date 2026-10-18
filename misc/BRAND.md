@@ -23,12 +23,12 @@ Rules:
 - Dark mode / footer: `bg-court`, headings `text-cream`, accents `text-brand-light`.
 
 ## Typography
-- Display / headings / club name: **Cormorant Garamond** 600, uppercase, letter-spacing ~0.06–0.08em (`font-display`).
-- UI and body: **Jost** 400/500 (`font-sans`). Small labels: uppercase, 12–13px, tracking 0.16em.
+- Display / headings / club name: **Playfair Display** 600, uppercase, letter-spacing ~0.06–0.08em (`font-display`).
+- UI and body: **Inter** 400/500 (`font-sans`). Small labels: uppercase, 12–13px, tracking 0.16em.
 
 ## Logo
 - Crest: laurel wreath (sage) around the monogram R-T-C (terracotta serif), small crown inside the C opening, crossed rackets below.
-- Web header: crest left of "ROYAL TENNISCLUB BEZAU" in Cormorant Garamond, terracotta.
+- Web header: crest left of "ROYAL TENNISCLUB BEZAU" in Playfair Display, terracotta.
 - App icon: crest on terracotta (white letters, light wreath), or monogram-only on court green below 48px.
 - Service badges: wreath + strung racket = **Restringing**; wreath + ball with crown = **Junior Academy** (placeholder name).
 - Leave clear space around the logo of at least the crown's width ×3. Don't recolor outside these palettes, stretch, or add effects.

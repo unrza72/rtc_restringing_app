@@ -15,9 +15,9 @@ import { Breadcrumbs } from '#/components/breadcrumbs'
 import appCss from '../styles.css?url'
 import badgeUrl from '../../misc/rtc-racket-badge.svg?url'
 
-// Cormorant Garamond for display, Jost for UI — see misc/BRAND.md.
+// Playfair Display for headings and the wordmark, Inter for UI text.
 const FONTS_URL =
-  'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Jost:wght@400;500;600&display=swap'
+  'https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap'
 
 export const Route = createRootRoute({
   beforeLoad: async ({ location }) => {

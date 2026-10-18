@@ -719,13 +719,13 @@ The app wears the Royal Tennisclub Bezau brand. `misc/BRAND.md` is the source of
 - **Palette.** Cream page (`--background`), sand cards (`--card`), court-green text
   (`court-900`), sage for secondary text and borders, terracotta (`--color-brand`) as the
   one accent and crown red for destructive actions. No gradients, no emoji.
-- **Type.** Headings and card titles are Cormorant Garamond 600, uppercase, letter-spaced
+- **Type.** Headings and card titles are Playfair Display 600, uppercase, letter-spaced
   — set once in the base layer, so a heading needs no weight or tracking utilities. UI text
-  is Jost. Small labels are uppercase with 0.16em tracking. Both fonts load from Google
+  is Inter. Small labels are uppercase with 0.16em tracking. Both fonts load from Google
   Fonts through `<link>`s in `__root.tsx`; an `@import` inside the theme file would sit
   behind Tailwind's own rules and be dropped.
 - **Logo.** `src/components/club-logo.tsx`: the badge (`misc/rtc-racket-badge.svg`, the
-  Restringing service mark) left of "ROYAL TENNISCLUB BEZAU" in terracotta Cormorant;
+  Restringing service mark) left of "ROYAL TENNISCLUB BEZAU" in terracotta Playfair;
   stacked and centred on the sign-in screens. The same SVG is the favicon. Swap the one
   import once there is an SVG of the full crest.
 - **Tokens over utilities.** Components reach for `bg-card`, `text-muted-foreground`,

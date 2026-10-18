@@ -16,9 +16,10 @@ import {
   UserPlus,
   Users,
   Wrench,
+  X,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { authClient } from '#/lib/auth-client'
 import { setMyLocale } from '#/server/locale.functions'
@@ -113,145 +114,183 @@ export function AppNav() {
     await router.navigate({ to: '/login', search: { redirect: undefined } })
   }
 
+  // Escape closes the mobile menu, like any other overlay.
+  useEffect(() => {
+    if (!open) return
+    function onKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open])
+
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur-md">
-      <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
-        <div className="flex h-16 items-center gap-3">
-          <Link
-            to={approved ? '/dashboard' : '/'}
-            aria-label={m.club_name()}
-            className="shrink-0"
-          >
-            <ClubLogo />
-          </Link>
-
-          <div className="ml-auto flex items-center gap-1.5">
-            {approved && (
-              <Link
-                to="/requests/new"
-                title={m.dash_new_request()}
-                className={cn(
-                  'flex min-h-9 items-center gap-1.5 rounded-full bg-primary px-4',
-                  'text-xs font-medium text-primary-foreground transition-colors hover:bg-primary-hover',
-                )}
-              >
-                <Plus className="size-3.5 stroke-[3]" />
-                <span className="hidden sm:inline">{m.dash_new_request()}</span>
-              </Link>
-            )}
-
-            <LocaleToggle signedIn={!!user} />
-
-            {user ? (
-              <>
-                <span className="hidden items-center gap-2 pr-1 pl-2 md:flex">
-                  <span className="flex size-7 items-center justify-center rounded-full bg-muted text-[11px] font-bold text-foreground">
-                    {user.name.charAt(0).toUpperCase()}
-                  </span>
-                  <span className="text-xs font-medium text-foreground">
-                    {user.name}
-                  </span>
-                </span>
-                {approved && (
-                  // On small screens the same entry lives in the menu below.
-                  <span className="hidden lg:inline-flex">
-                    <IconButton
-                      label={m.onboarding_replay()}
-                      icon={CircleHelp}
-                      onClick={openOnboardingTour}
-                    />
-                  </span>
-                )}
-                <IconButton
-                  label={m.nav_sign_out()}
-                  icon={LogOut}
-                  onClick={handleSignOut}
-                />
-              </>
-            ) : (
-              <Link
-                to="/login"
-                search={{ redirect: undefined }}
-                className="rounded-lg px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-sand hover:text-foreground"
-              >
-                {m.nav_sign_in()}
-              </Link>
-            )}
-
-            {items.length > 0 && (
-              <span className="lg:hidden">
-                <IconButton
-                  label={m.nav_menu()}
-                  icon={Menu}
-                  expanded={open}
-                  onClick={() => setOpen((v) => !v)}
-                />
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Tabs get a row of their own: a staff account carries up to nine,
-            which never fit beside the club wordmark in a 6xl container. */}
-        {items.length > 0 && (
-          <nav className="-mx-3 hidden items-center gap-0.5 overflow-x-auto pb-2 lg:flex">
-            {items.map((item) => (
-              <NavTab key={item.to} {...item} />
-            ))}
-          </nav>
-        )}
-
-        {open && items.length > 0 && (
-          <nav className="flex flex-col gap-0.5 border-t border-border py-2 lg:hidden">
-            {items.map((item) => (
-              <NavTab
-                key={item.to}
-                {...item}
-                onNavigate={() => setOpen(false)}
-              />
-            ))}
-            <button
-              type="button"
-              onClick={() => {
-                setOpen(false)
-                openOnboardingTour()
-              }}
-              className={cn(
-                'flex items-center gap-2 rounded-lg px-3 py-1.5 text-left',
-                'text-xs font-medium text-muted-foreground transition-colors',
-                'hover:bg-sand hover:text-foreground',
-              )}
+    <>
+      <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur-md">
+        <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
+          <div className="flex h-16 items-center gap-3">
+            <Link
+              to={approved ? '/dashboard' : '/'}
+              aria-label={m.club_name()}
+              className="shrink-0"
             >
-              <CircleHelp className="size-3.5" />
-              {m.onboarding_replay()}
-            </button>
-          </nav>
-        )}
-      </div>
-    </header>
+              <ClubLogo />
+            </Link>
+
+            <div className="ml-auto flex items-center gap-1.5">
+              {approved && (
+                <Link
+                  to="/requests/new"
+                  title={m.dash_new_request()}
+                  className={cn(
+                    'flex min-h-9 items-center gap-1.5 rounded-full bg-primary px-4',
+                    'text-xs font-medium text-primary-foreground transition-colors hover:bg-primary-hover',
+                  )}
+                >
+                  <Plus className="size-3.5 stroke-[3]" />
+                  <span className="hidden sm:inline">
+                    {m.dash_new_request()}
+                  </span>
+                </Link>
+              )}
+
+              <LocaleToggle signedIn={!!user} />
+
+              {user ? (
+                <>
+                  <span className="hidden items-center gap-2 pr-1 pl-2 md:flex">
+                    <span className="flex size-7 items-center justify-center rounded-full bg-muted text-[11px] font-bold text-foreground">
+                      {user.name.charAt(0).toUpperCase()}
+                    </span>
+                    <span className="text-xs font-medium text-foreground">
+                      {user.name}
+                    </span>
+                  </span>
+                  {approved && (
+                    // On small screens the same entry lives in the menu below.
+                    <span className="hidden lg:inline-flex">
+                      <IconButton
+                        label={m.onboarding_replay()}
+                        icon={CircleHelp}
+                        onClick={openOnboardingTour}
+                      />
+                    </span>
+                  )}
+                  <IconButton
+                    label={m.nav_sign_out()}
+                    icon={LogOut}
+                    onClick={handleSignOut}
+                  />
+                </>
+              ) : (
+                <Link
+                  to="/login"
+                  search={{ redirect: undefined }}
+                  className="rounded-lg px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-sand hover:text-foreground"
+                >
+                  {m.nav_sign_in()}
+                </Link>
+              )}
+
+              {items.length > 0 && (
+                <span className="lg:hidden">
+                  <IconButton
+                    label={m.nav_menu()}
+                    icon={open ? X : Menu}
+                    expanded={open}
+                    onClick={() => setOpen((v) => !v)}
+                  />
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Tabs get a row of their own: a staff account carries up to nine,
+            which never fit beside the club wordmark in a 6xl container. */}
+          {items.length > 0 && (
+            <nav className="-mx-3 hidden items-center gap-0.5 overflow-x-auto pb-2 lg:flex">
+              {items.map((item) => (
+                <NavTab key={item.to} {...item} />
+              ))}
+            </nav>
+          )}
+
+          {open && items.length > 0 && (
+            <nav className="-mx-4 flex flex-col gap-1 border-t-2 border-primary bg-sand px-4 py-3 sm:-mx-6 sm:px-6 lg:hidden">
+              {items.map((item) => (
+                <NavTab
+                  key={item.to}
+                  {...item}
+                  inMenu
+                  onNavigate={() => setOpen(false)}
+                />
+              ))}
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false)
+                  openOnboardingTour()
+                }}
+                className={cn(MENU_ITEM, MENU_ITEM_IDLE, 'text-left')}
+              >
+                <CircleHelp className="size-4" />
+                {m.onboarding_replay()}
+              </button>
+            </nav>
+          )}
+        </div>
+      </header>
+
+      {/* Below the header (z-40), over the page: blurs what the open menu
+        covers, and a tap anywhere on it closes the menu. Outside <header>
+        because the header's own backdrop-blur would clip a fixed child. */}
+      {open && items.length > 0 && (
+        <div
+          aria-hidden
+          onClick={() => setOpen(false)}
+          className="fixed inset-0 z-30 bg-court-900/20 backdrop-blur-sm lg:hidden"
+        />
+      )}
+    </>
   )
 }
+
+/** A row in the mobile menu: 0.5rem taller than a desktop tab, larger text. */
+const MENU_ITEM =
+  'flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors'
+const MENU_ITEM_IDLE =
+  'text-muted-foreground hover:bg-background hover:text-foreground'
 
 function NavTab({
   to,
   label,
   icon: Icon,
   exact,
+  inMenu = false,
   onNavigate,
-}: NavItem & { onNavigate?: () => void }) {
+}: NavItem & { inMenu?: boolean; onNavigate?: () => void }) {
   return (
     <Link
       to={to}
       onClick={onNavigate}
       activeOptions={{ exact }}
-      className={cn(
-        'flex items-center gap-2 rounded-lg px-3 py-1.5 whitespace-nowrap',
-        'text-xs font-medium text-muted-foreground transition-colors',
-        'hover:bg-sand hover:text-foreground',
-      )}
-      activeProps={{ className: 'bg-sand text-foreground font-semibold' }}
+      className={
+        inMenu
+          ? MENU_ITEM
+          : cn(
+              'flex items-center gap-2 rounded-lg px-3 py-1.5 whitespace-nowrap',
+              'text-xs font-medium text-muted-foreground transition-colors',
+              'hover:bg-sand hover:text-foreground',
+            )
+      }
+      inactiveProps={{ className: inMenu ? MENU_ITEM_IDLE : undefined }}
+      activeProps={{
+        className: inMenu
+          ? 'bg-primary text-primary-foreground font-semibold hover:bg-primary-hover'
+          : 'bg-sand text-foreground font-semibold',
+      }}
     >
-      <Icon className="size-3.5" />
+      <Icon className={inMenu ? 'size-4' : 'size-3.5'} />
       {label}
     </Link>
   )
@@ -275,7 +314,12 @@ function IconButton({
       title={label}
       aria-label={label}
       aria-expanded={expanded}
-      className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-sand hover:text-foreground"
+      className={cn(
+        'rounded-lg p-2 transition-colors',
+        expanded
+          ? 'bg-primary text-primary-foreground hover:bg-primary-hover'
+          : 'text-muted-foreground hover:bg-sand hover:text-foreground',
+      )}
     >
       <Icon className="size-4" />
     </button>
