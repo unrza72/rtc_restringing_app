@@ -95,7 +95,7 @@ function LoginPage() {
                 id={field.name}
                 name={field.name}
                 type="email"
-                autoComplete="email"
+                autoComplete="username"
                 autoCapitalize="none"
                 value={field.state.value}
                 onBlur={field.handleBlur}

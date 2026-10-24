@@ -120,6 +120,7 @@ function SignupPage() {
             >
               <Input
                 id={field.name}
+                name={field.name}
                 autoComplete="name"
                 value={field.state.value}
                 onBlur={field.handleBlur}
@@ -139,8 +140,11 @@ function SignupPage() {
             >
               <Input
                 id={field.name}
+                name={field.name}
                 type="email"
-                autoComplete="email"
+                // "username", not "email": tells password managers this is the
+                // account the generated password gets saved under.
+                autoComplete="username"
                 value={field.state.value}
                 onBlur={field.handleBlur}
                 onChange={(e) => field.handleChange(e.target.value)}
@@ -158,8 +162,10 @@ function SignupPage() {
             >
               <Input
                 id={field.name}
+                name={field.name}
                 type="password"
                 autoComplete="new-password"
+                minLength={8}
                 value={field.state.value}
                 onBlur={field.handleBlur}
                 onChange={(e) => field.handleChange(e.target.value)}
