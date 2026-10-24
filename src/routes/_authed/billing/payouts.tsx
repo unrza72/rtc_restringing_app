@@ -62,7 +62,9 @@ function PayoutsPage() {
 
   return (
     <div className="grid gap-6">
-      <h1 className="text-3xl text-foreground">{m.payouts_title()}</h1>
+      <h1 className="min-w-0 text-3xl wrap-break-word hyphens-auto text-foreground">
+        {m.payouts_title()}
+      </h1>
 
       {balances.length === 0 ? (
         <Card>
@@ -71,58 +73,100 @@ function PayoutsPage() {
           </CardContent>
         </Card>
       ) : (
-        <Card>
-          <CardContent className="px-0 py-2 sm:px-2">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{m.request_stringer()}</TableHead>
-                  <TableHead className="text-right">
-                    {m.payouts_earned()}
-                  </TableHead>
-                  <TableHead className="text-right">
-                    {m.payouts_reimbursed()}
-                  </TableHead>
-                  <TableHead className="text-right">
-                    {m.payouts_outstanding()}
-                  </TableHead>
-                  <TableHead />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {balances.map((balance) => (
-                  <TableRow key={balance.operatorId}>
-                    <TableCell className="font-medium text-foreground">
-                      {balance.name}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {formatPrice(balance.earnedCents)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {formatPrice(balance.reimbursedCents)}
-                    </TableCell>
-                    <TableCell className="text-right font-semibold text-foreground">
-                      {formatPrice(balance.outstandingCents)}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={balance.outstandingCents <= 0}
-                        onClick={() => setReimbursing(balance)}
-                      >
-                        {m.payouts_reimburse()}
-                      </Button>
-                    </TableCell>
+        <>
+          {/* Phones get one card per stringer; the table is for wider screens. */}
+          <ul className="grid gap-3 md:hidden">
+            {balances.map((balance) => (
+              <li
+                key={balance.operatorId}
+                className="grid gap-2 rounded-xl border border-border bg-card px-4 py-3 shadow-sm"
+              >
+                <span className="font-semibold wrap-break-word text-foreground">
+                  {balance.name}
+                </span>
+                <dl className="grid grid-cols-3 gap-2 text-xs">
+                  <Amount
+                    label={m.payouts_earned()}
+                    cents={balance.earnedCents}
+                  />
+                  <Amount
+                    label={m.payouts_reimbursed()}
+                    cents={balance.reimbursedCents}
+                  />
+                  <Amount
+                    label={m.payouts_outstanding()}
+                    cents={balance.outstandingCents}
+                    strong
+                  />
+                </dl>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="justify-self-start"
+                  disabled={balance.outstandingCents <= 0}
+                  onClick={() => setReimbursing(balance)}
+                >
+                  {m.payouts_reimburse()}
+                </Button>
+              </li>
+            ))}
+          </ul>
+
+          {/* min-w-0: without it the table's width stretches the page instead
+            of scrolling inside its own container. */}
+          <Card className="hidden min-w-0 md:block">
+            <CardContent className="px-0 py-2 sm:px-2">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{m.request_stringer()}</TableHead>
+                    <TableHead className="text-right">
+                      {m.payouts_earned()}
+                    </TableHead>
+                    <TableHead className="text-right">
+                      {m.payouts_reimbursed()}
+                    </TableHead>
+                    <TableHead className="text-right">
+                      {m.payouts_outstanding()}
+                    </TableHead>
+                    <TableHead />
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                </TableHeader>
+                <TableBody>
+                  {balances.map((balance) => (
+                    <TableRow key={balance.operatorId}>
+                      <TableCell className="font-medium text-foreground">
+                        {balance.name}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {formatPrice(balance.earnedCents)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {formatPrice(balance.reimbursedCents)}
+                      </TableCell>
+                      <TableCell className="text-right font-semibold text-foreground">
+                        {formatPrice(balance.outstandingCents)}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={balance.outstandingCents <= 0}
+                          onClick={() => setReimbursing(balance)}
+                        >
+                          {m.payouts_reimburse()}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </>
       )}
 
-      <Card>
+      <Card className="min-w-0">
         <CardContent className="px-0 py-2 sm:px-2">
           <div className="px-4 pt-4 pb-2 text-xs font-medium tracking-[0.16em] text-muted-foreground uppercase sm:px-2">
             {m.payouts_history()}
@@ -132,36 +176,64 @@ function PayoutsPage() {
               {m.payouts_history_empty()}
             </p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{m.request_stringer()}</TableHead>
-                  <TableHead className="text-right">
-                    {m.payouts_amount()}
-                  </TableHead>
-                  <TableHead>{m.payouts_note()}</TableHead>
-                  <TableHead>{m.payouts_recorded_by()}</TableHead>
-                  <TableHead>{m.payouts_recorded_on()}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* On a phone, one entry per line instead of five columns. */}
+              <ul className="divide-y px-4 pb-2 md:hidden">
                 {reimbursements.map((entry) => (
-                  <TableRow key={entry.id}>
-                    <TableCell>{entry.operator.name}</TableCell>
-                    <TableCell className="text-right">
-                      {formatPrice(entry.amountCents)}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {entry.note}
-                    </TableCell>
-                    <TableCell>{entry.createdBy.name}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatDateTime(entry.createdAt)}
-                    </TableCell>
-                  </TableRow>
+                  <li key={entry.id} className="grid gap-0.5 py-3 text-sm">
+                    <div className="flex items-baseline gap-3">
+                      <span className="min-w-0 font-medium wrap-break-word text-foreground">
+                        {entry.operator.name}
+                      </span>
+                      <span className="ml-auto shrink-0 font-semibold text-foreground">
+                        {formatPrice(entry.amountCents)}
+                      </span>
+                    </div>
+                    {entry.note && (
+                      <p className="wrap-break-word text-muted-foreground">
+                        {entry.note}
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      {entry.createdBy.name} · {formatDateTime(entry.createdAt)}
+                    </p>
+                  </li>
                 ))}
-              </TableBody>
-            </Table>
+              </ul>
+
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{m.request_stringer()}</TableHead>
+                      <TableHead className="text-right">
+                        {m.payouts_amount()}
+                      </TableHead>
+                      <TableHead>{m.payouts_note()}</TableHead>
+                      <TableHead>{m.payouts_recorded_by()}</TableHead>
+                      <TableHead>{m.payouts_recorded_on()}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {reimbursements.map((entry) => (
+                      <TableRow key={entry.id}>
+                        <TableCell>{entry.operator.name}</TableCell>
+                        <TableCell className="text-right">
+                          {formatPrice(entry.amountCents)}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {entry.note}
+                        </TableCell>
+                        <TableCell>{entry.createdBy.name}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {formatDateTime(entry.createdAt)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -174,6 +246,30 @@ function PayoutsPage() {
           await router.invalidate()
         }}
       />
+    </div>
+  )
+}
+
+/** One figure of a stringer's balance on the phone card. */
+function Amount({
+  label,
+  cents,
+  strong = false,
+}: {
+  label: string
+  cents: number
+  strong?: boolean
+}) {
+  return (
+    <div className="min-w-0">
+      <dt className="wrap-break-word hyphens-auto text-muted-foreground">
+        {label}
+      </dt>
+      <dd
+        className={strong ? 'text-sm font-semibold text-foreground' : 'text-sm'}
+      >
+        {formatPrice(cents)}
+      </dd>
     </div>
   )
 }

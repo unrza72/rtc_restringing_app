@@ -95,15 +95,17 @@ function InvitesPage() {
 
   return (
     <div className="grid gap-6">
-      <h1 className="text-3xl text-foreground">{m.invites_title()}</h1>
+      <h1 className="min-w-0 text-3xl wrap-break-word hyphens-auto text-foreground">
+        {m.invites_title()}
+      </h1>
 
       <FormError>{error}</FormError>
 
-      <Card>
+      <Card className="min-w-0">
         <CardHeader>
           <CardTitle className="text-lg">{m.invites_create()}</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-4">
+        <CardContent className="grid min-w-0 gap-4">
           <form
             className="flex flex-wrap items-end gap-4"
             onSubmit={(e) => {
@@ -153,72 +155,141 @@ function InvitesPage() {
           </CardContent>
         </Card>
       ) : (
-        <Card>
-          <CardContent className="px-0 py-2 sm:px-2">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{m.invites_col_status()}</TableHead>
-                  <TableHead>{m.invites_link()}</TableHead>
-                  <TableHead>{m.invites_col_created_by()}</TableHead>
-                  <TableHead>{m.invites_col_created()}</TableHead>
-                  <TableHead>{m.invites_col_expires()}</TableHead>
-                  <TableHead>{m.invites_col_used_by()}</TableHead>
-                  <TableHead />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {invites.map((invite) => {
-                  const status = inviteStatus(invite)
-                  return (
-                    <TableRow key={invite.id}>
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={cn(STATUS_BADGE[status])}
-                        >
-                          {STATUS_LABEL[status]()}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {status === 'ACTIVE' ? (
-                          <InviteLink token={invite.token} compact />
-                        ) : (
-                          <span className="text-muted-foreground">
-                            {m.common_none()}
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell>{invite.createdBy.name}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {formatDateTime(invite.createdAt)}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {formatDateTime(invite.expiresAt)}
-                      </TableCell>
-                      <TableCell>
-                        {invite.usedBy?.name ?? m.common_none()}
-                      </TableCell>
-                      <TableCell>
-                        {status === 'ACTIVE' && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => void handleRevoke(invite.id)}
+        <>
+          {/* A phone gets one card per invite; the table is for wider screens. */}
+          <ul className="grid gap-3 md:hidden">
+            {invites.map((invite) => {
+              const status = inviteStatus(invite)
+              return (
+                <li
+                  key={invite.id}
+                  className="grid min-w-0 gap-2 rounded-xl border border-border bg-card px-4 py-3 shadow-sm"
+                >
+                  <div className="flex items-center gap-3">
+                    <Badge
+                      variant="outline"
+                      className={cn(STATUS_BADGE[status])}
+                    >
+                      {STATUS_LABEL[status]()}
+                    </Badge>
+                    {status === 'ACTIVE' && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="ml-auto text-destructive hover:text-destructive"
+                        onClick={() => void handleRevoke(invite.id)}
+                      >
+                        {m.invites_revoke()}
+                      </Button>
+                    )}
+                  </div>
+                  {status === 'ACTIVE' && (
+                    <InviteLink token={invite.token} compact />
+                  )}
+                  <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                    <InviteFact label={m.invites_col_created_by()}>
+                      {invite.createdBy.name}
+                    </InviteFact>
+                    <InviteFact label={m.invites_col_created()}>
+                      {formatDateTime(invite.createdAt)}
+                    </InviteFact>
+                    <InviteFact label={m.invites_col_expires()}>
+                      {formatDateTime(invite.expiresAt)}
+                    </InviteFact>
+                    <InviteFact label={m.invites_col_used_by()}>
+                      {invite.usedBy?.name ?? m.common_none()}
+                    </InviteFact>
+                  </dl>
+                </li>
+              )
+            })}
+          </ul>
+
+          {/* min-w-0: without it the table's width stretches the page instead
+            of scrolling inside its own container. */}
+          <Card className="hidden min-w-0 md:block">
+            <CardContent className="px-0 py-2 sm:px-2">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{m.invites_col_status()}</TableHead>
+                    <TableHead>{m.invites_link()}</TableHead>
+                    <TableHead>{m.invites_col_created_by()}</TableHead>
+                    <TableHead>{m.invites_col_created()}</TableHead>
+                    <TableHead>{m.invites_col_expires()}</TableHead>
+                    <TableHead>{m.invites_col_used_by()}</TableHead>
+                    <TableHead />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {invites.map((invite) => {
+                    const status = inviteStatus(invite)
+                    return (
+                      <TableRow key={invite.id}>
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className={cn(STATUS_BADGE[status])}
                           >
-                            {m.invites_revoke()}
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                            {STATUS_LABEL[status]()}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {status === 'ACTIVE' ? (
+                            <InviteLink token={invite.token} compact />
+                          ) : (
+                            <span className="text-muted-foreground">
+                              {m.common_none()}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell>{invite.createdBy.name}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {formatDateTime(invite.createdAt)}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {formatDateTime(invite.expiresAt)}
+                        </TableCell>
+                        <TableCell>
+                          {invite.usedBy?.name ?? m.common_none()}
+                        </TableCell>
+                        <TableCell>
+                          {status === 'ACTIVE' && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => void handleRevoke(invite.id)}
+                            >
+                              {m.invites_revoke()}
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </>
       )}
+    </div>
+  )
+}
+
+/** One labelled detail on an invite's phone card. */
+function InviteFact({
+  label,
+  children,
+}: {
+  label: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="wrap-break-word text-foreground">{children}</dd>
     </div>
   )
 }
@@ -241,18 +312,22 @@ function InviteLink({ token, compact }: { token: string; compact?: boolean }) {
     }
   }
 
+  // The URL is one unbreakable word. Full size, it wraps anywhere (with the
+  // copy button below it on a phone); compact, in a list, it is cut short.
+  // Either way min-w-0, or the token's width pushes the whole page wide.
   return (
     <div
       className={cn(
-        'flex items-center gap-2',
-        !compact &&
-          'rounded-lg border border-border bg-surface-sunken px-3 py-2',
+        'flex min-w-0 gap-2',
+        compact
+          ? 'items-center'
+          : 'flex-col items-start rounded-lg border border-border bg-surface-sunken px-3 py-2 sm:flex-row sm:items-center',
       )}
     >
       <code
         className={cn(
-          'truncate font-mono text-foreground',
-          compact ? 'max-w-48 text-xs' : 'text-sm',
+          'min-w-0 font-mono text-foreground',
+          compact ? 'max-w-48 truncate text-xs' : 'text-sm break-all',
         )}
       >
         {href}

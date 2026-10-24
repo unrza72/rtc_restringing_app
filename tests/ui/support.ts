@@ -73,3 +73,37 @@ export async function pickToken(page: Page, token: number) {
   await page.getByLabel(t('request_token'), { exact: true }).click()
   await page.getByRole('option', { name: String(token), exact: true }).click()
 }
+
+/** A typical small phone; the width every page must fit. */
+export const PHONE = { width: 360, height: 800 }
+
+/**
+ * Fails if anything in the page's main area sticks out past the right edge of
+ * the screen, naming the first few offenders. Content inside its own
+ * horizontal scroller (a wide table in an `overflow-x-auto` box) is fine — it
+ * scrolls there, not the page.
+ */
+export async function expectNoHorizontalOverflow(page: Page) {
+  const overflow = await page.evaluate(() => {
+    const width = document.documentElement.clientWidth
+    const scrolls = (el: Element) =>
+      ['auto', 'scroll', 'hidden', 'clip'].includes(
+        getComputedStyle(el).overflowX,
+      )
+    const inScroller = (el: Element) => {
+      for (let p = el.parentElement; p; p = p.parentElement) {
+        if (scrolls(p)) return true
+      }
+      return false
+    }
+    const wide = [...document.querySelectorAll('main *')]
+      .filter(
+        (el) => el.getBoundingClientRect().right > width + 1 && !inScroller(el),
+      )
+      .slice(0, 5)
+      .map((el) => `${el.tagName} ${el.textContent.trim().slice(0, 40)}`)
+    return { scroll: document.documentElement.scrollWidth, width, wide }
+  })
+  expect(overflow.wide).toEqual([])
+  expect(overflow.scroll).toBeLessThanOrEqual(overflow.width)
+}

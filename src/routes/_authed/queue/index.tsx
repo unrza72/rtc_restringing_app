@@ -115,10 +115,14 @@ function QueuePage() {
 
   return (
     <div className="grid gap-6">
-      <h1 className="text-3xl text-foreground">{m.queue_title()}</h1>
+      <h1 className="min-w-0 text-3xl wrap-break-word hyphens-auto text-foreground">
+        {m.queue_title()}
+      </h1>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-2">
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
+        {/* Seven tabs don't fit one line on a phone: they wrap, so every
+            filter stays in view — none hidden off the edge. */}
+        <div className="flex min-w-0 flex-wrap gap-2">
           <FilterTab
             label={m.queue_filter_open()}
             to={{ status: undefined, mine: undefined }}
@@ -163,103 +167,159 @@ function QueuePage() {
           </CardContent>
         </Card>
       ) : (
-        <Card>
-          <CardContent className="px-0 py-2 sm:px-2">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {showTokens && (
+        <>
+          {/* A phone gets one card per job; the table is for wider screens. */}
+          <ul className="grid gap-3 md:hidden">
+            {rows.map((request) => (
+              <li key={request.id}>
+                <QueueCard request={request} />
+              </li>
+            ))}
+          </ul>
+
+          {/* min-w-0: without it the table's width stretches the page instead
+            of scrolling inside its own container. */}
+          <Card className="hidden min-w-0 md:block">
+            <CardContent className="px-0 py-2 sm:px-2">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    {showTokens && (
+                      <SortableHead
+                        label={m.queue_col_token()}
+                        sortKey="token"
+                        active={sortKey === 'token'}
+                        dir={sortDir}
+                        onSort={toggleSort}
+                      />
+                    )}
                     <SortableHead
-                      label={m.queue_col_token()}
-                      sortKey="token"
-                      active={sortKey === 'token'}
+                      label={m.request_racket()}
+                      sortKey="racket"
+                      active={sortKey === 'racket'}
                       dir={sortDir}
                       onSort={toggleSort}
                     />
-                  )}
-                  <SortableHead
-                    label={m.request_racket()}
-                    sortKey="racket"
-                    active={sortKey === 'racket'}
-                    dir={sortDir}
-                    onSort={toggleSort}
-                  />
-                  <SortableHead
-                    label={m.request_label_requester()}
-                    sortKey="requester"
-                    active={sortKey === 'requester'}
-                    dir={sortDir}
-                    onSort={toggleSort}
-                  />
-                  <SortableHead
-                    label={m.request_stringer()}
-                    sortKey="stringer"
-                    active={sortKey === 'stringer'}
-                    dir={sortDir}
-                    onSort={toggleSort}
-                  />
-                  <SortableHead
-                    label={m.request_needed_by()}
-                    sortKey="neededBy"
-                    active={sortKey === 'neededBy'}
-                    dir={sortDir}
-                    onSort={toggleSort}
-                  />
-                  <SortableHead
-                    label={m.queue_col_status()}
-                    sortKey="status"
-                    active={sortKey === 'status'}
-                    dir={sortDir}
-                    onSort={toggleSort}
-                  />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((request) => (
-                  <TableRow key={request.id}>
-                    {showTokens && (
-                      <TableCell className="font-mono text-base font-semibold">
-                        {request.tokenNumber ?? m.common_none()}
-                      </TableCell>
-                    )}
-                    <TableCell>
-                      <Link
-                        to="/queue/$id"
-                        params={{ id: request.id }}
-                        className="font-medium text-foreground underline-offset-4 hover:underline"
-                      >
-                        {request.racket.label}
-                      </Link>
-                      <div className="text-xs text-muted-foreground">
-                        {describeString(request)} ·{' '}
-                        {formatTension(
-                          request.tensionMain,
-                          request.tensionCross,
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>{request.requester.name}</TableCell>
-                    <TableCell>
-                      {request.operator?.name ?? m.request_unassigned()}
-                    </TableCell>
-                    <TableCell
-                      className={cn(request.neededBy && 'text-primary-ink')}
-                    >
-                      {request.neededBy
-                        ? formatDate(request.neededBy)
-                        : m.common_none()}
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={request.status} />
-                    </TableCell>
+                    <SortableHead
+                      label={m.request_label_requester()}
+                      sortKey="requester"
+                      active={sortKey === 'requester'}
+                      dir={sortDir}
+                      onSort={toggleSort}
+                    />
+                    <SortableHead
+                      label={m.request_stringer()}
+                      sortKey="stringer"
+                      active={sortKey === 'stringer'}
+                      dir={sortDir}
+                      onSort={toggleSort}
+                    />
+                    <SortableHead
+                      label={m.request_needed_by()}
+                      sortKey="neededBy"
+                      active={sortKey === 'neededBy'}
+                      dir={sortDir}
+                      onSort={toggleSort}
+                    />
+                    <SortableHead
+                      label={m.queue_col_status()}
+                      sortKey="status"
+                      active={sortKey === 'status'}
+                      dir={sortDir}
+                      onSort={toggleSort}
+                    />
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                </TableHeader>
+                <TableBody>
+                  {rows.map((request) => (
+                    <TableRow key={request.id}>
+                      {showTokens && (
+                        <TableCell className="font-mono text-base font-semibold">
+                          {request.tokenNumber ?? m.common_none()}
+                        </TableCell>
+                      )}
+                      <TableCell>
+                        <Link
+                          to="/queue/$id"
+                          params={{ id: request.id }}
+                          className="font-medium text-foreground underline-offset-4 hover:underline"
+                        >
+                          {request.racket.label}
+                        </Link>
+                        <div className="text-xs text-muted-foreground">
+                          {describeString(request)} ·{' '}
+                          {formatTension(
+                            request.tensionMain,
+                            request.tensionCross,
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>{request.requester.name}</TableCell>
+                      <TableCell>
+                        {request.operator?.name ?? m.request_unassigned()}
+                      </TableCell>
+                      <TableCell
+                        className={cn(request.neededBy && 'text-primary-ink')}
+                      >
+                        {request.neededBy
+                          ? formatDate(request.neededBy)
+                          : m.common_none()}
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge status={request.status} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </>
       )}
     </div>
+  )
+}
+
+type QueueRequest = Awaited<ReturnType<typeof listQueue>>[number]
+
+/**
+ * One job as a phone shows it: the whole card opens the job, with the
+ * carabiner number big enough to match against the rack at a glance.
+ */
+function QueueCard({ request }: { request: QueueRequest }) {
+  return (
+    <Link
+      to="/queue/$id"
+      params={{ id: request.id }}
+      className="grid gap-1.5 rounded-xl border border-border bg-card px-4 py-3 shadow-sm transition-colors hover:bg-muted"
+    >
+      <div className="flex items-center gap-3">
+        {request.tokenNumber != null && (
+          <span className="font-mono text-lg font-semibold text-foreground">
+            {request.tokenNumber}
+          </span>
+        )}
+        <span className="min-w-0 truncate font-semibold text-foreground">
+          {request.racket.label}
+        </span>
+        <span className="ml-auto shrink-0">
+          <StatusBadge status={request.status} />
+        </span>
+      </div>
+      <div className="text-xs wrap-break-word text-muted-foreground">
+        {describeString(request)} ·{' '}
+        {formatTension(request.tensionMain, request.tensionCross)}
+      </div>
+      <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+        <span className="text-foreground">{request.requester.name}</span>
+        <span>{request.operator?.name ?? m.request_unassigned()}</span>
+        {request.neededBy && (
+          <span className="text-primary-ink">
+            {m.request_needed_by()}: {formatDate(request.neededBy)}
+          </span>
+        )}
+      </div>
+    </Link>
   )
 }
 
@@ -277,7 +337,7 @@ function FilterTab({
       to="/queue"
       search={to}
       className={cn(
-        'rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors',
+        'shrink-0 rounded-lg border px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors',
         active
           ? // The workshop is amber territory throughout the prototype.
             'border-primary bg-primary text-white shadow-md'

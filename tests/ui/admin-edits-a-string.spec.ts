@@ -1,7 +1,15 @@
 import { expect, test } from '@playwright/test'
 
 import { createApprovedUser } from './fixtures'
-import { euros, header, signIn, t, uniqueStamp } from './support'
+import {
+  PHONE,
+  euros,
+  expectNoHorizontalOverflow,
+  header,
+  signIn,
+  t,
+  uniqueStamp,
+} from './support'
 
 test('an admin adds a string to the catalogue and then corrects it', async ({
   page,
@@ -27,18 +35,8 @@ test('an admin adds a string to the catalogue and then corrects it', async ({
   })
 
   await test.step('The catalogue fits on a phone', async () => {
-    await page.setViewportSize({ width: 360, height: 800 })
-    const overflow = await page.evaluate(() => {
-      const width = document.documentElement.clientWidth
-      // The widest offenders, to say what broke rather than just that it did.
-      const wide = [...document.querySelectorAll('main *')]
-        .filter((el) => el.getBoundingClientRect().right > width + 1)
-        .slice(0, 5)
-        .map((el) => `${el.tagName} ${el.textContent.trim().slice(0, 40)}`)
-      return { scroll: document.documentElement.scrollWidth, width, wide }
-    })
-    expect(overflow.wide).toEqual([])
-    expect(overflow.scroll).toBeLessThanOrEqual(overflow.width)
+    await page.setViewportSize(PHONE)
+    await expectNoHorizontalOverflow(page)
     await page.setViewportSize({ width: 1280, height: 720 })
   })
 
