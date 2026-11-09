@@ -11,7 +11,7 @@ See [SPEC.md](SPEC.md) for the data model, status machine and design decisions.
 ```bash
 pnpm install
 pnpm db:generate      # generate the Prisma client
-pnpm db:push          # create dev.db from prisma/schema.prisma
+pnpm db:migrate       # create the database from prisma/migrations
 pnpm db:seed          # bootstrap the admin (strings, prices, roster: enter in the app)
 pnpm dev              # http://localhost:3000
 ```
@@ -25,6 +25,12 @@ and use the link it gives you (`/signup?token=…`) to create the second account
 
 Environment lives in `.env`: `DATABASE_URL`, `BETTER_AUTH_URL`,
 `BETTER_AUTH_SECRET`.
+
+To change the schema, edit `prisma/schema.prisma`, then run
+`pnpm db:migrate --name <what-changed>` and commit the new folder in
+`prisma/migrations/`. Production applies these migrations on every deploy;
+`db push` changes never reach it. Deploying is covered in
+[DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## Spike devtools: quick sign-in
 
@@ -132,18 +138,10 @@ pnpm format
 pnpm check
 ```
 
-## Deploy with Nitro
+## Deploying
 
-This project uses Nitro as a generic server adapter, so it can run on any Node-compatible host.
-
-```bash
-npm run build
-node dist/server/index.mjs
-```
-
-The build output is a self-contained Node server. To deploy, push the `dist/` directory to your host (Render, Fly.io, your own VPS, etc.) and run the server command above.
-
-For host-specific presets (Vercel, Netlify, Cloudflare, AWS Lambda, etc.) and tuning, see https://v3.nitro.build/deploy.
+See [DEPLOYMENT.md](DEPLOYMENT.md): the server runs `.output/server/index.mjs`
+under pm2.
 
 # Paraglide i18n
 
