@@ -2,6 +2,7 @@ import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import { useForm } from '@tanstack/react-form'
 import { useServerFn } from '@tanstack/react-start'
 import { useState } from 'react'
+import { z } from 'zod'
 
 import { listRackets } from '#/server/rackets.functions'
 import { listActiveStrings } from '#/server/strings.functions'
@@ -29,6 +30,8 @@ import {
 import { Field, FormError, fieldErrors } from '#/components/form-field'
 
 export const Route = createFileRoute('/_authed/requests/new')({
+  // Opened from a racket's page: start with that racket picked.
+  validateSearch: z.object({ racketId: z.string().optional() }),
   loader: async () => ({
     rackets: await listRackets({ data: { includeArchived: false } }),
     strings: await listActiveStrings(),
@@ -49,7 +52,8 @@ function NewRequestPage() {
   const router = useRouter()
   const create = useServerFn(createRequest)
   const [formError, setFormError] = useState<string | null>(null)
-  const firstRacket = rackets.at(0)
+  const { racketId } = Route.useSearch()
+  const firstRacket = rackets.find((r) => r.id === racketId) ?? rackets.at(0)
 
   const form = useForm({
     defaultValues: {

@@ -27,12 +27,9 @@ function NewRacketPage() {
               void router.navigate({ to: '/rackets', search: {} })
             }
             onSubmit={async (value) => {
-              const racket = await create({ data: value })
+              await create({ data: value })
               await router.invalidate()
-              await router.navigate({
-                to: '/rackets/$id',
-                params: { id: racket.id },
-              })
+              await router.navigate({ to: '/rackets', search: {} })
             }}
           />
         </CardContent>

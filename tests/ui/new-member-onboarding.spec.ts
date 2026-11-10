@@ -178,8 +178,10 @@ test('a newcomer joins through an invite link, is shown around, adds a racket an
       .fill(racket.model)
     await newcomer.getByRole('button', { name: t('racket_add') }).click()
 
-    await expect(newcomer).toHaveURL(/\/rackets\/(?!new$)[\w-]+$/)
-    await expect(currentCrumb(newcomer)).toHaveText(racket.label)
+    await expect(newcomer).toHaveURL(/\/rackets$/)
+    await expect(
+      newcomer.getByRole('main').getByRole('link', { name: racket.label }),
+    ).toBeVisible()
   })
 
   await test.step('Newcomer requests a restring', async () => {

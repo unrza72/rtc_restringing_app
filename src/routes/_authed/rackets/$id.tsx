@@ -1,6 +1,6 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 import {
   deleteRacket,
@@ -11,6 +11,14 @@ import { isOpen } from '#/lib/status'
 import { m } from '#/paraglide/messages'
 import { Button } from '#/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '#/components/ui/dialog'
 import { RacketForm } from '#/components/racket-form'
 import { FormError } from '#/components/form-field'
 import { RequestList } from '#/components/request-list'
@@ -29,6 +37,26 @@ function RacketDetailPage() {
   const remove = useServerFn(deleteRacket)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const inProgress = racket.requests.some((r) => isOpen(r.status))
+  // Set while the "save your changes first?" dialog is open.
+  const [pendingSave, setPendingSave] = useState(false)
+  const [savingFirst, setSavingFirst] = useState(false)
+  const saveForm = useRef<(() => Promise<boolean>) | null>(null)
+
+  function goToRequest() {
+    void router.navigate({
+      to: '/requests/new',
+      search: { racketId: racket.id },
+    })
+  }
+
+  async function saveThenRequest() {
+    setSavingFirst(true)
+    const saved = (await saveForm.current?.()) ?? false
+    setSavingFirst(false)
+    setPendingSave(false)
+    // A failed save leaves its errors on the form, where the member fixes them.
+    if (saved) goToRequest()
+  }
 
   async function handleDelete() {
     if (!confirm(m.racket_delete_confirm())) return
@@ -68,6 +96,22 @@ function RacketDetailPage() {
               await update({ data: { ...value, id: racket.id } })
               await router.invalidate()
             }}
+            // Archived rackets can't be restrung; unarchive one first.
+            extraActions={({ isDirty, save }) =>
+              !racket.archived && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    if (!isDirty) return goToRequest()
+                    saveForm.current = save
+                    setPendingSave(true)
+                  }}
+                >
+                  {m.dash_new_request()}
+                </Button>
+              )
+            }
           />
 
           <div className="grid justify-items-start gap-2 border-t pt-4">
@@ -109,6 +153,35 @@ function RacketDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog
+        open={pendingSave}
+        onOpenChange={(open) => !savingFirst && setPendingSave(open)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{m.racket_unsaved_title()}</DialogTitle>
+            <DialogDescription>{m.racket_unsaved_body()}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={savingFirst}
+              onClick={() => setPendingSave(false)}
+            >
+              {m.common_cancel()}
+            </Button>
+            <Button
+              type="button"
+              disabled={savingFirst}
+              onClick={() => void saveThenRequest()}
+            >
+              {savingFirst ? m.common_saving() : m.racket_unsaved_save()}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

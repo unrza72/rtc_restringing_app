@@ -68,7 +68,10 @@ test('a member with no racket yet requests a restring, and the stand-in racket s
       .click()
     await page.getByLabel(t('racket_label'), { exact: true }).fill('Pure Drive')
     await page.getByRole('button', { name: t('racket_add') }).click()
-    await expect(currentCrumb(page)).toHaveText('Pure Drive')
+    await expect(page).toHaveURL(/\/rackets$/)
+    await expect(
+      page.getByRole('main').getByRole('link', { name: 'Pure Drive' }),
+    ).toBeVisible()
 
     await header(page)
       .getByRole('link', { name: t('dash_new_request') })

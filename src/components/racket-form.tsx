@@ -1,6 +1,7 @@
 import { useForm } from '@tanstack/react-form'
 import { ChevronDown } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 
 import { racketInputSchema } from '#/lib/schemas'
 import type { RacketInput } from '#/lib/schemas'
@@ -55,13 +56,21 @@ export function RacketForm({
   submitLabel,
   onSubmit,
   onCancel,
+  extraActions,
 }: {
   defaultValues?: RacketFormValues
   submitLabel: string
   onSubmit: (value: RacketInput) => Promise<void>
   onCancel?: () => void
+  /** More buttons for the action row, told whether there are unsaved edits
+   * and given a `save` that resolves to whether saving worked. */
+  extraActions?: (form: {
+    isDirty: boolean
+    save: () => Promise<boolean>
+  }) => ReactNode
 }) {
   const [formError, setFormError] = useState<string | null>(null)
+  const saved = useRef(false)
   // Editing an existing racket shows its details right away; adding a new one
   // starts with just the name and lets the rest stay out of the way.
   const [detailsOpen, setDetailsOpen] = useState(() =>
@@ -75,6 +84,9 @@ export function RacketForm({
       setFormError(null)
       try {
         await onSubmit(racketInputSchema.parse(normalise(value)))
+        saved.current = true
+        // What was just saved is the new baseline for "unsaved changes".
+        form.reset(value)
       } catch (error) {
         setFormError(
           error instanceof Error ? error.message : m.common_error_generic(),
@@ -82,6 +94,12 @@ export function RacketForm({
       }
     },
   })
+
+  async function save() {
+    saved.current = false
+    await form.handleSubmit()
+    return saved.current
+  }
 
   return (
     <form
@@ -283,7 +301,7 @@ export function RacketForm({
         </div>
       )}
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <form.Subscribe selector={(s) => s.isSubmitting}>
           {(isSubmitting) => (
             <Button type="submit" disabled={isSubmitting}>
@@ -295,6 +313,11 @@ export function RacketForm({
           <Button type="button" variant="ghost" onClick={onCancel}>
             {m.common_cancel()}
           </Button>
+        )}
+        {extraActions && (
+          <form.Subscribe selector={(s) => !s.isDefaultValue}>
+            {(isDirty) => extraActions({ isDirty, save })}
+          </form.Subscribe>
         )}
       </div>
     </form>
