@@ -24,7 +24,8 @@
     "db:deploy": "dotenv -e .env -- prisma migrate deploy",
     "db:studio": "dotenv -e .env -- prisma studio",
     "db:seed": "dotenv -e .env -- prisma db seed",
-    "db:reset-data": "dotenv -e .env -- tsx scripts/reset-dev-data.ts"
+    "db:reset-data": "dotenv -e .env -- tsx scripts/reset-dev-data.ts",
+    "admin:set": "dotenv -e .env -- tsx scripts/set-admin.ts"
   },
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "^7.10.0",

@@ -45,6 +45,7 @@
   "devlogin_title": "Schnellanmeldung (Spike-Devtools)",
   "auth_invalid_credentials": "Benutzername und Passwort passen nicht zusammen.",
   "auth_email_taken": "Diese E-Mail-Adresse ist bereits registriert.",
+  "auth_rate_limited": "Zu viele Versuche. Bitte warte ein paar Minuten und versuche es dann noch einmal.",
   "auth_invite_invalid": "Dieser Einladungslink ist ungültig, bereits verwendet oder abgelaufen.",
   "auth_invite_invalid_title": "Einladung nicht mehr gültig",
   "auth_invite_invalid_body": "Dieser Einladungslink wurde bereits verwendet, zurückgezogen oder ist abgelaufen. Frag die Person, die dich eingeladen hat, nach einem neuen Link.",

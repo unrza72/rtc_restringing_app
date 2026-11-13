@@ -21,9 +21,18 @@ release after that.
 - **pm2**: `npm install -g pm2`.
 - **Read access to the GitHub repo**, for example a
   [deploy key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/managing-deploy-keys).
-- **A reverse proxy with HTTPS** (nginx, Caddy, …) that forwards the public
-  domain to the app's port. Sign-in only works from the address set in
-  `BETTER_AUTH_URL`.
+- **A reverse proxy with HTTPS** (nginx, Caddy, …) on the same machine that
+  forwards the public domain to the app's port. Sign-in only works from the
+  address set in `BETTER_AUTH_URL`. The proxy must also:
+  - **pass on the visitor's address** in `X-Forwarded-For`. Sign-in and signup
+    are rate-limited per visitor (5 sign-ins a minute, 10 signups per 10
+    minutes), and the limiter finds the visitor there. Caddy does this by
+    default. With nginx, add
+    `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`. Without
+    it, all visitors share one limit, and the log warns that rate limiting
+    "could not determine a client IP".
+  - **send an HSTS header** (`Strict-Transport-Security: max-age=31536000`),
+    so browsers never try the site over plain HTTP.
 
 ## First install
 
@@ -49,15 +58,10 @@ DATABASE_URL="file:///home/<user>/rtc-data/rtc.sqlite"   # absolute path
 BETTER_AUTH_URL="https://<public domain>"                 # exactly as members type it
 BETTER_AUTH_SECRET="<output of: openssl rand -base64 32>"
 PORT=3000                                                 # what the reverse proxy forwards to
-HOST=127.0.0.1                                            # only the proxy can reach the app
+HOST=127.0.0.1                                            # only the proxy can reach the app (keep this: rate limiting trusts the proxy)
 
 # Optional
 RACKET_TOKENS_ENABLED=true   # members pick the numbered carabiner when they request a restring
-
-# Only for the first `pnpm db:seed`: the bootstrap admin
-SEED_ADMIN_NAME="…"
-SEED_ADMIN_EMAIL="…"
-SEED_ADMIN_PASSWORD="…"
 ```
 
 Never set `DEV_QUICK_LOGIN_ENABLED` here. It lets anyone sign in as six test
@@ -65,20 +69,42 @@ accounts that share a published password.
 
 Changing `BETTER_AUTH_SECRET` later signs everyone out.
 
+`BETTER_AUTH_URL` must start with `https://`. That turns on the hardened
+session cookie (`__Host-rtc.session_token`: Secure, HttpOnly, SameSite=Lax, no
+Domain). With an `http://` address the cookie falls back to the weaker
+development settings.
+
 ### 3. Install, create the database, build
 
 ```bash
 pnpm install --frozen-lockfile
 pnpm db:generate      # Prisma client (src/generated/ is not in git)
 pnpm db:deploy        # creates the database and applies every migration
-pnpm db:seed          # creates the bootstrap admin from SEED_ADMIN_*
 pnpm build            # writes the server to .output/
 ```
 
-The seed leaves an existing admin alone, so running it twice does no harm.
-After the first sign-in, you can remove the `SEED_ADMIN_*` lines from `.env`.
+### 4. Create the admin
 
-### 4. Start under pm2
+Without an admin nobody can approve the first member, so create one:
+
+```bash
+pnpm admin:set admin@example.org --name "Club Admin"
+```
+
+It asks for the password twice and doesn't show it as you type, so it ends up
+neither in `.env` nor in the shell history. Admin passwords need at least 12
+characters.
+
+Run the same command whenever an admin is locked out. For an existing account
+it sets the new password, makes the account an admin and approved, and signs
+it out everywhere (`--name` can be left off then). For a script, pipe the
+password in instead: `pnpm admin:set admin@example.org < password-file`.
+
+Don't run `pnpm db:seed` on the server. It is for development, and without
+its `SEED_ADMIN_*` settings it creates `admin@rtc.local` with the published
+password `changeme123`.
+
+### 5. Start under pm2
 
 ```bash
 pm2 start ecosystem.config.cjs

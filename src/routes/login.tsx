@@ -59,7 +59,11 @@ function LoginPage() {
         password: value.password,
       })
       if (error) {
-        setFormError(m.auth_invalid_credentials())
+        setFormError(
+          error.status === 429
+            ? m.auth_rate_limited()
+            : m.auth_invalid_credentials(),
+        )
         return
       }
       // First login ever records today's ambient locale as their preference;

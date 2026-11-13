@@ -64,11 +64,13 @@ function SignupPage() {
         // shown directly. Named codes get their own translated copy; anything
         // else falls back to the generic message rather than leaking it.
         setFormError(
-          error.code?.includes('EMAIL')
-            ? m.auth_email_taken()
-            : error.code?.includes('invite')
-              ? m.auth_invite_invalid()
-              : m.common_error_generic(),
+          error.status === 429
+            ? m.auth_rate_limited()
+            : error.code?.includes('EMAIL')
+              ? m.auth_email_taken()
+              : error.code?.includes('invite')
+                ? m.auth_invite_invalid()
+                : m.common_error_generic(),
         )
         return
       }
