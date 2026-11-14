@@ -109,5 +109,6 @@ export function describeString(request: {
       .filter(Boolean)
       .join(' ')
   }
+  // Also covers a CLUB job whose catalogue string has since been deleted.
   return request.ownStringName ?? m.common_none()
 }

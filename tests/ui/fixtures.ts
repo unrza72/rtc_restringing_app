@@ -151,6 +151,25 @@ export async function createFinishedJob(
   })
 }
 
+/**
+ * A string of the test's own in the catalogue, so a test that deletes or
+ * deactivates one leaves the shared catalogue alone.
+ */
+export async function createClubString(options: {
+  name: string
+  priceCents: number
+  active?: boolean
+}) {
+  return prisma().clubString.create({
+    data: {
+      name: options.name,
+      gauge: '1.25',
+      priceCents: options.priceCents,
+      active: options.active ?? true,
+    },
+  })
+}
+
 /** The club's flat prices in cents, as an admin would set them. */
 export async function setClubPricing(pricing: {
   labourPriceCents: number | null

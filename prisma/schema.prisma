@@ -179,6 +179,8 @@ model StringingRequest {
   stringSource  String
   clubStringId  String?
   clubString    ClubString? @relation(fields: [clubStringId], references: [id])
+  /// For CLUB jobs whose catalogue string was deleted later: that string's
+  /// name, kept so old jobs still say what was strung.
   ownStringName String?
   /// Optional: null leaves the tension to the stringer.
   tensionMain   Float?

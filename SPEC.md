@@ -216,13 +216,20 @@ and cannot be picked by id. Once the member adds a real racket, the picker offer
 that; requests already filed keep the stand-in.
 
 Deleting a racket that has requests is blocked → archive instead, so history stays intact.
-Archiving is in turn blocked while the racket still has an open request. Same for a
-`ClubString` that has been used: "remove" deactivates it (`active = false`) rather than
-deleting, so past jobs keep showing what was strung; an unused one is deleted outright.
+Archiving is in turn blocked while the racket still has an open request.
+
+A `ClubString` is taken off the request form by deactivating it (`active = false`); it
+stays listed on `/admin/strings`. Deleting removes it for good, used or not, after a
+confirmation dialog — but is refused while an open (`REQUESTED`/`ACCEPTED`) request
+still uses it. Past jobs that used it get its name copied into `ownStringName` and
+`clubStringId` cleared, so they keep showing what was strung; their prices were already
+stamped on completion.
 
 **String selection invariant** (enforced in the Zod schema and re-checked server-side):
 `stringSource = CLUB` → `clubStringId` set, `ownStringName` null;
 `stringSource = MEMBER` → `ownStringName` set, `clubStringId` null.
+The one exception is a past CLUB job whose catalogue string was deleted later:
+`clubStringId` null, `ownStringName` holds that string's name.
 
 ## 5. Status machine
 
@@ -270,7 +277,7 @@ REQUESTED --accept(operator)--> ACCEPTED --complete(operator)--> DONE --collect-
 | `/training/people`, `/training/people/$id`    | coach                     | trainee/trainer roster + weekly availability                                                       |
 | `/training/plans`, `/training/plans/$id`      | coach                     | solver knobs, saved runs, groups and who was left out                                              |
 | `/admin/members`                              | admin                     | approve, reject, set roles                                                                         |
-| `/admin/strings`                              | admin                     | club string catalogue: add, edit price, deactivate                                                 |
+| `/admin/strings`                              | admin                     | club string catalogue: add, edit price, deactivate, delete                                         |
 | `/help`                                       | member                    | every feature explained, filtered to the reader's roles; restarts the tour                         |
 | `/api/auth/$`                                 | public                    | better-auth handler (exists)                                                                       |
 

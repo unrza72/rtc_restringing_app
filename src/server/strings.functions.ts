@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { prisma } from '#/db'
 import { adminMiddleware, memberMiddleware } from '#/lib/auth-middleware'
 import { clubStringInputSchema, idSchema } from '#/lib/schemas'
+import { m } from '#/paraglide/messages'
 
 /** The club's string catalogue. Members read it; only admins change it. */
 
@@ -40,8 +41,12 @@ export const updateClubString = createServerFn({ method: 'POST' })
   })
 
 /**
- * Strings that have never been used can go entirely; once a job references one
- * it is only deactivated, so historical jobs still name what was strung.
+ * Deletes a string from the catalogue for good, used or not. Refused while an
+ * open request still waits for it — the stringer needs to know what to string.
+ * Finished and cancelled jobs keep the string's name: it is copied into
+ * `ownStringName`, which `describeString` shows when the catalogue entry is
+ * gone. Their prices were stamped on completion, so billing is unaffected.
+ * To only take a string off the request form, deactivate it instead.
  */
 export const removeClubString = createServerFn({ method: 'POST' })
   .middleware([adminMiddleware])
@@ -49,18 +54,24 @@ export const removeClubString = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const clubString = await prisma.clubString.findUnique({
       where: { id: data.id },
-      include: { _count: { select: { requests: true } } },
     })
     if (!clubString) throw notFound()
 
-    if (clubString._count.requests > 0) {
-      await prisma.clubString.update({
-        where: { id: data.id },
-        data: { active: false },
-      })
-      return { id: data.id, deactivated: true }
-    }
+    const open = await prisma.stringingRequest.count({
+      where: {
+        clubStringId: data.id,
+        status: { in: ['REQUESTED', 'ACCEPTED'] },
+      },
+    })
+    if (open > 0) throw new Error(m.admin_string_delete_open({ count: open }))
 
-    await prisma.clubString.delete({ where: { id: data.id } })
-    return { id: data.id, deactivated: false }
+    const name = [clubString.name, clubString.gauge].filter(Boolean).join(' ')
+    await prisma.$transaction([
+      prisma.stringingRequest.updateMany({
+        where: { clubStringId: data.id },
+        data: { clubStringId: null, ownStringName: name },
+      }),
+      prisma.clubString.delete({ where: { id: data.id } }),
+    ])
+    return { id: data.id }
   })

@@ -1,8 +1,16 @@
-import { createFileRoute, useRouter } from '@tanstack/react-router'
+import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import { useForm } from '@tanstack/react-form'
 import { useServerFn } from '@tanstack/react-start'
 import { useState } from 'react'
-import { Archive, ArchiveRestore, Pencil, Trash2 } from 'lucide-react'
+import {
+  Archive,
+  ArchiveRestore,
+  Eye,
+  EyeOff,
+  Pencil,
+  Trash2,
+} from 'lucide-react'
+import { z } from 'zod'
 
 import {
   createClubString,
@@ -24,9 +32,24 @@ import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '#/components/ui/dialog'
 import { Field, FormError, fieldErrors } from '#/components/form-field'
 
+const searchSchema = z.object({
+  // Deactivated strings are hidden unless asked for — they're off the request
+  // form, so mostly clutter here.
+  inactive: z.boolean().optional(),
+})
+
 export const Route = createFileRoute('/_authed/admin/strings')({
+  validateSearch: searchSchema,
   loader: async () => ({
     strings: await listAllStrings(),
     tokens: await getTokenStatus(),
@@ -37,12 +60,20 @@ export const Route = createFileRoute('/_authed/admin/strings')({
 
 function StringsPage() {
   const { strings, tokens, pricing } = Route.useLoaderData()
+  const showInactive = Route.useSearch().inactive ?? false
+  const inactiveCount = strings.filter((s) => !s.active).length
+  const shown = showInactive ? strings : strings.filter((s) => s.active)
   const router = useRouter()
   const update = useServerFn(updateClubString)
   const remove = useServerFn(removeClubString)
   const [error, setError] = useState<string | null>(null)
   // One row at a time turns into the edit form.
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState<{
+    id: string
+    name: string
+    gauge: string | null
+  } | null>(null)
 
   async function run(action: () => Promise<unknown>) {
     setError(null)
@@ -72,13 +103,31 @@ function StringsPage() {
 
       <Card>
         <CardContent className="py-2">
-          {strings.length === 0 ? (
+          {(inactiveCount > 0 || showInactive) && (
+            <div className="flex justify-end pt-2">
+              <Button asChild size="sm" variant="outline">
+                <Link
+                  to="."
+                  search={{ inactive: showInactive ? undefined : true }}
+                  replace
+                >
+                  {showInactive ? <EyeOff /> : <Eye />}
+                  {showInactive
+                    ? m.admin_strings_hide_inactive()
+                    : m.admin_strings_show_inactive({ count: inactiveCount })}
+                </Link>
+              </Button>
+            </div>
+          )}
+          {shown.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">
-              {m.admin_strings_empty()}
+              {strings.length === 0
+                ? m.admin_strings_empty()
+                : m.admin_strings_all_inactive()}
             </p>
           ) : (
             <ul className="divide-y">
-              {strings.map((s) =>
+              {shown.map((s) =>
                 editingId === s.id ? (
                   <li key={s.id} className="py-4">
                     <StringForm
@@ -120,7 +169,7 @@ function StringsPage() {
                     <span className="text-sm">{formatPrice(s.priceCents)}</span>
                     {!s.active && (
                       <Badge variant="outline">
-                        {m.member_status_REJECTED()}
+                        {m.admin_string_inactive()}
                       </Badge>
                     )}
 
@@ -174,9 +223,7 @@ function StringsPage() {
                           variant="ghost"
                           className="text-destructive hover:text-destructive"
                           title={m.common_delete()}
-                          onClick={() =>
-                            void run(() => remove({ data: { id: s.id } }))
-                          }
+                          onClick={() => setDeleting(s)}
                         >
                           <Trash2 />
                           <ActionLabel>{m.common_delete()}</ActionLabel>
@@ -192,7 +239,90 @@ function StringsPage() {
       </Card>
 
       <NewStringCard onCreated={() => router.invalidate()} />
+
+      <DeleteStringDialog
+        clubString={deleting}
+        onClose={() => setDeleting(null)}
+        onConfirm={async (id) => {
+          await remove({ data: { id } })
+          await router.invalidate()
+        }}
+      />
     </div>
+  )
+}
+
+/**
+ * Deleting is for good, so it asks first. Stays open on failure (a string
+ * still on open requests) and shows why, since that is where the admin looks.
+ */
+function DeleteStringDialog({
+  clubString,
+  onClose,
+  onConfirm,
+}: {
+  clubString: { id: string; name: string; gauge: string | null } | null
+  onClose: () => void
+  onConfirm: (id: string) => Promise<void>
+}) {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  // Keep the last content while the dialog animates out.
+  const [shown, setShown] = useState(clubString)
+  if (clubString && clubString !== shown) {
+    setShown(clubString)
+    setError(null)
+  }
+
+  async function confirm() {
+    if (!shown) return
+    setBusy(true)
+    setError(null)
+    try {
+      await onConfirm(shown.id)
+      onClose()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : m.common_error_generic())
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const name = shown ? [shown.name, shown.gauge].filter(Boolean).join(' ') : ''
+
+  return (
+    <Dialog
+      open={clubString !== null}
+      onOpenChange={(open) => !open && !busy && onClose()}
+    >
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="wrap-break-word">
+            {m.admin_string_delete_title({ name })}
+          </DialogTitle>
+          <DialogDescription>{m.admin_string_delete_body()}</DialogDescription>
+        </DialogHeader>
+        <FormError>{error}</FormError>
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={busy}
+            onClick={onClose}
+          >
+            {m.common_cancel()}
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            disabled={busy}
+            onClick={() => void confirm()}
+          >
+            {m.common_delete()}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
