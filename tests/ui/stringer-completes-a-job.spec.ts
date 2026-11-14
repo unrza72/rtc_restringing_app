@@ -18,8 +18,9 @@ test('a stringer picks a job out of the queue, strings it and marks it as done',
     tensionMain: 25,
     tensionCross: 24,
   })
-  // The labour isn't entered per job — it's the club's flat fee.
-  await setClubPricing({ labourPriceCents: 1500, ownStringFeeCents: null })
+  // No price is entered per job: the string's comes from the catalogue,
+  // labour and rake are the club's flat prices.
+  await setClubPricing({ labourPriceCents: 1500, rakeCents: 300 })
   const notes = 'Neu bespannt, Griffband gleich mitgewechselt.'
 
   await test.step('Stringer signs in and opens the queue', async () => {
@@ -64,7 +65,7 @@ test('a stringer picks a job out of the queue, strings it and marks it as done',
     await expect(stringer.getByText(t('queue_complete_title'))).toBeVisible()
 
     // Everything the request already said comes prefilled — the stringer only
-    // corrects what actually differed. Labour is the club's flat fee.
+    // corrects what actually differed. Prices aren't the stringer's to set.
     await expect(
       stringer.getByLabel(t('queue_used_string'), { exact: true }),
     ).toHaveValue('Luxilon ALU Power 1.25')
@@ -74,9 +75,7 @@ test('a stringer picks a job out of the queue, strings it and marks it as done',
     await expect(
       stringer.getByLabel(t('queue_used_tension_cross'), { exact: true }),
     ).toHaveValue('24')
-    await expect(
-      stringer.getByLabel(t('queue_string_price'), { exact: true }),
-    ).toHaveValue('25.00')
+    await expect(stringer.getByRole('spinbutton')).toHaveCount(2)
 
     await stringer
       .getByLabel(t('queue_operator_notes'), { exact: true })
@@ -88,8 +87,10 @@ test('a stringer picks a job out of the queue, strings it and marks it as done',
     const main = stringer.getByRole('main')
     await expect(main).toContainText(t('status_DONE'))
     await expect(main).toContainText('Luxilon ALU Power 1.25')
-    // 25,00 € string + 15,00 € labour.
-    await expect(main).toContainText(euros(40))
+    // 25,00 € string + 15,00 € labour + 3,00 € rake.
+    await expect(main).toContainText(euros(25))
+    await expect(main).toContainText(euros(3))
+    await expect(main).toContainText(euros(43))
     await expect(main).toContainText(notes)
     // Nothing left for the stringer to do on it — the member collects it.
     await expect(

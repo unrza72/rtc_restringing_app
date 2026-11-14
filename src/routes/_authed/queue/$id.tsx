@@ -126,7 +126,6 @@ function CompleteForm({
     clubString: {
       name: string
       gauge: string | null
-      priceCents: number | null
     } | null
   }
   onDone: () => Promise<void>
@@ -137,17 +136,13 @@ function CompleteForm({
 
   const form = useForm({
     // Prefilled from the request — the operator only edits what actually
-    // differed, e.g. a substituted string or a corrected price.
+    // differed, e.g. a substituted string. No prices: those are the club's.
     defaultValues: {
       usedStringName: describeString(request),
       usedTensionMain:
         request.tensionMain == null ? '' : String(request.tensionMain),
       usedTensionCross:
         request.tensionCross == null ? '' : String(request.tensionCross),
-      stringPriceCents:
-        request.clubString?.priceCents == null
-          ? ''
-          : (request.clubString.priceCents / 100).toFixed(2),
       operatorNotes: '',
     },
     onSubmit: async ({ value }) => {
@@ -160,10 +155,6 @@ function CompleteForm({
             usedTensionMain: value.usedTensionMain,
             usedTensionCross:
               value.usedTensionCross === '' ? null : value.usedTensionCross,
-            stringPriceCents:
-              value.stringPriceCents === ''
-                ? null
-                : Math.round(Number(value.stringPriceCents) * 100),
             operatorNotes: value.operatorNotes || null,
           }),
         })
@@ -206,7 +197,7 @@ function CompleteForm({
             )}
           </form.Field>
 
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2">
             <form.Field name="usedTensionMain">
               {(field) => (
                 <Field
@@ -237,25 +228,6 @@ function CompleteForm({
                     id={field.name}
                     type="number"
                     step="0.5"
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                  />
-                </Field>
-              )}
-            </form.Field>
-
-            <form.Field name="stringPriceCents">
-              {(field) => (
-                <Field
-                  id={field.name}
-                  label={m.queue_string_price()}
-                  errors={fieldErrors(field.state.meta)}
-                >
-                  <Input
-                    id={field.name}
-                    type="number"
-                    step="0.01"
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}

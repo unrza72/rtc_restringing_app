@@ -4,6 +4,12 @@ import {
   createCsrfMiddleware,
 } from '@tanstack/react-start'
 
+import {
+  SECURITY_HEADERS,
+  contentSecurityPolicy,
+  createNonce,
+} from '#/lib/security-headers'
+
 /**
  * Paraglide resolves the locale from the URL prefix ("/de/..."). On the server
  * that has to be established per request, otherwise `getLocale()` falls back to
@@ -52,6 +58,36 @@ const csrf = createCsrfMiddleware({
   filter: (ctx) => ctx.handlerType === 'serverFn',
 })
 
+// Outermost, so even a request the CSRF check turns away gets the headers.
+// The nonce travels on in the request context: `getRouter()` (src/router.tsx)
+// hands it to the router, which stamps it on every inline script it renders.
+//
+// The CSP is left out in development, where Vite injects inline scripts of its
+// own (the React refresh preamble) that no nonce covers. The UI tests run the
+// production build, so they do see it.
+const securityHeaders = createMiddleware().server(async ({ next }) => {
+  const cspNonce = createNonce()
+  const result = await next({ context: { cspNonce } })
+
+  const headers = new Headers(SECURITY_HEADERS)
+  if (process.env.NODE_ENV === 'production') {
+    headers.set(
+      'Content-Security-Policy',
+      contentSecurityPolicy(cspNonce, {
+        https: process.env.BETTER_AUTH_URL?.startsWith('https://') ?? false,
+      }),
+    )
+  }
+  try {
+    for (const [name, value] of headers)
+      result.response.headers.set(name, value)
+  } catch {
+    // `Response.redirect()` freezes its headers. A bare redirect has no body
+    // to protect, so it goes out as it is.
+  }
+  return result
+})
+
 export const startInstance = createStart(() => ({
-  requestMiddleware: [csrf, localeMiddleware],
+  requestMiddleware: [securityHeaders, csrf, localeMiddleware],
 }))

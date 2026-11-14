@@ -35,7 +35,7 @@ type SortKey =
   | 'stringer'
   | 'stringPrice'
   | 'labourPrice'
-  | 'ownStringFee'
+  | 'rake'
   | 'totalPrice'
   | 'paid'
 
@@ -106,19 +106,19 @@ function BillingPage() {
           return nullsLast(a.stringPriceCents, b.stringPriceCents)
         case 'labourPrice':
           return nullsLast(a.labourPriceCents, b.labourPriceCents)
-        case 'ownStringFee':
-          return nullsLast(a.ownStringFeeCents, b.ownStringFeeCents)
+        case 'rake':
+          return nullsLast(a.rakeCents, b.rakeCents)
         case 'totalPrice':
           return nullsLast(
             totalPriceCents(
               a.stringPriceCents,
               a.labourPriceCents,
-              a.ownStringFeeCents,
+              a.rakeCents,
             ),
             totalPriceCents(
               b.stringPriceCents,
               b.labourPriceCents,
-              b.ownStringFeeCents,
+              b.rakeCents,
             ),
           )
         case 'paid':
@@ -226,9 +226,9 @@ function BillingPage() {
                       className="text-right"
                     />
                     <SortableHead
-                      label={m.request_own_string_fee()}
-                      sortKey="ownStringFee"
-                      active={sortKey === 'ownStringFee'}
+                      label={m.request_rake()}
+                      sortKey="rake"
+                      active={sortKey === 'rake'}
                       dir={sortDir}
                       onSort={toggleSort}
                       className="text-right"
@@ -277,14 +277,14 @@ function BillingPage() {
                         {formatPrice(request.labourPriceCents)}
                       </TableCell>
                       <TableCell className="text-right">
-                        {formatPrice(request.ownStringFeeCents)}
+                        {formatPrice(request.rakeCents)}
                       </TableCell>
                       <TableCell className="text-right font-semibold text-foreground">
                         {formatPrice(
                           totalPriceCents(
                             request.stringPriceCents,
                             request.labourPriceCents,
-                            request.ownStringFeeCents,
+                            request.rakeCents,
                           ),
                         )}
                       </TableCell>
@@ -356,7 +356,7 @@ function BillingCard({
   const parts = [
     [m.request_string_price(), request.stringPriceCents],
     [m.request_labour_price(), request.labourPriceCents],
-    [m.request_own_string_fee(), request.ownStringFeeCents],
+    [m.request_rake(), request.rakeCents],
   ] as const
 
   return (
@@ -400,7 +400,7 @@ function BillingCard({
               totalPriceCents(
                 request.stringPriceCents,
                 request.labourPriceCents,
-                request.ownStringFeeCents,
+                request.rakeCents,
               ),
             )}
           </dd>

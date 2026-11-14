@@ -606,15 +606,15 @@ function inputToCents(value: string) {
 }
 
 /**
- * The club's flat prices: labour per racket — the same for every stringer, so
- * it lives here instead of on the "mark as done" form — and the extra fee when
- * a member brings their own string.
+ * The club's flat prices per racket (SPEC.md §5a): labour, reimbursed to the
+ * stringer, and the rake the club keeps. With the catalogue price above they
+ * make up what a member pays; stringers can't change any of them.
  */
 function PricingCard({
   pricing,
   onSaved,
 }: {
-  pricing: { labourPriceCents: number | null; ownStringFeeCents: number | null }
+  pricing: { labourPriceCents: number | null; rakeCents: number | null }
   onSaved: () => Promise<void>
 }) {
   const save = useServerFn(setPricing)
@@ -624,7 +624,7 @@ function PricingCard({
   const form = useForm({
     defaultValues: {
       labourPrice: centsToInput(pricing.labourPriceCents),
-      ownStringFee: centsToInput(pricing.ownStringFeeCents),
+      rake: centsToInput(pricing.rakeCents),
     },
     onSubmit: async ({ value }) => {
       setError(null)
@@ -632,7 +632,7 @@ function PricingCard({
       // safeParse: a thrown ZodError's message is its raw issue list.
       const parsed = pricingSchema.safeParse({
         labourPriceCents: inputToCents(value.labourPrice),
-        ownStringFeeCents: inputToCents(value.ownStringFee),
+        rakeCents: inputToCents(value.rake),
       })
       if (!parsed.success) {
         setError(parsed.error.issues[0]?.message ?? m.common_error_generic())
@@ -649,7 +649,7 @@ function PricingCard({
   })
 
   const priceField = (
-    name: 'labourPrice' | 'ownStringFee',
+    name: 'labourPrice' | 'rake',
     label: string,
     hint: string,
   ) => (
@@ -693,11 +693,7 @@ function PricingCard({
               m.admin_labour_price(),
               m.admin_labour_price_hint(),
             )}
-            {priceField(
-              'ownStringFee',
-              m.admin_own_string_fee(),
-              m.admin_own_string_fee_hint(),
-            )}
+            {priceField('rake', m.admin_rake(), m.admin_rake_hint())}
           </div>
           <div className="flex items-center gap-3">
             <form.Subscribe selector={(s) => s.isSubmitting}>

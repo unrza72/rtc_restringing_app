@@ -125,14 +125,6 @@ export const requestInputSchema = z
   }))
 export type RequestInput = z.infer<typeof requestInputSchema>
 
-const priceInput = z.coerce
-  .number()
-  .int()
-  .min(0)
-  .max(100000)
-  .nullable()
-  .default(null)
-
 export const completeInputSchema = z.object({
   id: z.string().min(1),
   usedStringName: z
@@ -142,9 +134,8 @@ export const completeInputSchema = z.object({
     .max(120),
   usedTensionMain: tension,
   usedTensionCross: tension.nullable().default(null),
-  stringPriceCents: priceInput,
-  // No labour or own-string fee: both are the club's flat prices, which
-  // completeRequest stamps on from the settings.
+  // No prices: the stringer can't change them. completeRequest stamps the
+  // catalogue string price and the club's labour and rake on from the server.
   operatorNotes: optionalText(500),
 })
 
@@ -169,6 +160,10 @@ export const clubStringInputSchema = z.object({
 export const memberDecisionSchema = z.object({
   userId: z.string().min(1),
   status: z.enum(USER_STATUSES),
+})
+
+export const memberIdSchema = z.object({
+  userId: z.string().min(1),
 })
 
 export const memberRolesSchema = z.object({
@@ -197,14 +192,14 @@ export const tokenCountSchema = z.object({
 const clubPrice = z.coerce
   .number()
   .int()
-  .min(0, { error: () => m.admin_labour_price_invalid() })
-  .max(100000, { error: () => m.admin_labour_price_invalid() })
+  .min(0, { error: () => m.admin_price_invalid() })
+  .max(100000, { error: () => m.admin_price_invalid() })
   .nullable()
   .default(null)
 
 export const pricingSchema = z.object({
   labourPriceCents: clubPrice,
-  ownStringFeeCents: clubPrice,
+  rakeCents: clubPrice,
 })
 
 export const localeInputSchema = z.object({ locale: z.enum(locales) })

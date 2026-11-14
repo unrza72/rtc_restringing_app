@@ -50,13 +50,27 @@ try {
   const hash = await hashPassword(password)
   const now = new Date()
 
+  // In the member audit log with no actor: it was done on the server itself.
+  const audit = (targetId: string, fromValue: string | null, toValue: string) =>
+    prisma.memberAuditEntry.create({
+      data: {
+        action: 'ADMIN_SET',
+        targetId,
+        targetName: name,
+        targetEmail: email,
+        fromValue,
+        toValue,
+      },
+    })
+
   if (existing) {
+    const role = serializeRoles([...parseRoles(existing.role), 'admin'])
     await prisma.$transaction([
       prisma.user.update({
         where: { id: existing.id },
         data: {
           name,
-          role: serializeRoles([...parseRoles(existing.role), 'admin']),
+          role,
           status: 'APPROVED',
           approvedAt: existing.approvedAt ?? now,
           banned: false,
@@ -81,11 +95,12 @@ try {
       }),
       // Whoever knew the old password is signed out too.
       prisma.session.deleteMany({ where: { userId: existing.id } }),
+      audit(existing.id, existing.role ?? 'member', role),
     ])
     console.log(`✅ ${email}: new password set, admin, signed out everywhere`)
   } else {
     const userId = randomUUID()
-    await prisma.user.create({
+    const create = prisma.user.create({
       data: {
         id: userId,
         name,
@@ -110,6 +125,7 @@ try {
         },
       },
     })
+    await prisma.$transaction([create, audit(userId, null, 'admin')])
     console.log(`✅ ${email}: admin account created`)
   }
 } finally {

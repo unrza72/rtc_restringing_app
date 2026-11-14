@@ -58,6 +58,8 @@ model User {
   invitesCreated Invite[] @relation("inviteCreatedBy")
   invitesUsed    Invite[] @relation("inviteUsedBy")
   trainingPlans  TrainingPlan[] @relation("trainingPlanCreatedBy")
+  auditActions   MemberAuditEntry[] @relation("auditActor")
+  auditEntries   MemberAuditEntry[] @relation("auditTarget")
 
   @@unique([email])
   @@map("user")
@@ -204,12 +206,16 @@ model StringingRequest {
   usedStringName String?
   usedTensionMain  Float?
   usedTensionCross Float?
-  /// Split so the billing view can show what was materials vs. labour.
+  /// The price is three parts, all stamped when the job is marked done so
+  /// later price changes leave finished jobs alone (SPEC.md §5a):
+  /// string cost — the catalogue price of the club string, null for the
+  /// member's own string;
   stringPriceCents Int?
+  /// labour — the club's flat rate, reimbursed to the stringer;
   labourPriceCents Int?
-  /// The club's own-string fee, stamped on MEMBER-string jobs when marked
-  /// done. Part of the member's total; not labour, so not in stringer payouts.
-  ownStringFeeCents Int?
+  /// rake — the club's flat cut for machine upkeep and hosting, kept by the
+  /// club. Not labour, so not in stringer payouts.
+  rakeCents Int?
 
   /// Set by a controller (or admin) once the member has paid; null = unpaid.
   paidAt   DateTime?
@@ -236,9 +242,9 @@ model ClubSettings {
   /// Flat labour fee per racket in cents, the same for every stringer. Copied
   /// onto each job when it is marked done; null = not set yet.
   labourPriceCents Int?
-  /// Extra fee in cents when the member brings their own string, on top of
-  /// labour. Goes to the club, not the stringer. null = not set yet.
-  ownStringFeeCents Int?
+  /// The club's cut per racket in cents, on every job whatever the string —
+  /// machine maintenance and app hosting. null = not set yet.
+  rakeCents Int?
   updatedAt  DateTime @updatedAt
 }
 
@@ -292,6 +298,32 @@ model Invite {
   createdAt   DateTime  @default(now())
 
   @@index([createdById, createdAt])
+}
+
+/// Who approved, rejected, re-roled or deleted whom, and when. Append-only:
+/// written in the same transaction as the change it records, never edited.
+/// Names and emails are copied in, and both links are cleared rather than the
+/// row deleted, so an entry still reads correctly after either account is gone.
+model MemberAuditEntry {
+  id          String   @id @default(cuid())
+  /// APPROVED | REJECTED | ROLES_CHANGED | DELETED | ADMIN_SET
+  action      String
+  /// null = the command line (`pnpm admin:set`), or an account since deleted.
+  actorId     String?
+  actor       User?    @relation("auditActor", fields: [actorId], references: [id], onDelete: SetNull)
+  actorName   String?
+  targetId    String?
+  target      User?    @relation("auditTarget", fields: [targetId], references: [id], onDelete: SetNull)
+  targetName  String
+  targetEmail String
+  /// Status (PENDING | APPROVED | REJECTED) or the stored role list, before
+  /// and after. Both null for DELETED.
+  fromValue   String?
+  toValue     String?
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([targetId, createdAt])
 }
 
 // ---------------------------------------------------------------------------

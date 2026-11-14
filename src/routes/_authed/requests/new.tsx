@@ -43,10 +43,11 @@ export const Route = createFileRoute('/_authed/requests/new')({
 
 function NewRequestPage() {
   const { rackets, strings, tokens, pricing } = Route.useLoaderData()
-  // What the member pays, labour included, so the picker shows the real price.
+  // What the member pays — string, labour and rake (SPEC.md §5a) — so the
+  // picker shows the real price. An own string costs only labour and rake.
   const ownStringPrice = totalPriceCents(
     pricing.labourPriceCents,
-    pricing.ownStringFeeCents,
+    pricing.rakeCents,
   )
   const free = freeTokens(tokens.count, tokens.inUse)
   const router = useRouter()
@@ -273,6 +274,7 @@ function NewRequestPage() {
                                     totalPriceCents(
                                       s.priceCents,
                                       pricing.labourPriceCents,
+                                      pricing.rakeCents,
                                     ),
                                   )}`}
                               </SelectItem>

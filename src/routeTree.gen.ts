@@ -21,6 +21,7 @@ import { Route as AuthedHelpRouteImport } from './routes/_authed/help'
 import { Route as AuthedInvitesRouteImport } from './routes/_authed/invites'
 import { Route as AuthedQueueRouteImport } from './routes/_authed/queue'
 import { Route as AuthedTrainingRouteImport } from './routes/_authed/training'
+import { Route as AuthedAdminAuditRouteImport } from './routes/_authed/admin/audit'
 import { Route as AuthedAdminMembersRouteImport } from './routes/_authed/admin/members'
 import { Route as AuthedAdminStringsRouteImport } from './routes/_authed/admin/strings'
 import { Route as AuthedBillingIndexRouteImport } from './routes/_authed/billing/index'
@@ -98,6 +99,11 @@ const AuthedTrainingRoute = AuthedTrainingRouteImport.update({
   id: '/training',
   path: '/training',
   getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedAdminAuditRoute = AuthedAdminAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => AuthedAdminRoute,
 } as any)
 const AuthedAdminMembersRoute = AuthedAdminMembersRouteImport.update({
   id: '/members',
@@ -204,6 +210,7 @@ export interface FileRoutesByFullPath {
   '/invites': typeof AuthedInvitesRoute
   '/queue': typeof AuthedQueueRouteWithChildren
   '/training': typeof AuthedTrainingRouteWithChildren
+  '/admin/audit': typeof AuthedAdminAuditRoute
   '/admin/members': typeof AuthedAdminMembersRoute
   '/admin/strings': typeof AuthedAdminStringsRoute
   '/billing/payouts': typeof AuthedBillingPayoutsRoute
@@ -232,6 +239,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthedDashboardRoute
   '/help': typeof AuthedHelpRoute
   '/invites': typeof AuthedInvitesRoute
+  '/admin/audit': typeof AuthedAdminAuditRoute
   '/admin/members': typeof AuthedAdminMembersRoute
   '/admin/strings': typeof AuthedAdminStringsRoute
   '/billing/payouts': typeof AuthedBillingPayoutsRoute
@@ -265,6 +273,7 @@ export interface FileRoutesById {
   '/_authed/invites': typeof AuthedInvitesRoute
   '/_authed/queue': typeof AuthedQueueRouteWithChildren
   '/_authed/training': typeof AuthedTrainingRouteWithChildren
+  '/_authed/admin/audit': typeof AuthedAdminAuditRoute
   '/_authed/admin/members': typeof AuthedAdminMembersRoute
   '/_authed/admin/strings': typeof AuthedAdminStringsRoute
   '/_authed/billing/payouts': typeof AuthedBillingPayoutsRoute
@@ -298,6 +307,7 @@ export interface FileRouteTypes {
     | '/invites'
     | '/queue'
     | '/training'
+    | '/admin/audit'
     | '/admin/members'
     | '/admin/strings'
     | '/billing/payouts'
@@ -326,6 +336,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/help'
     | '/invites'
+    | '/admin/audit'
     | '/admin/members'
     | '/admin/strings'
     | '/billing/payouts'
@@ -358,6 +369,7 @@ export interface FileRouteTypes {
     | '/_authed/invites'
     | '/_authed/queue'
     | '/_authed/training'
+    | '/_authed/admin/audit'
     | '/_authed/admin/members'
     | '/_authed/admin/strings'
     | '/_authed/billing/payouts'
@@ -472,6 +484,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/training'
       preLoaderRoute: typeof AuthedTrainingRouteImport
       parentRoute: typeof AuthedRoute
+    }
+    '/_authed/admin/audit': {
+      id: '/_authed/admin/audit'
+      path: '/audit'
+      fullPath: '/admin/audit'
+      preLoaderRoute: typeof AuthedAdminAuditRouteImport
+      parentRoute: typeof AuthedAdminRoute
     }
     '/_authed/admin/members': {
       id: '/_authed/admin/members'
@@ -603,11 +622,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthedAdminRouteChildren {
+  AuthedAdminAuditRoute: typeof AuthedAdminAuditRoute
   AuthedAdminMembersRoute: typeof AuthedAdminMembersRoute
   AuthedAdminStringsRoute: typeof AuthedAdminStringsRoute
 }
 
 const AuthedAdminRouteChildren: AuthedAdminRouteChildren = {
+  AuthedAdminAuditRoute: AuthedAdminAuditRoute,
   AuthedAdminMembersRoute: AuthedAdminMembersRoute,
   AuthedAdminStringsRoute: AuthedAdminStringsRoute,
 }

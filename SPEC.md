@@ -112,7 +112,7 @@ model ClubString {
   id         String   @id @default(cuid())
   name       String   // "Luxilon ALU Power"
   gauge      String?  // "1.25"
-  priceCents Int?     // what the club charges for it
+  priceCents Int?     // the string cost of a job strung with it (§5a)
   active     Boolean  @default(true)  // hidden from new requests when false
   sortOrder  Int      @default(0)
   createdAt  DateTime @default(now())
@@ -149,8 +149,10 @@ model StringingRequest {
   usedStringName String? // what was actually used, prefilled on complete
   usedTensionMain  Float? // what was actually strung, prefilled from tensionMain
   usedTensionCross Float?
-  stringPriceCents Int?  // materials, prefilled from ClubString.priceCents
-  labourPriceCents Int?  // the stringing fee, entered by the operator
+  // the three price parts, stamped on complete — never entered by the operator (§5a)
+  stringPriceCents Int?  // ClubString.priceCents; null for the member's own string
+  labourPriceCents Int?  // ClubSettings.labourPriceCents, reimbursed to the stringer
+  rakeCents        Int?  // ClubSettings.rakeCents, kept by the club
 
   // controller side — orthogonal to the status machine below, not a transition
   paidAt   DateTime? // null = unpaid
@@ -248,14 +250,40 @@ REQUESTED --accept(operator)--> ACCEPTED --complete(operator)--> DONE --collect-
   Release and complete are limited to the claiming operator — admins may act on any job.
 - `complete` requires the actually used string and main tension (both prefilled from the
   request; the operator can correct them, e.g. when they had to substitute a string).
-  String and labour price are prefilled — string price from `ClubString.priceCents` —
-  but **optional**: v1.0 said "requires a price", the code accepts none (§12).
+  The operator enters **no price**: the server stamps all three price parts (§5a).
 - `collect` can be triggered by the operator (handed over) or the member (picked up).
 - Every transition writes a `RequestEvent`. The current status is part of the update's
   `where` clause, so two operators racing for one job resolve to exactly one winner;
   the loser gets a localized "someone else changed this request" error.
 - Paid state (§2, controller) is deliberately **not** a transition: it is set/reset on
   `DONE` or `COLLECTED` jobs only, and never moves the status.
+
+## 5a. Pricing
+
+What a member pays for one racket is the sum of three parts:
+
+| Part        | Set by                                                 | Goes to                                                  | Own string? |
+| ----------- | ------------------------------------------------------ | -------------------------------------------------------- | ----------- |
+| String cost | admin, per string (`ClubString.priceCents`)            | the club, which bought the string                        | **skipped** |
+| Labour      | admin, one flat rate (`ClubSettings.labourPriceCents`) | reimbursed to the stringer (§4 `Reimbursement`)          | charged     |
+| Club rake   | admin, one flat rate (`ClubSettings.rakeCents`)        | kept by the club for machine maintenance and app hosting | charged     |
+
+```
+club string: total = string cost + labour + rake
+own string:  total =               labour + rake
+```
+
+- Labour and rake are the same for every stringer and every racket. Both are set on
+  `/admin/strings`, next to the catalogue prices; either may be left unset, which
+  counts as zero.
+- **The stringer changes nothing.** The "mark as done" form has no price fields, and
+  `completeRequest` ignores any price it is sent. It copies the three parts onto the
+  job (`stringPriceCents`, `labourPriceCents`, `rakeCents`) at that moment, so later
+  price changes leave finished jobs alone.
+- The request form shows the member the total for each option before they submit;
+  the request detail and `/billing` show the three parts and the total.
+- Stringer payouts count only labour, on paid jobs. String cost and rake stay with
+  the club.
 
 ## 6. Routes
 
@@ -270,14 +298,14 @@ REQUESTED --accept(operator)--> ACCEPTED --complete(operator)--> DONE --collect-
 | `/requests`, `/requests/new`, `/requests/$id` | member                    | own requests + detail/timeline                                                                     |
 | `/queue`                                      | operator                  | open + own claimed jobs, filter by status, sortable/searchable table                               |
 | `/queue/$id`                                  | operator                  | accept / complete / collect                                                                        |
-| `/billing`                                    | operator OR controller    | every restrung racket: string/labour/total price, paid state, sortable/searchable table            |
+| `/billing`                                    | operator OR controller    | every restrung racket: string/labour/rake/total price, paid state, sortable/searchable table       |
 | `/billing/payouts`                            | controller                | labour earned/reimbursed/outstanding per stringer, reimbursement ledger                            |
 | `/invites`                                    | operator (admin inherits) | create/list/revoke invite links — see §9                                                           |
 | `/training`                                   | coach                     | redirects to the roster                                                                            |
 | `/training/people`, `/training/people/$id`    | coach                     | trainee/trainer roster + weekly availability                                                       |
 | `/training/plans`, `/training/plans/$id`      | coach                     | solver knobs, saved runs, groups and who was left out                                              |
 | `/admin/members`                              | admin                     | approve, reject, set roles                                                                         |
-| `/admin/strings`                              | admin                     | club string catalogue: add, edit price, deactivate, delete                                         |
+| `/admin/strings`                              | admin                     | club string catalogue: add, edit price, deactivate, delete; labour and club rake (§5a)             |
 | `/help`                                       | member                    | every feature explained, filtered to the reader's roles; restarts the tour                         |
 | `/api/auth/$`                                 | public                    | better-auth handler (exists)                                                                       |
 
@@ -426,7 +454,7 @@ worth remembering if this ever needs to change.
 | String choice   | Club catalogue (`ClubString`, admin-maintained) **or** own string as free text                                         |
 | Email at signup | Required — real address, enables notifications/reset later                                                             |
 | Language        | Keep `en` + `de` switchable; `de` is the base locale, per-account preference persists                                  |
-| Price           | Tracked per job, split into `stringPriceCents` (prefilled from the catalogue) and `labourPriceCents`; both optional    |
+| Price           | String cost + labour + club rake, all admin-set and stamped on complete; no string cost for an own string (§5a)        |
 | Payment         | A paid flag per job (controller), plus an append-only labour payout ledger per stringer — no real settlement           |
 | Light theme     | Committed light-only palette; no dark mode or user toggle                                                              |
 | Racket handover | Not tracked in the app                                                                                                 |
@@ -495,7 +523,7 @@ before a second run, or balance assertions in the payout section fail on leftove
 | --------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
 | Newcomer joins via invite link, gets approved, walks the welcome tour, adds a racket, requests a restring | `new-member-onboarding.spec.ts`             |
 | Help shows a member, a stringer and an admin only the sections their roles can use                        | `help-shows-what-your-roles-can-do.spec.ts` |
-| Stringer finds a job in the queue, accepts it, completes it with prices and notes                         | `stringer-completes-a-job.spec.ts`          |
+| Stringer finds a job in the queue, accepts it, completes it with notes, prices from the club              | `stringer-completes-a-job.spec.ts`          |
 | Controller marks a job paid, is refused an overpayment, pays the stringer part of their labour            | `controller-reimburses-a-stringer.spec.ts`  |
 | Member with no racket requests a restring; the stand-in never shows under "my rackets"                    | `request-without-a-racket.spec.ts`          |
 | Carabiner in use is refused, the admin can't lower the count below it, and it is free again after pickup  | `racket-tokens.spec.ts`                     |
@@ -532,7 +560,6 @@ the sentence from the spec.
 | ------------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------- |
 | Admins can cancel any request (§5)    | Server allows it; **no screen shows the button** — `/requests/$id` only for the owner, `/queue/$id` never | `requests/$id.tsx`, `queue/$id.tsx`   |
 | A rejected member cannot sign in (§3) | Sessions are deleted, but they **can sign in again** and land on `/pending`'s "not approved" screen       | `members.functions.ts`, `pending.tsx` |
-| `complete` requires a price (§5)      | String and labour price are **optional**                                                                  | `schemas.ts` `completeInputSchema`    |
 
 ### Not built yet
 

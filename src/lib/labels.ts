@@ -79,7 +79,7 @@ export function formatPrice(cents: number | null | undefined) {
 }
 
 /**
- * The sum of whatever price parts are set (string, labour, own-string fee),
+ * The sum of whatever price parts are set (string, labour, rake),
  * or null when none of them ever was.
  */
 export function totalPriceCents(...parts: Array<number | null | undefined>) {

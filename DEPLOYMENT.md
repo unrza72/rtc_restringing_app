@@ -33,6 +33,11 @@ release after that.
     "could not determine a client IP".
   - **send an HSTS header** (`Strict-Transport-Security: max-age=31536000`),
     so browsers never try the site over plain HTTP.
+  - **not add other security headers.** The app sends its own
+    Content-Security-Policy (with a fresh nonce on every page),
+    `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`,
+    `Permissions-Policy` and `Cross-Origin-Opener-Policy`. A second CSP from
+    the proxy would apply on top and block the app's own scripts.
 
 ## First install
 

@@ -319,6 +319,7 @@ function sections(): Array<Section> {
           body: m.help_admin_approve_body({
             approve: m.admin_approve(),
             reject: m.admin_reject(),
+            delete: m.admin_delete(),
           }),
         },
         {

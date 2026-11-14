@@ -28,7 +28,7 @@ export type RequestDetailData = {
   usedTensionMain: number | null
   usedTensionCross: number | null
   stringPriceCents: number | null
-  ownStringFeeCents: number | null
+  rakeCents: number | null
   labourPriceCents: number | null
   paidAt: Date | string | null
   operatorNotes: string | null
@@ -125,9 +125,9 @@ export function RequestSummary({
               <Row label={m.request_labour_price()}>
                 {formatPrice(request.labourPriceCents)}
               </Row>
-              {request.ownStringFeeCents != null && (
-                <Row label={m.request_own_string_fee()}>
-                  {formatPrice(request.ownStringFeeCents)}
+              {request.rakeCents != null && (
+                <Row label={m.request_rake()}>
+                  {formatPrice(request.rakeCents)}
                 </Row>
               )}
               <Row label={m.request_total_price()}>
@@ -135,7 +135,7 @@ export function RequestSummary({
                   totalPriceCents(
                     request.stringPriceCents,
                     request.labourPriceCents,
-                    request.ownStringFeeCents,
+                    request.rakeCents,
                   ),
                 )}{' '}
                 <Badge variant={request.paidAt ? 'secondary' : 'outline'}>

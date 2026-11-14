@@ -326,7 +326,10 @@ export const completeRequest = createServerFn({ method: 'POST' })
       getClubPricing(),
       prisma.stringingRequest.findUnique({
         where: { id },
-        select: { stringSource: true },
+        select: {
+          stringSource: true,
+          clubString: { select: { priceCents: true } },
+        },
       }),
     ])
     return transition({
@@ -338,9 +341,14 @@ export const completeRequest = createServerFn({ method: 'POST' })
         : { operatorId: context.user.id },
       data: {
         ...used,
+        // The price parts (SPEC.md §5a), all from the server, never the form:
+        // the member's own string costs the club nothing.
+        stringPriceCents:
+          request?.stringSource === 'CLUB'
+            ? (request.clubString?.priceCents ?? null)
+            : null,
         labourPriceCents: pricing.labourPriceCents,
-        ownStringFeeCents:
-          request?.stringSource === 'MEMBER' ? pricing.ownStringFeeCents : null,
+        rakeCents: pricing.rakeCents,
         operatorNotes,
         completedAt: new Date(),
       },

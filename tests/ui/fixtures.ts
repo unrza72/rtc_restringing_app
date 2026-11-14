@@ -69,6 +69,19 @@ export async function createApprovedUser(
   return user
 }
 
+/** Rejects an account, as an admin would from the members page. */
+export async function rejectUser(user: TestUser) {
+  await prisma().user.update({
+    where: { id: user.id },
+    data: { status: 'REJECTED', approvedAt: null },
+  })
+}
+
+/** Whether the account still exists. */
+export async function userExists(user: TestUser) {
+  return (await prisma().user.count({ where: { id: user.id } })) > 0
+}
+
 /**
  * A racket of the member's with an open request on it, as if they had just
  * submitted the request form: status `REQUESTED`, nobody assigned, and the
@@ -173,7 +186,7 @@ export async function createClubString(options: {
 /** The club's flat prices in cents, as an admin would set them. */
 export async function setClubPricing(pricing: {
   labourPriceCents: number | null
-  ownStringFeeCents: number | null
+  rakeCents: number | null
 }) {
   await prisma().clubSettings.upsert({
     where: { id: 1 },

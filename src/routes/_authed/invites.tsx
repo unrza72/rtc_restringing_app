@@ -1,7 +1,7 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { useForm } from '@tanstack/react-form'
 import { useServerFn } from '@tanstack/react-start'
-import { useState } from 'react'
+import { useState, useSyncExternalStore } from 'react'
 
 import {
   createInvite,
@@ -294,13 +294,20 @@ function InviteFact({
   )
 }
 
+const noSubscription = () => () => {}
+
 /** The shareable URL for one invite, with a click-to-copy button. */
 function InviteLink({ token, compact }: { token: string; compact?: boolean }) {
   const [copied, setCopied] = useState(false)
-  const href =
-    typeof window !== 'undefined'
-      ? `${window.location.origin}${invitePath(token)}`
-      : invitePath(token)
+  // The server can't know the origin the member sees, so it renders the bare
+  // path; hydration starts from that too and only then fills in the origin.
+  // Reading `window` straight away made the two renders disagree.
+  const origin = useSyncExternalStore(
+    noSubscription,
+    () => window.location.origin,
+    () => '',
+  )
+  const href = `${origin}${invitePath(token)}`
 
   async function copy() {
     try {

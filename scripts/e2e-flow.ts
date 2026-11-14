@@ -606,31 +606,28 @@ check('cannot collect before it is done', !earlyCollect.ok, earlyCollect.error)
 
 const memberLabour = await member.call(PRICING, 'setPricing', {
   labourPriceCents: 1,
-  ownStringFeeCents: 1,
+  rakeCents: 1,
 })
 check(
-  'a plain member cannot set the labour price',
+  'a plain member cannot set labour and rake',
   !memberLabour.ok,
   memberLabour.result,
 )
 const labour = await admin.call(PRICING, 'setPricing', {
   labourPriceCents: 1000,
-  ownStringFeeCents: 300,
+  rakeCents: 300,
 })
-check(
-  'admin sets the flat labour price and own-string fee',
-  labour.ok,
-  labour.error,
-)
+check('admin sets the flat labour price and club rake', labour.ok, labour.error)
 
 const complete = await admin.call(REQUESTS, 'completeRequest', {
   id: requestId,
   usedStringName: 'Babolat RPM Blast 1.25',
   usedTensionMain: 24,
   usedTensionCross: 23,
-  stringPriceCents: 1200,
-  // Ignored: labour comes from the club setting, not the stringer.
+  // Ignored: every price part comes from the server, never the stringer.
+  stringPriceCents: 9999,
   labourPriceCents: 9999,
+  rakeCents: 9999,
   operatorNotes: 'Strung on the Wise',
 })
 check(
@@ -805,24 +802,20 @@ const priced = detail.result as
   | {
       stringPriceCents?: number
       labourPriceCents?: number
+      rakeCents?: number
       usedStringName?: string
       paidAt?: string | null
     }
   | undefined
 check(
-  'string price, the club labour price and used string were stored',
+  'catalogue string price, club labour and rake, and used string were stored',
   priced?.stringPriceCents === 1200 &&
     priced.labourPriceCents === 1000 &&
+    priced.rakeCents === 300 &&
     priced.usedStringName === 'Babolat RPM Blast 1.25',
   priced,
 )
 check('a freshly completed job starts unpaid', priced?.paidAt == null, priced)
-check(
-  'a club-string job carries no own-string fee',
-  (detail.result as { ownStringFeeCents?: number | null } | undefined)
-    ?.ownStringFeeCents === null,
-  detail.result,
-)
 
 {
   // Left unpaid, so the payout ledger below is unaffected.
@@ -844,7 +837,6 @@ check(
     usedStringName: 'Luxilon ALU Power 1.25',
     usedTensionMain: 24,
     usedTensionCross: null,
-    stringPriceCents: null,
     operatorNotes: null,
   })
   check('an own-string job can be completed', ownDone.ok, ownDone.error)
@@ -856,10 +848,17 @@ check(
     'GET',
   )
   const ownJob = ownDetail.result as
-    { labourPriceCents?: number; ownStringFeeCents?: number } | undefined
+    | {
+        stringPriceCents?: number | null
+        labourPriceCents?: number
+        rakeCents?: number
+      }
+    | undefined
   check(
-    'an own-string job gets labour plus the own-string fee',
-    ownJob?.labourPriceCents === 1000 && ownJob.ownStringFeeCents === 300,
+    'an own-string job costs labour and rake, no string',
+    ownJob?.stringPriceCents === null &&
+      ownJob.labourPriceCents === 1000 &&
+      ownJob.rakeCents === 300,
     ownDetail.error ?? ownJob,
   )
 }
@@ -986,6 +985,28 @@ check(
   controllerViewsBilling.error,
 )
 
+type Balance = {
+  operatorId: string
+  earnedCents: number
+  reimbursedCents: number
+  outstandingCents: number
+}
+const adminId = ((list3.result ?? []) as Array<MemberRow>).find(
+  (r) => r.email === 'admin@rtc.local',
+)?.id
+// The dev database keeps the jobs of earlier runs, so the ledger checks below
+// compare against the admin stringer's balance from just before this job is
+// paid, not against zero.
+const adminBalanceBefore = (
+  ((await controller.call(PAYOUTS, 'listLabourBalances', undefined, 'GET'))
+    .result ?? []) as Array<Balance>
+).find((b) => b.operatorId === adminId) ?? {
+  operatorId: adminId ?? '',
+  earnedCents: 0,
+  reimbursedCents: 0,
+  outstandingCents: 0,
+}
+
 const controllerMarksPaid = await controller.call(REQUESTS, 'setRequestPaid', {
   id: requestId,
   paid: true,
@@ -1010,13 +1031,6 @@ check(
 
 console.log('\n— controller: the labour payout ledger —')
 
-type Balance = {
-  operatorId: string
-  earnedCents: number
-  reimbursedCents: number
-  outstandingCents: number
-}
-
 const memberBalances = await member.call(
   PAYOUTS,
   'listLabourBalances',
@@ -1029,10 +1043,6 @@ check(
   memberBalances.error,
 )
 
-const adminId = ((list3.result ?? []) as Array<MemberRow>).find(
-  (r) => r.email === 'admin@rtc.local',
-)?.id
-
 const balances = await controller.call(
   PAYOUTS,
   'listLabourBalances',
@@ -1044,7 +1054,9 @@ const adminBalance = ((balances.result ?? []) as Array<Balance>).find(
 )
 check(
   'the admin stringer earned the labour price of the completed job',
-  adminBalance?.earnedCents === 1000 && adminBalance.outstandingCents === 1000,
+  adminBalance?.earnedCents === adminBalanceBefore.earnedCents + 1000 &&
+    adminBalance.outstandingCents ===
+      adminBalanceBefore.outstandingCents + 1000,
   { balances: balances.result, adminBalance },
 )
 
@@ -1086,8 +1098,10 @@ const adminBalanceAfter = ((balancesAfter.result ?? []) as Array<Balance>).find(
 )
 check(
   'the outstanding balance dropped by the reimbursed amount',
-  adminBalanceAfter?.reimbursedCents === 500 &&
-    adminBalanceAfter.outstandingCents === 500,
+  adminBalanceAfter?.reimbursedCents ===
+    (adminBalance?.reimbursedCents ?? 0) + 500 &&
+    adminBalanceAfter.outstandingCents ===
+      (adminBalance?.outstandingCents ?? 0) - 500,
   adminBalanceAfter,
 )
 
@@ -1302,6 +1316,27 @@ const addPerson = (
 const idOf = (res: { result: unknown }) =>
   (res.result as { id: string } | undefined)?.id
 
+// Earlier runs leave their E2E people behind (a failed run never reaches the
+// cleanup at the end). On Sunday morning they would join this run's groups, so
+// clear them out first.
+const removeE2ePeople = async () => {
+  const people = await coach.call(
+    TRAINING,
+    'listTrainingPeople',
+    undefined,
+    'GET',
+  )
+  for (const person of (people.result ?? []) as Array<{
+    id: string
+    name: string
+    archived: boolean
+  }>) {
+    if (!person.name.startsWith('E2E ') || person.archived) continue
+    await coach.call(TRAINING, 'removeTrainingPerson', { id: person.id })
+  }
+}
+await removeE2ePeople()
+
 const trainerRes = await addPerson(`E2E Trainer ${uniq}`, 'TRAINER', null, null)
 check('coach adds a trainer', trainerRes.ok, trainerRes.error)
 const traineeARes = await addPerson(`E2E A ${uniq}`, 'TRAINEE', 'GREEN', 2)
@@ -1497,6 +1532,7 @@ const deletePlan = await coach.call(TRAINING, 'deleteTrainingPlan', {
   id: planId,
 })
 check('coach deletes the plan', deletePlan.ok, deletePlan.error)
+await removeE2ePeople()
 
 console.log('\n— rejection revokes access —')
 const rejectEmail = `reject${uniq}@example.com`
