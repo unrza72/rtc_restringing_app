@@ -46,12 +46,32 @@ test('an admin deletes a used, deactivated string, but not one an open request w
     page.getByRole('listitem').filter({ hasText: name })
   const dialog = page.getByRole('dialog')
 
-  await test.step('A deactivated string is labelled as such', async () => {
+  await test.step('A deactivated string drops out of the default view', async () => {
     await row(retired)
       .getByRole('button', { name: t('racket_archive') })
       .click()
+    await expect(row(retired)).toHaveCount(0)
+    await expect(row(wanted)).toBeVisible()
+  })
+
+  await test.step('Asked for, it is listed and labelled as deactivated', async () => {
+    // The count includes other tests' deactivated strings, so match the
+    // label without it.
+    const showLabel = t('admin_strings_show_inactive').replace(/\s*\(.*$/, '')
+    const show = page.getByRole('link', { name: new RegExp(`^${showLabel}`) })
+    await expect(show).toBeInViewport({ ratio: 1 })
+    await show.click()
+    await expect(page).toHaveURL(/[?&]inactive=true/)
     await expect(row(retired)).toContainText(t('admin_string_inactive'))
     await expect(row(retired)).not.toContainText(t('member_status_REJECTED'))
+    await expectNoHorizontalOverflow(page)
+
+    // And hidden again.
+    await page
+      .getByRole('link', { name: t('admin_strings_hide_inactive') })
+      .click()
+    await expect(row(retired)).toHaveCount(0)
+    await show.click()
   })
 
   await test.step('Deleting asks first, and cancelling keeps the string', async () => {

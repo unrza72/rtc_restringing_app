@@ -485,7 +485,7 @@
   "help_admin_roles_title": "Rollen vergeben",
   "help_admin_roles_body": "Jeder ist Mitglied. Zusätzlich kannst du {operator} (Warteschlange, Einladungen), {controller} (Zahlungen, Auszahlungen) und {coach} (Trainingsplanung) vergeben; {admin} umfasst alles. Deine eigene Admin-Rolle kannst du nicht abgeben, und der Verein behält immer mindestens einen Admin.",
   "help_admin_strings_title": "Saitenkatalog",
-  "help_admin_strings_body": "Unter Saiten pflegst du, was der Verein anbietet: Name, Stärke, Preis und Reihenfolge im Formular. Deaktivierst du eine Saite, verschwindet sie aus dem Auftragsformular, bleibt hier aber gelistet. Löschen entfernt sie endgültig — alte Aufträge nennen weiter, was besaitet wurde —, aber nicht, solange ein offener Auftrag auf sie wartet.",
+  "help_admin_strings_body": "Unter Saiten pflegst du, was der Verein anbietet: Name, Stärke, Preis und Reihenfolge im Formular. Deaktivierst du eine Saite, verschwindet sie aus dem Auftragsformular und auch hier, bis du „Deaktivierte anzeigen“ wählst. Löschen entfernt sie endgültig — alte Aufträge nennen weiter, was besaitet wurde —, aber nicht, solange ein offener Auftrag auf sie wartet.",
   "help_admin_tokens_title": "Karabiner",
   "help_admin_tokens_body": "Auf derselben Seite legst du fest, wie viele nummerierte Karabiner es gibt. Unter die höchste gerade benutzte Nummer lässt sich die Zahl nicht senken."
 }

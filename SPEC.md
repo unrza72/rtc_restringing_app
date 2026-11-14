@@ -219,7 +219,7 @@ Deleting a racket that has requests is blocked → archive instead, so history s
 Archiving is in turn blocked while the racket still has an open request.
 
 A `ClubString` is taken off the request form by deactivating it (`active = false`); it
-stays listed on `/admin/strings`. Deleting removes it for good, used or not, after a
+is hidden on `/admin/strings` too unless "show deactivated" is on (`?inactive=true`). Deleting removes it for good, used or not, after a
 confirmation dialog — but is refused while an open (`REQUESTED`/`ACCEPTED`) request
 still uses it. Past jobs that used it get its name copied into `ownStringName` and
 `clubStringId` cleared, so they keep showing what was strung; their prices were already
