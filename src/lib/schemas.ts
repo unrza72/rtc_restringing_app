@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { locales } from '#/paraglide/runtime'
 import { m } from '#/paraglide/messages'
 
+import { isValidBic, isValidIban, normalizeIban } from './payment'
 import { ROLES, USER_STATUSES } from './roles'
 import { STRING_SOURCES } from './status'
 import { BALLS, MAX_STRENGTH, MIN_STRENGTH, PERSON_KINDS } from './training'
@@ -201,6 +202,44 @@ export const pricingSchema = z.object({
   labourPriceCents: clubPrice,
   rakeCents: clubPrice,
 })
+
+const oneLine = (max: number, error: () => string) =>
+  z
+    .string()
+    .trim()
+    .max(max, { error })
+    .regex(/^[^\r\n]*$/, { error })
+    .transform((v) => (v === '' ? null : v))
+    .nullable()
+    .default(null)
+
+/** The club's bank account for payment QR codes (§16). All or nothing. */
+export const paymentAccountSchema = z
+  .object({
+    recipient: oneLine(70, () => m.admin_payment_recipient_invalid()),
+    iban: z
+      .string()
+      .transform(normalizeIban)
+      .refine((v) => v === '' || isValidIban(v), {
+        error: () => m.admin_payment_iban_invalid(),
+      })
+      .transform((v) => (v === '' ? null : v))
+      .nullable()
+      .default(null),
+    bic: z
+      .string()
+      .transform((v) => v.replace(/\s/g, '').toUpperCase())
+      .refine((v) => v === '' || isValidBic(v), {
+        error: () => m.admin_payment_bic_invalid(),
+      })
+      .transform((v) => (v === '' ? null : v))
+      .nullable()
+      .default(null),
+  })
+  .refine((v) => (v.recipient === null) === (v.iban === null), {
+    error: () => m.admin_payment_incomplete(),
+  })
+export type PaymentAccountInput = z.input<typeof paymentAccountSchema>
 
 export const localeInputSchema = z.object({ locale: z.enum(locales) })
 

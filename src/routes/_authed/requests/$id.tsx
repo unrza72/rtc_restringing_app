@@ -19,6 +19,7 @@ import {
 } from '#/components/ui/dialog'
 import { FormError } from '#/components/form-field'
 import { RequestSummary, RequestTimeline } from '#/components/request-detail'
+import { PaymentDetails } from '#/components/payment-details'
 
 export const Route = createFileRoute('/_authed/requests/$id')({
   loader: async ({ params }) => ({
@@ -63,6 +64,13 @@ function RequestDetailPage() {
   return (
     <div className="mx-auto grid max-w-2xl gap-6">
       <RequestSummary request={request} />
+
+      {request.payment && (
+        <PaymentDetails
+          payment={request.payment}
+          memberName={request.requester.name}
+        />
+      )}
 
       <FormError>{error}</FormError>
 

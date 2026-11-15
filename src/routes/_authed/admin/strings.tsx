@@ -19,9 +19,15 @@ import {
   updateClubString,
 } from '#/server/strings.functions'
 import { getTokenStatus, setTokenCount } from '#/server/tokens.functions'
-import { getPricing, setPricing } from '#/server/pricing.functions'
+import {
+  getPaymentAccountSettings,
+  getPricing,
+  setPaymentAccount,
+  setPricing,
+} from '#/server/pricing.functions'
 import {
   clubStringInputSchema,
+  paymentAccountSchema,
   pricingSchema,
   tokenCountSchema,
 } from '#/lib/schemas'
@@ -41,6 +47,7 @@ import {
   DialogTitle,
 } from '#/components/ui/dialog'
 import { Field, FormError, fieldErrors } from '#/components/form-field'
+import { formatIBAN } from '#/lib/payment'
 
 const searchSchema = z.object({
   // Deactivated strings are hidden unless asked for — they're off the request
@@ -54,12 +61,13 @@ export const Route = createFileRoute('/_authed/admin/strings')({
     strings: await listAllStrings(),
     tokens: await getTokenStatus(),
     pricing: await getPricing(),
+    paymentAccount: await getPaymentAccountSettings(),
   }),
   component: StringsPage,
 })
 
 function StringsPage() {
-  const { strings, tokens, pricing } = Route.useLoaderData()
+  const { strings, tokens, pricing, paymentAccount } = Route.useLoaderData()
   const showInactive = Route.useSearch().inactive ?? false
   const inactiveCount = strings.filter((s) => !s.active).length
   const shown = showInactive ? strings : strings.filter((s) => s.active)
@@ -92,6 +100,11 @@ function StringsPage() {
       <FormError>{error}</FormError>
 
       <PricingCard pricing={pricing} onSaved={() => router.invalidate()} />
+
+      <PaymentAccountCard
+        account={paymentAccount}
+        onSaved={() => router.invalidate()}
+      />
 
       {tokens.enabled && (
         <TokenCountCard
@@ -696,6 +709,137 @@ function PricingCard({
             {priceField('rake', m.admin_rake(), m.admin_rake_hint())}
           </div>
           <div className="flex items-center gap-3">
+            <form.Subscribe selector={(s) => s.isSubmitting}>
+              {(isSubmitting) => (
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? m.common_saving() : m.common_save()}
+                </Button>
+              )}
+            </form.Subscribe>
+            {saved && (
+              <span role="status" className="text-sm text-sage-800">
+                {m.admin_token_count_saved()}
+              </span>
+            )}
+          </div>
+        </form>
+        <FormError>{error}</FormError>
+      </CardContent>
+    </Card>
+  )
+}
+
+/**
+ * The account members pay finished jobs to (SPEC.md §16). The IBAN is checked
+ * (country length and mod 97) before it is saved, so a typo can't end up in
+ * every member's QR code.
+ */
+function PaymentAccountCard({
+  account,
+  onSaved,
+}: {
+  account: { recipient: string; iban: string; bic: string | null } | null
+  onSaved: () => Promise<void>
+}) {
+  const save = useServerFn(setPaymentAccount)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [error, setError] = useState<string | null>(null)
+  const [saved, setSaved] = useState(false)
+
+  const form = useForm({
+    defaultValues: {
+      recipient: account?.recipient ?? '',
+      iban: account ? formatIBAN(account.iban) : '',
+      bic: account?.bic ?? '',
+    },
+    onSubmit: async ({ value }) => {
+      setError(null)
+      setErrors({})
+      setSaved(false)
+      const parsed = paymentAccountSchema.safeParse(value)
+      if (!parsed.success) {
+        const byField: Record<string, string> = {}
+        for (const issue of parsed.error.issues) {
+          const key = String(issue.path[0] ?? '')
+          if (key && !(key in byField)) byField[key] = issue.message
+          else if (!key) setError(issue.message)
+        }
+        setErrors(byField)
+        return
+      }
+      try {
+        await save({ data: value })
+        setSaved(true)
+        if (parsed.data.iban) {
+          form.setFieldValue('iban', formatIBAN(parsed.data.iban))
+        }
+        await onSaved()
+      } catch (e) {
+        setError(e instanceof Error ? e.message : m.common_error_generic())
+      }
+    },
+  })
+
+  const textField = (
+    name: 'recipient' | 'iban' | 'bic',
+    label: string,
+    props: { autoComplete?: string; className?: string; maxLength?: number },
+  ) => (
+    <form.Field name={name}>
+      {(field) => (
+        <Field
+          id={`payment-${field.name}`}
+          label={label}
+          errors={errors[name] ? [errors[name]] : []}
+          className={props.className}
+        >
+          <Input
+            id={`payment-${field.name}`}
+            value={field.state.value}
+            autoComplete={props.autoComplete ?? 'off'}
+            maxLength={props.maxLength}
+            spellCheck={false}
+            aria-invalid={errors[name] ? true : undefined}
+            onBlur={field.handleBlur}
+            onChange={(e) => {
+              setSaved(false)
+              field.handleChange(e.target.value)
+            }}
+          />
+        </Field>
+      )}
+    </form.Field>
+  )
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg">{m.admin_payment_title()}</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          {m.admin_payment_intro()}
+        </p>
+      </CardHeader>
+      <CardContent>
+        <form
+          className="grid gap-4"
+          onSubmit={(e) => {
+            e.preventDefault()
+            void form.handleSubmit()
+          }}
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            {textField('recipient', m.admin_payment_recipient(), {
+              className: 'sm:col-span-2',
+              maxLength: 70,
+            })}
+            {textField('iban', m.admin_payment_iban(), { maxLength: 42 })}
+            {textField(
+              'bic',
+              `${m.admin_payment_bic()} (${m.common_optional()})`,
+              { maxLength: 11 },
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
             <form.Subscribe selector={(s) => s.isSubmitting}>
               {(isSubmitting) => (
                 <Button type="submit" disabled={isSubmitting}>

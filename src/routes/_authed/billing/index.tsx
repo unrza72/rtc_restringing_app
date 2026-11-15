@@ -8,6 +8,7 @@ import {
   setRequestPaid,
 } from '#/server/requests.functions'
 import { formatDate, formatPrice, totalPriceCents } from '#/lib/labels'
+import { findPaymentCode, paymentCode } from '#/lib/payment'
 import { m } from '#/paraglide/messages'
 import { Button } from '#/components/ui/button'
 import { Card, CardContent } from '#/components/ui/card'
@@ -71,13 +72,17 @@ function BillingPage() {
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase()
-    const filtered = q
-      ? requests.filter((r) =>
-          [r.racket.label, r.requester.name, r.operator?.name]
-            .filter((v): v is string => !!v)
-            .some((v) => v.toLowerCase().includes(q)),
-        )
-      : requests
+    // A reference pasted from the bank statement finds its job by the code.
+    const code = findPaymentCode(q)
+    const filtered = code
+      ? requests.filter((r) => paymentCode(r.id) === code)
+      : q
+        ? requests.filter((r) =>
+            [r.racket.label, r.requester.name, r.operator?.name]
+              .filter((v): v is string => !!v)
+              .some((v) => v.toLowerCase().includes(q)),
+          )
+        : requests
 
     if (!sortKey) return filtered
 

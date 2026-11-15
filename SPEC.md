@@ -287,27 +287,27 @@ own string:  total =               labour + rake
 
 ## 6. Routes
 
-| Route                                         | Access                    | Purpose                                                                                            |
-| --------------------------------------------- | ------------------------- | -------------------------------------------------------------------------------------------------- |
-| `/`                                           | public                    | Landing → redirects to `/dashboard` when signed in                                                 |
-| `/login`                                      | public                    | email + password                                                                                   |
-| `/signup`                                     | public, needs `?token=`   | invite-gated — see §9                                                                              |
-| `/pending`                                    | authed, PENDING           | "waiting for approval"                                                                             |
-| `/dashboard`                                  | member                    | my open requests + quick "new request"; operator (jobs waiting) and admin (pending members) panels |
-| `/rackets`, `/rackets/new`, `/rackets/$id`    | member                    | manage own rackets                                                                                 |
-| `/requests`, `/requests/new`, `/requests/$id` | member                    | own requests + detail/timeline                                                                     |
-| `/queue`                                      | operator                  | open + own claimed jobs, filter by status, sortable/searchable table                               |
-| `/queue/$id`                                  | operator                  | accept / complete / collect                                                                        |
-| `/billing`                                    | operator OR controller    | every restrung racket: string/labour/rake/total price, paid state, sortable/searchable table       |
-| `/billing/payouts`                            | controller                | labour earned/reimbursed/outstanding per stringer, reimbursement ledger                            |
-| `/invites`                                    | operator (admin inherits) | create/list/revoke invite links — see §9                                                           |
-| `/training`                                   | coach                     | redirects to the roster                                                                            |
-| `/training/people`, `/training/people/$id`    | coach                     | trainee/trainer roster + weekly availability                                                       |
-| `/training/plans`, `/training/plans/$id`      | coach                     | solver knobs, saved runs, groups and who was left out                                              |
-| `/admin/members`                              | admin                     | approve, reject, set roles                                                                         |
-| `/admin/strings`                              | admin                     | club string catalogue: add, edit price, deactivate, delete; labour and club rake (§5a)             |
-| `/help`                                       | member                    | every feature explained, filtered to the reader's roles; restarts the tour                         |
-| `/api/auth/$`                                 | public                    | better-auth handler (exists)                                                                       |
+| Route                                         | Access                    | Purpose                                                                                                    |
+| --------------------------------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `/`                                           | public                    | Landing → redirects to `/dashboard` when signed in                                                         |
+| `/login`                                      | public                    | email + password                                                                                           |
+| `/signup`                                     | public, needs `?token=`   | invite-gated — see §9                                                                                      |
+| `/pending`                                    | authed, PENDING           | "waiting for approval"                                                                                     |
+| `/dashboard`                                  | member                    | my open requests + quick "new request"; operator (jobs waiting) and admin (pending members) panels         |
+| `/rackets`, `/rackets/new`, `/rackets/$id`    | member                    | manage own rackets                                                                                         |
+| `/requests`, `/requests/new`, `/requests/$id` | member                    | own requests + detail/timeline                                                                             |
+| `/queue`                                      | operator                  | open + own claimed jobs, filter by status, sortable/searchable table                                       |
+| `/queue/$id`                                  | operator                  | accept / complete / collect                                                                                |
+| `/billing`                                    | operator OR controller    | every restrung racket: string/labour/rake/total price, paid state, sortable/searchable table               |
+| `/billing/payouts`                            | controller                | labour earned/reimbursed/outstanding per stringer, reimbursement ledger                                    |
+| `/invites`                                    | operator (admin inherits) | create/list/revoke invite links — see §9                                                                   |
+| `/training`                                   | coach                     | redirects to the roster                                                                                    |
+| `/training/people`, `/training/people/$id`    | coach                     | trainee/trainer roster + weekly availability                                                               |
+| `/training/plans`, `/training/plans/$id`      | coach                     | solver knobs, saved runs, groups and who was left out                                                      |
+| `/admin/members`                              | admin                     | approve, reject, set roles                                                                                 |
+| `/admin/strings`                              | admin                     | club string catalogue: add, edit price, deactivate, delete; labour and club rake (§5a); bank account (§16) |
+| `/help`                                       | member                    | every feature explained, filtered to the reader's roles; restarts the tour                                 |
+| `/api/auth/$`                                 | public                    | better-auth handler (exists)                                                                               |
 
 Guards live in one place: `beforeLoad` on a `_authed` pathless layout route that loads
 the session, checks `status === APPROVED`, and a `requireRole()` helper for
@@ -462,7 +462,7 @@ worth remembering if this ever needs to change.
 
 ## 11. What is built
 
-Everything in §2–§10, §13 and §14, except the items listed in §12. All feature and
+Everything in §2–§10, §13, §14 and §16, except the items listed in §12. All feature and
 spike branches are merged into `main`.
 
 ### Beyond the v1.0 spec
@@ -495,6 +495,7 @@ None of these run in CI — there is no CI configuration in the repo.
 | `pnpm test:e2e`       | Real HTTP stack (better-auth + server-function RPC) against a **running dev server**: auth, invite gate, approval, rackets, strings, request lifecycle, paid state, payout ledger, locale persistence, training planner, rejection revoking access |
 | `pnpm test:solver`    | The grouping solver in isolation — hard rules, determinism, unplaced reasons                                                                                                                                                                       |
 | `pnpm test:timetable` | Timetable cell⇄slot conversion, configurable window, out-of-window preservation, lane packing                                                                                                                                                      |
+| `pnpm test:epc`       | Payment QR payload line by line, reference length and job code, IBAN/BIC checks (§16)                                                                                                                                                              |
 
 The e2e script mutates the dev database; run `pnpm db:reset-data && pnpm db:seed`
 before a second run, or balance assertions in the payout section fail on leftovers.
@@ -813,3 +814,158 @@ hidden button is not the only barrier. Never enable it on a deployment.
 **Agent tooling.** `AGENTS.md` describes loading TanStack's intent skills before larger
 changes; `.agents/skills/` vendors the Prisma skill docs (see the formatting caveat in
 §12).
+
+## 16. Payment QR code (Zahlschein)
+
+**Status: built.** The decisions taken on the open questions are listed at the end.
+
+Members pay for a restring by bank transfer, and typing IBAN, amount and reference by
+hand is where payments go wrong or get forgotten. Once a job has a price, the app shows
+an **EPC QR code** ("GiroCode", what Austrian and German banking apps open when you
+choose "Zahlschein scannen" or "QR-Code scannen") with everything filled in: recipient,
+IBAN, amount and a reference the controller can match on the bank statement.
+
+The QR code only fills in the transfer. Nothing in the app learns that the money
+arrived: a controller still marks the job paid on `/billing` after seeing it on the
+statement (§2, §10 "Payment").
+
+### Where it appears
+
+A job **shows payment details** when all of these hold:
+
+- its status is `DONE` or `COLLECTED`, so the price has been stamped (§5a)
+- it is unpaid (`paidAt` is null)
+- its total is above zero
+- the club has entered its bank account (below)
+
+| Where                                 | Who                     | Why                                                                                        |
+| ------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------ |
+| `/requests/$id`, the member's own job | the member              | pay from home, any time after the job is done                                              |
+| `/queue/$id`, at handover             | the stringer (operator) | at the court, the member scans the QR code off the stringer's phone with their banking app |
+
+Once the job is marked paid, the block disappears and the job summary's "Bezahlt"
+badge says it is settled. With no bank account entered, nothing is shown; there is no
+half-filled QR code.
+
+**A member can't scan their own screen.** On a phone the member is usually looking at
+the very screen they'd need to scan. So the block shows, next to the QR code, each
+field on its own line with a copy button: recipient, IBAN (grouped in fours), amount
+and reference. On a phone the copy fields come first and the QR code below them; from
+`sm:` up the QR code sits beside them.
+
+### What goes into the code
+
+The payload follows EPC069-12 (version 002, UTF-8), one field per line, separated by
+`\n`:
+
+| #   | Field          | Value                                                                |
+| --- | -------------- | -------------------------------------------------------------------- |
+| 1   | Service tag    | `BCD`                                                                |
+| 2   | Version        | `002` (BIC optional inside the EEA)                                  |
+| 3   | Character set  | `1` (UTF-8)                                                          |
+| 4   | Identification | `SCT` (SEPA credit transfer)                                         |
+| 5   | BIC            | `ClubSettings.paymentBic`, or empty                                  |
+| 6   | Recipient      | `ClubSettings.paymentRecipient`, at most 70 characters               |
+| 7   | IBAN           | `ClubSettings.paymentIban`, uppercase, no spaces                     |
+| 8   | Amount         | `EUR` + the job's total with a dot and two decimals, e.g. `EUR32.50` |
+| 9   | Purpose        | empty                                                                |
+| 10  | Structured ref | empty                                                                |
+| 11  | Remittance     | the reference text below, at most 35 characters                      |
+| 12  | Info           | empty                                                                |
+
+- The whole payload must stay within 331 bytes. Umlauts in names count as two.
+- The QR code uses error correction level M, as EPC069-12 requires.
+- The amount is `totalPriceCents(string, labour, rake)` from the stamped parts. It is
+  never recomputed from today's prices.
+
+**Reference text:** `RTC-<code> <member name>`, for example
+`RTC-7K3M9Q2A Anna Gruber`.
+
+- `<code>` is the last 8 characters of the request id, uppercased. It is short enough
+  to read out loud, and a collision is very unlikely at club scale.
+- The member name is cut short if the text would pass 35 characters. EPC069-12
+  allows 140 for remittance text, but `eu-payment-qr` caps the reference at 35, and
+  its 140-character `message` goes to line 12, which banks don't carry into the
+  transfer. The job code always survives the cut.
+- `/billing` search also matches `RTC-<code>`. A controller can paste the reference
+  from the bank statement and land on the job.
+
+The QR code and the copy fields always show the same values, both from one server
+response.
+
+### The club's bank account
+
+Three new optional columns on `ClubSettings` (one migration):
+
+```prisma
+paymentRecipient String?   // account holder, e.g. "Tennisclub RTC"
+paymentIban      String?   // stored uppercase, without spaces
+paymentBic       String?   // optional
+```
+
+- The admin edits them on `/admin/strings`, in a new "Bankverbindung" card next to the
+  club prices.
+- Leaving recipient or IBAN empty switches the feature off.
+- The form checks the IBAN's mod-97 checksum and its country-specific length before it
+  saves, and shows it grouped in fours.
+- The BIC, if entered, must be 8 or 11 characters.
+
+All of the money goes to this one account. That matches §5a: the club receives string
+cost, labour and rake, and pays labour back to the stringer through the payout ledger.
+
+### Implementation notes
+
+- [`eu-payment-qr`](https://www.npmjs.com/package/eu-payment-qr) builds the payload
+  and validates IBAN (country length, mod 97) and BIC. `src/lib/payment.ts` wraps it:
+  job code, reference, the 331-byte check, and the IBAN/BIC checks the admin form and
+  the server schema share.
+- `getRequest` (used by `/requests/$id` and `/queue/$id`) returns a `payment` object
+  (`{ recipient, iban, bic, amountCents, reference, payload }`) or `null`.
+  `paymentDetailsFor` in `src/lib/payment.server.ts` is the one place that decides.
+- `src/components/payment-details.tsx` draws the QR code client-side as an inline
+  `<svg>`. [`uqr`](https://www.npmjs.com/package/uqr) only computes the module grid;
+  React draws one `<path>`. There is no `innerHTML` and no `data:` image, so the
+  Content-Security-Policy in `src/lib/security-headers.ts` needs no change.
+- Both packages were installed under the 7-day minimum release age, and
+  `eu-payment-qr`'s source was read first: no dependencies, no install scripts, no
+  network access.
+- Copy buttons use `navigator.clipboard.writeText` and switch to "Kopiert" for two
+  seconds, like the invite link. Each has an accessible name ("IBAN kopieren"). The
+  IBAN is copied without spaces, the amount as `33,00` without the euro sign.
+
+### Tests
+
+- **Unit** (`scripts/epc-check.ts`, run as `pnpm test:epc`):
+  - payload line by line, with and without a BIC, read back with `eu-payment-qr`'s
+    parser
+  - an IBAN with spaces and lowercase letters is normalized
+  - a bad IBAN checksum or length is refused, and no payload is built for it
+  - a name with umlauts stays within 331 bytes
+  - a long name is cut to 35 characters, keeping the job code
+  - the job code is found in a pasted reference
+- **Browser** (`tests/ui/member-pays-by-qr-code.spec.ts`, at `PHONE` width):
+  - the admin enters the bank account, and an invalid IBAN is refused
+  - on a finished, unpaid job the member sees the QR code and the copy fields with
+    the right IBAN, amount and reference, with no horizontal overflow; copying the
+    IBAN and the amount puts them on the clipboard
+  - the stringer sees the same block on `/queue/$id`
+  - the reference pasted into the `/billing` search finds the job, which is marked
+    paid, and the block disappears
+  - with the bank account removed, no block is shown
+
+### Out of scope
+
+- Confirming payments automatically (bank API or statement import)
+- A structured creditor reference (ISO 11649 `RF…`)
+- A printable paper Zahlschein or PDF
+- Payment providers (PayPal, card)
+
+### Decisions
+
+1. **One QR code per job**, not one for everything a member owes. Each transfer
+   matches one paid flag. A combined code remains possible later.
+2. **Reference** `RTC-<code> <name>`, because of the 35-character cap above. To be
+   confirmed with the club treasurer.
+3. **No "I've paid" button.** The bank statement is the source of truth either way.
+4. **Only after the job is done**, because the price isn't fixed until completion
+   (§5a).

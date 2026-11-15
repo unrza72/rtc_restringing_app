@@ -245,6 +245,13 @@ model ClubSettings {
   /// The club's cut per racket in cents, on every job whatever the string —
   /// machine maintenance and app hosting. null = not set yet.
   rakeCents Int?
+  /// The club's bank account for the payment QR code (SPEC.md §16). Without
+  /// recipient and IBAN, no payment details are shown anywhere.
+  paymentRecipient String?
+  /// Stored uppercase, without spaces.
+  paymentIban      String?
+  /// Optional inside SEPA.
+  paymentBic       String?
   updatedAt  DateTime @updatedAt
 }
 

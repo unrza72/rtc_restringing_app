@@ -26,6 +26,7 @@ import {
   isRacketTokensEnabled,
 } from '#/lib/racket-tokens.server'
 import { getClubPricing } from '#/lib/pricing.server'
+import { paymentDetailsFor } from '#/lib/payment.server'
 import { Prisma } from '#/generated/prisma/client'
 import type { RequestAction, RequestStatus } from '#/lib/status'
 import { m } from '#/paraglide/messages'
@@ -73,7 +74,12 @@ export const getRequest = createServerFn({ method: 'GET' })
     const isOperator = context.user.roles.includes('operator')
     if (!isOwner && !isOperator) throw notFound()
 
-    return { ...request, viewerIsOwner: isOwner, viewerIsOperator: isOperator }
+    return {
+      ...request,
+      viewerIsOwner: isOwner,
+      viewerIsOperator: isOperator,
+      payment: await paymentDetailsFor(request),
+    }
   })
 
 export const listQueue = createServerFn({ method: 'GET' })

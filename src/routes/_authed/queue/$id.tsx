@@ -20,6 +20,7 @@ import { Textarea } from '#/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
 import { Field, FormError, fieldErrors } from '#/components/form-field'
 import { RequestSummary, RequestTimeline } from '#/components/request-detail'
+import { PaymentDetails } from '#/components/payment-details'
 
 export const Route = createFileRoute('/_authed/queue/$id')({
   loader: async ({ params }) => ({
@@ -56,6 +57,14 @@ function QueueDetailPage() {
   return (
     <div className="mx-auto grid max-w-2xl gap-6">
       <RequestSummary request={request} showRequester />
+
+      {request.payment && (
+        <PaymentDetails
+          payment={request.payment}
+          memberName={request.requester.name}
+          forOperator
+        />
+      )}
 
       <FormError>{error}</FormError>
 
