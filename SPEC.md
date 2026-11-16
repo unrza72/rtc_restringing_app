@@ -13,7 +13,7 @@ spec promises but the code does not yet do is collected in §12** — start ther
 | Concern   | Choice                                                                                |
 | --------- | ------------------------------------------------------------------------------------- |
 | Framework | TanStack Start (file routes in `src/routes`, `createServerFn` for mutations/loads)    |
-| DB        | Prisma 7 + SQLite (`@prisma/adapter-better-sqlite3`)                                  |
+| DB        | Prisma 7 + PostgreSQL (`@prisma/adapter-pg`); SQLite until Nov 2026                   |
 | Auth      | better-auth 1.7 — `admin` plugin, `prismaAdapter`; email + password                   |
 | UI        | Tailwind 4 + shadcn/ui (new-york), lucide icons; club brand theme, see §14            |
 | Forms     | TanStack Form + Zod schemas shared client/server                                      |
@@ -505,8 +505,9 @@ before a second run, or balance assertions in the payout section fail on leftove
 `tests/ui/`, configured in `playwright.config.ts`. Each workflow is one test, split into
 `test.step`s so `pnpm test:ui --ui` reads as an outline you can step through.
 
-- **Isolated.** Its own server on :4100 and its own `e2e.sqlite`, so it never touches
-  `pnpm dev` on :4000 or `dev.sqlite`, and both can run at once (`tests/ui/env.ts`).
+- **Isolated.** Its own server on :4100 and its own `e2e` schema in the dev database,
+  dropped and migrated afresh each run, so it never touches `pnpm dev` on :4000 or the
+  dev data in `public`, and both can run at once (`tests/ui/env.ts`).
 - **Production build.** The web server runs `pnpm build`, then the built server — no
   Vite dependency optimiser reloading the page mid-test, and it tests what ships. After
   editing `src/`, restart `--ui` to rebuild.

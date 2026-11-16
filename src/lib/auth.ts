@@ -29,7 +29,7 @@ const hardenedCookies = {
 } as const
 
 export const auth = betterAuth({
-  database: prismaAdapter(prisma, { provider: 'sqlite' }),
+  database: prismaAdapter(prisma, { provider: 'postgresql' }),
   baseURL: process.env.BETTER_AUTH_URL,
   secret: process.env.BETTER_AUTH_SECRET,
   // On in production (better-auth's default), counted per client IP in

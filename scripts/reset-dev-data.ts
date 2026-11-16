@@ -3,14 +3,11 @@
  * the admin and the default strings. Handy after the e2e script, which leaves
  * throwaway members and requests behind. Never point this at a real database.
  */
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
-
+import { createPgAdapter } from '../src/db-adapter.js'
 import { PrismaClient } from '../src/generated/prisma/client.js'
 
 const prisma = new PrismaClient({
-  adapter: new PrismaBetterSqlite3({
-    url: process.env.DATABASE_URL || 'file:./dev.db',
-  }),
+  adapter: createPgAdapter(process.env.DATABASE_URL),
 })
 
 // Children first: every model below is deleted before whatever it points at,

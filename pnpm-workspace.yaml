@@ -3,5 +3,4 @@ allowBuilds:
   lightningcss: true
   '@prisma/engines': true
   prisma: true
-  better-sqlite3: true
   unrs-resolver: true

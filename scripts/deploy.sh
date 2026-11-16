@@ -11,9 +11,19 @@ pnpm install --frozen-lockfile
 pnpm db:generate
 
 # A consistent copy of the live database, taken before any migration runs.
+# pg_dump gets the connection from DATABASE_URL in .env, with the password in
+# PGPASSWORD rather than on the command line, where `ps` would show it.
 mkdir -p "$BACKUP_DIR"
-backup="$BACKUP_DIR/rtc-$(date +%Y%m%d-%H%M%S).sqlite"
-echo "VACUUM INTO '$backup';" | pnpm exec dotenv -e .env -- prisma db execute --stdin
+backup="$BACKUP_DIR/rtc-$(date +%Y%m%d-%H%M%S).dump"
+{ read -r db_url; IFS= read -r db_password || true; } < <(node --env-file=.env -e '
+  const url = new URL(process.env.DATABASE_URL)
+  const password = decodeURIComponent(url.password)
+  url.password = ""
+  url.searchParams.delete("schema") // Prisma-only, pg_dump would refuse it
+  console.log(url.toString())
+  console.log(password)
+')
+PGPASSWORD="$db_password" pg_dump --format=custom --file="$backup" "$db_url"
 echo "Backed up the database to $backup"
 
 pnpm db:deploy

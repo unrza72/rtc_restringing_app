@@ -1,39 +1,29 @@
 import { execFileSync } from 'node:child_process'
-import { fileURLToPath } from 'node:url'
-import { DatabaseSync } from 'node:sqlite'
 
-import { DATABASE_URL, SERVER_ENV } from './env'
+import { E2E_SCHEMA, SERVER_ENV } from './env'
 
 /**
- * Brings `e2e.sqlite` to a known state before a run: every table dropped, the
- * schema pushed from scratch, then the seed (the bootstrap admin) and the
- * string catalogue the specs use.
- *
- * Dropping the tables rather than migrating them means a schema change never
- * meets existing rows or columns, so `db push` never stops to ask about data
- * loss (it would, for example, on any new unique constraint). This database
- * exists only for these tests and is emptied every run regardless.
- *
- * The file itself stays: in `--ui` mode the server is already running and keeps
- * its handle open, and a replaced file would leave it reading the old one.
+ * Brings the `e2e` schema to a known state before a run: dropped and created
+ * again, every migration applied (the same `prisma migrate deploy` a release
+ * runs), then the seed (the bootstrap admin) and the string catalogue the
+ * specs use. The schema exists only for these tests and is emptied every run.
  */
 export default function globalSetup() {
-  const db = new DatabaseSync(fileURLToPath(DATABASE_URL))
-  db.exec('PRAGMA foreign_keys = OFF')
-  const tables = db
-    .prepare(
-      "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
-    )
-    .all() as Array<{ name: string }>
-  for (const { name } of tables) db.exec(`DROP TABLE "${name}"`)
-  db.close()
-
-  const run = (command: string, args: Array<string>) =>
+  if (E2E_SCHEMA === 'public') {
+    throw new Error('The UI tests empty their schema: give them ?schema=e2e')
+  }
+  const run = (command: string, args: Array<string>, input?: string) =>
     execFileSync('pnpm', ['exec', command, ...args], {
-      stdio: 'inherit',
+      stdio: [input === undefined ? 'inherit' : 'pipe', 'inherit', 'inherit'],
+      input,
       env: { ...process.env, ...SERVER_ENV },
     })
-  run('prisma', ['db', 'push'])
+  run(
+    'prisma',
+    ['db', 'execute', '--stdin'],
+    `DROP SCHEMA IF EXISTS "${E2E_SCHEMA}" CASCADE; CREATE SCHEMA "${E2E_SCHEMA}";`,
+  )
+  run('prisma', ['migrate', 'deploy'])
   run('tsx', ['prisma/seed.ts'])
   run('tsx', ['tests/ui/seed-catalogue.ts'])
 }

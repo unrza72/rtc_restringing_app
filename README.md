@@ -8,10 +8,24 @@ See [SPEC.md](SPEC.md) for the data model, status machine and design decisions.
 
 ## First run
 
+The app needs a PostgreSQL database. Create a user and a database it owns
+(as a superuser, e.g. `sudo -u postgres psql`, or in your Docker container):
+
+```sql
+CREATE ROLE rtc LOGIN PASSWORD '<password>';
+CREATE DATABASE rtc_restringing OWNER rtc;
+```
+
+and point `.env` at it:
+
+```bash
+DATABASE_URL="postgresql://rtc:<password>@localhost:5432/rtc_restringing"
+```
+
 ```bash
 pnpm install
 pnpm db:generate      # generate the Prisma client
-pnpm db:migrate       # create the database from prisma/migrations
+pnpm db:deploy        # create the tables from prisma/migrations
 pnpm db:seed          # bootstrap the admin (strings, prices, roster: enter in the app)
 pnpm dev              # http://localhost:3000
 ```
@@ -28,7 +42,13 @@ Environment lives in `.env`: `DATABASE_URL`, `BETTER_AUTH_URL`,
 
 To change the schema, edit `prisma/schema.prisma`, then run
 `pnpm db:migrate --name <what-changed>` and commit the new folder in
-`prisma/migrations/`. Production applies these migrations on every deploy;
+`prisma/migrations/`. `db:migrate` needs a shadow database it may wipe: give
+the user `CREATEDB`, or create `rtc_restringing_shadow` and set
+`SHADOW_DATABASE_URL` (details in [DEPLOYMENT.md](DEPLOYMENT.md#where-migrations-come-from)).
+
+The UI tests (`pnpm exec playwright test`) use their own `e2e` schema in the
+same database, dropped and rebuilt on every run; the dev data in `public` is
+never touched. Set `E2E_DATABASE_URL` to use another database instead. Production applies these migrations on every deploy;
 `db push` changes never reach it. Deploying is covered in
 [DEPLOYMENT.md](DEPLOYMENT.md).
 

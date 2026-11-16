@@ -13,9 +13,9 @@
 import { randomUUID } from 'node:crypto'
 import { parseArgs } from 'node:util'
 
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
 import { hashPassword } from 'better-auth/crypto'
 
+import { createPgAdapter } from '../src/db-adapter.js'
 import { PrismaClient } from '../src/generated/prisma/client.js'
 import { parseRoles, serializeRoles } from '../src/lib/roles.js'
 
@@ -38,7 +38,7 @@ if (!databaseUrl)
   fail('DATABASE_URL is not set: run this through pnpm admin:set.')
 
 const prisma = new PrismaClient({
-  adapter: new PrismaBetterSqlite3({ url: databaseUrl }),
+  adapter: createPgAdapter(databaseUrl),
 })
 
 try {

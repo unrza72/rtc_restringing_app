@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
 
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
 import { hashPassword } from 'better-auth/crypto'
 
+import { createPgAdapter } from '../src/db-adapter.js'
 import { PrismaClient } from '../src/generated/prisma/client.js'
 import { DEV_LOGIN_ROSTER } from '../src/lib/dev-quick-login.js'
 import {
@@ -10,9 +10,7 @@ import {
   isDevQuickLoginEnabled,
 } from '../src/lib/dev-quick-login.server.js'
 
-const adapter = new PrismaBetterSqlite3({
-  url: process.env.DATABASE_URL || 'file:./dev.db',
-})
+const adapter = createPgAdapter(process.env.DATABASE_URL)
 
 const prisma = new PrismaClient({ adapter })
 

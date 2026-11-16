@@ -1,69 +1,78 @@
+-- PostgreSQL baseline: the whole schema as of the switch from SQLite.
+-- The SQLite migrations before it live in git history.
+
 -- CreateTable
 CREATE TABLE "user" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "emailVerified" BOOLEAN NOT NULL DEFAULT false,
     "image" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
     "role" TEXT,
     "banned" BOOLEAN DEFAULT false,
     "banReason" TEXT,
-    "banExpires" DATETIME,
+    "banExpires" TIMESTAMP(3),
     "status" TEXT DEFAULT 'PENDING',
-    "approvedAt" DATETIME,
+    "approvedAt" TIMESTAMP(3),
     "approvedById" TEXT,
     "locale" TEXT,
     "inviteToken" TEXT,
-    "onboardedAt" DATETIME
+    "onboardedAt" TIMESTAMP(3),
+
+    CONSTRAINT "user_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "session" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "expiresAt" DATETIME NOT NULL,
+    "id" TEXT NOT NULL,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
     "token" TEXT NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
     "ipAddress" TEXT,
     "userAgent" TEXT,
     "userId" TEXT NOT NULL,
     "impersonatedBy" TEXT,
-    CONSTRAINT "session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+
+    CONSTRAINT "session_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "account" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "accountId" TEXT NOT NULL,
     "providerId" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "accessToken" TEXT,
     "refreshToken" TEXT,
     "idToken" TEXT,
-    "accessTokenExpiresAt" DATETIME,
-    "refreshTokenExpiresAt" DATETIME,
+    "accessTokenExpiresAt" TIMESTAMP(3),
+    "refreshTokenExpiresAt" TIMESTAMP(3),
     "scope" TEXT,
     "password" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
-    CONSTRAINT "account_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "account_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "verification" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "identifier" TEXT NOT NULL,
     "value" TEXT NOT NULL,
-    "expiresAt" DATETIME NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "verification_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Racket" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "ownerId" TEXT NOT NULL,
     "label" TEXT NOT NULL,
     "brand" TEXT,
@@ -71,156 +80,181 @@ CREATE TABLE "Racket" (
     "headSizeCm2" INTEGER,
     "stringPattern" TEXT,
     "gripSize" TEXT,
-    "tensionMain" REAL,
-    "tensionCross" REAL,
+    "tensionMain" DOUBLE PRECISION,
+    "tensionCross" DOUBLE PRECISION,
     "notes" TEXT,
     "archived" BOOLEAN NOT NULL DEFAULT false,
     "hidden" BOOLEAN NOT NULL DEFAULT false,
-    "deletedAt" DATETIME,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
-    CONSTRAINT "Racket_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "user" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    "deletedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Racket_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "ClubString" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "gauge" TEXT,
     "priceCents" INTEGER,
     "active" BOOLEAN NOT NULL DEFAULT true,
     "sortOrder" INTEGER NOT NULL DEFAULT 0,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ClubString_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "StringingRequest" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "racketId" TEXT NOT NULL,
     "requesterId" TEXT NOT NULL,
     "status" TEXT NOT NULL DEFAULT 'REQUESTED',
     "stringSource" TEXT NOT NULL,
     "clubStringId" TEXT,
     "ownStringName" TEXT,
-    "tensionMain" REAL,
-    "tensionCross" REAL,
-    "neededBy" DATETIME,
+    "tensionMain" DOUBLE PRECISION,
+    "tensionCross" DOUBLE PRECISION,
+    "neededBy" TIMESTAMP(3),
     "memberNotes" TEXT,
     "tokenNumber" INTEGER,
     "activeToken" INTEGER,
     "operatorId" TEXT,
-    "acceptedAt" DATETIME,
-    "completedAt" DATETIME,
-    "collectedAt" DATETIME,
+    "acceptedAt" TIMESTAMP(3),
+    "completedAt" TIMESTAMP(3),
+    "collectedAt" TIMESTAMP(3),
     "operatorNotes" TEXT,
     "usedStringName" TEXT,
-    "usedTensionMain" REAL,
-    "usedTensionCross" REAL,
+    "usedTensionMain" DOUBLE PRECISION,
+    "usedTensionCross" DOUBLE PRECISION,
     "stringPriceCents" INTEGER,
     "labourPriceCents" INTEGER,
-    "ownStringFeeCents" INTEGER,
-    "paidAt" DATETIME,
+    "rakeCents" INTEGER,
+    "paidAt" TIMESTAMP(3),
     "paidById" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
-    CONSTRAINT "StringingRequest_racketId_fkey" FOREIGN KEY ("racketId") REFERENCES "Racket" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "StringingRequest_requesterId_fkey" FOREIGN KEY ("requesterId") REFERENCES "user" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "StringingRequest_clubStringId_fkey" FOREIGN KEY ("clubStringId") REFERENCES "ClubString" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT "StringingRequest_operatorId_fkey" FOREIGN KEY ("operatorId") REFERENCES "user" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT "StringingRequest_paidById_fkey" FOREIGN KEY ("paidById") REFERENCES "user" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "StringingRequest_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "ClubSettings" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT DEFAULT 1,
+    "id" INTEGER NOT NULL DEFAULT 1,
     "tokenCount" INTEGER NOT NULL DEFAULT 20,
     "labourPriceCents" INTEGER,
-    "ownStringFeeCents" INTEGER,
-    "updatedAt" DATETIME NOT NULL
+    "rakeCents" INTEGER,
+    "paymentRecipient" TEXT,
+    "paymentIban" TEXT,
+    "paymentBic" TEXT,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ClubSettings_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "RequestEvent" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "requestId" TEXT NOT NULL,
     "actorId" TEXT NOT NULL,
     "fromStatus" TEXT,
     "toStatus" TEXT NOT NULL,
     "note" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "RequestEvent_requestId_fkey" FOREIGN KEY ("requestId") REFERENCES "StringingRequest" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "RequestEvent_actorId_fkey" FOREIGN KEY ("actorId") REFERENCES "user" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "RequestEvent_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Reimbursement" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "operatorId" TEXT NOT NULL,
     "amountCents" INTEGER NOT NULL,
     "note" TEXT,
     "createdById" TEXT NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "Reimbursement_operatorId_fkey" FOREIGN KEY ("operatorId") REFERENCES "user" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "Reimbursement_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "user" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Reimbursement_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Invite" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "token" TEXT NOT NULL,
     "createdById" TEXT NOT NULL,
-    "expiresAt" DATETIME NOT NULL,
-    "usedAt" DATETIME,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "usedAt" TIMESTAMP(3),
     "usedById" TEXT,
-    "revokedAt" DATETIME,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "Invite_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "user" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "Invite_usedById_fkey" FOREIGN KEY ("usedById") REFERENCES "user" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+    "revokedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Invite_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "MemberAuditEntry" (
+    "id" TEXT NOT NULL,
+    "action" TEXT NOT NULL,
+    "actorId" TEXT,
+    "actorName" TEXT,
+    "targetId" TEXT,
+    "targetName" TEXT NOT NULL,
+    "targetEmail" TEXT NOT NULL,
+    "fromValue" TEXT,
+    "toValue" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "MemberAuditEntry_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "TrainingPerson" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "kind" TEXT NOT NULL,
     "ball" TEXT,
-    "strength" REAL,
+    "strength" DOUBLE PRECISION,
     "notes" TEXT,
     "archived" BOOLEAN NOT NULL DEFAULT false,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TrainingPerson_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "TrainingAvailability" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "personId" TEXT NOT NULL,
     "weekday" INTEGER NOT NULL,
     "startMin" INTEGER NOT NULL,
     "endMin" INTEGER NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "TrainingAvailability_personId_fkey" FOREIGN KEY ("personId") REFERENCES "TrainingPerson" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "TrainingAvailability_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "TrainingPlan" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "createdById" TEXT NOT NULL,
     "minGroupSize" INTEGER NOT NULL,
     "maxGroupSize" INTEGER NOT NULL,
-    "strengthSpread" REAL NOT NULL,
+    "strengthSpread" DOUBLE PRECISION NOT NULL,
     "sessionMinutes" INTEGER NOT NULL,
     "slotStepMinutes" INTEGER NOT NULL,
     "courtCount" INTEGER NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "TrainingPlan_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "user" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "TrainingPlan_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "TrainingGroup" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "planId" TEXT NOT NULL,
     "trainerId" TEXT NOT NULL,
     "weekday" INTEGER NOT NULL,
@@ -228,27 +262,27 @@ CREATE TABLE "TrainingGroup" (
     "endMin" INTEGER NOT NULL,
     "ball" TEXT NOT NULL,
     "court" INTEGER NOT NULL,
-    CONSTRAINT "TrainingGroup_planId_fkey" FOREIGN KEY ("planId") REFERENCES "TrainingPlan" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "TrainingGroup_trainerId_fkey" FOREIGN KEY ("trainerId") REFERENCES "TrainingPerson" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+
+    CONSTRAINT "TrainingGroup_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "TrainingGroupMember" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "groupId" TEXT NOT NULL,
     "personId" TEXT NOT NULL,
-    CONSTRAINT "TrainingGroupMember_groupId_fkey" FOREIGN KEY ("groupId") REFERENCES "TrainingGroup" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "TrainingGroupMember_personId_fkey" FOREIGN KEY ("personId") REFERENCES "TrainingPerson" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+
+    CONSTRAINT "TrainingGroupMember_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "TrainingPlanUnplaced" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "planId" TEXT NOT NULL,
     "personId" TEXT NOT NULL,
     "reason" TEXT NOT NULL,
-    CONSTRAINT "TrainingPlanUnplaced_planId_fkey" FOREIGN KEY ("planId") REFERENCES "TrainingPlan" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "TrainingPlanUnplaced_personId_fkey" FOREIGN KEY ("personId") REFERENCES "TrainingPerson" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+
+    CONSTRAINT "TrainingPlanUnplaced_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -300,6 +334,12 @@ CREATE UNIQUE INDEX "Invite_token_key" ON "Invite"("token");
 CREATE INDEX "Invite_createdById_createdAt_idx" ON "Invite"("createdById", "createdAt");
 
 -- CreateIndex
+CREATE INDEX "MemberAuditEntry_createdAt_idx" ON "MemberAuditEntry"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "MemberAuditEntry_targetId_createdAt_idx" ON "MemberAuditEntry"("targetId", "createdAt");
+
+-- CreateIndex
 CREATE INDEX "TrainingPerson_kind_archived_name_idx" ON "TrainingPerson"("kind", "archived", "name");
 
 -- CreateIndex
@@ -322,4 +362,76 @@ CREATE INDEX "TrainingPlanUnplaced_personId_idx" ON "TrainingPlanUnplaced"("pers
 
 -- CreateIndex
 CREATE UNIQUE INDEX "TrainingPlanUnplaced_planId_personId_key" ON "TrainingPlanUnplaced"("planId", "personId");
+
+-- AddForeignKey
+ALTER TABLE "session" ADD CONSTRAINT "session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "account" ADD CONSTRAINT "account_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Racket" ADD CONSTRAINT "Racket_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "StringingRequest" ADD CONSTRAINT "StringingRequest_racketId_fkey" FOREIGN KEY ("racketId") REFERENCES "Racket"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "StringingRequest" ADD CONSTRAINT "StringingRequest_requesterId_fkey" FOREIGN KEY ("requesterId") REFERENCES "user"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "StringingRequest" ADD CONSTRAINT "StringingRequest_clubStringId_fkey" FOREIGN KEY ("clubStringId") REFERENCES "ClubString"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "StringingRequest" ADD CONSTRAINT "StringingRequest_operatorId_fkey" FOREIGN KEY ("operatorId") REFERENCES "user"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "StringingRequest" ADD CONSTRAINT "StringingRequest_paidById_fkey" FOREIGN KEY ("paidById") REFERENCES "user"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RequestEvent" ADD CONSTRAINT "RequestEvent_requestId_fkey" FOREIGN KEY ("requestId") REFERENCES "StringingRequest"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RequestEvent" ADD CONSTRAINT "RequestEvent_actorId_fkey" FOREIGN KEY ("actorId") REFERENCES "user"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Reimbursement" ADD CONSTRAINT "Reimbursement_operatorId_fkey" FOREIGN KEY ("operatorId") REFERENCES "user"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Reimbursement" ADD CONSTRAINT "Reimbursement_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "user"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Invite" ADD CONSTRAINT "Invite_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "user"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Invite" ADD CONSTRAINT "Invite_usedById_fkey" FOREIGN KEY ("usedById") REFERENCES "user"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "MemberAuditEntry" ADD CONSTRAINT "MemberAuditEntry_actorId_fkey" FOREIGN KEY ("actorId") REFERENCES "user"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "MemberAuditEntry" ADD CONSTRAINT "MemberAuditEntry_targetId_fkey" FOREIGN KEY ("targetId") REFERENCES "user"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TrainingAvailability" ADD CONSTRAINT "TrainingAvailability_personId_fkey" FOREIGN KEY ("personId") REFERENCES "TrainingPerson"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TrainingPlan" ADD CONSTRAINT "TrainingPlan_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "user"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TrainingGroup" ADD CONSTRAINT "TrainingGroup_planId_fkey" FOREIGN KEY ("planId") REFERENCES "TrainingPlan"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TrainingGroup" ADD CONSTRAINT "TrainingGroup_trainerId_fkey" FOREIGN KEY ("trainerId") REFERENCES "TrainingPerson"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TrainingGroupMember" ADD CONSTRAINT "TrainingGroupMember_groupId_fkey" FOREIGN KEY ("groupId") REFERENCES "TrainingGroup"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TrainingGroupMember" ADD CONSTRAINT "TrainingGroupMember_personId_fkey" FOREIGN KEY ("personId") REFERENCES "TrainingPerson"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TrainingPlanUnplaced" ADD CONSTRAINT "TrainingPlanUnplaced_planId_fkey" FOREIGN KEY ("planId") REFERENCES "TrainingPlan"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TrainingPlanUnplaced" ADD CONSTRAINT "TrainingPlanUnplaced_personId_fkey" FOREIGN KEY ("personId") REFERENCES "TrainingPerson"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 

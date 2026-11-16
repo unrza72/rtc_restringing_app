@@ -1,5 +1,4 @@
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
-
+import { createPgAdapter } from '../../src/db-adapter'
 import { PrismaClient } from '../../src/generated/prisma/client'
 import { DATABASE_URL } from './env'
 
@@ -20,7 +19,7 @@ const CLUB_STRINGS = [
 ]
 
 const prisma = new PrismaClient({
-  adapter: new PrismaBetterSqlite3({ url: DATABASE_URL }),
+  adapter: createPgAdapter(DATABASE_URL),
 })
 await prisma.clubString.createMany({ data: CLUB_STRINGS })
 console.log(`✅ ${CLUB_STRINGS.length} test club string(s) added`)

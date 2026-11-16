@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
 
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
 import { hashPassword } from 'better-auth/crypto'
 
+import { createPgAdapter } from '../../src/db-adapter'
 import { PrismaClient } from '../../src/generated/prisma/client'
 import { DATABASE_URL } from './env'
 import { uniqueStamp } from './support'
@@ -18,7 +18,7 @@ import { uniqueStamp } from './support'
 let client: PrismaClient | undefined
 const prisma = () =>
   (client ??= new PrismaClient({
-    adapter: new PrismaBetterSqlite3({ url: DATABASE_URL }),
+    adapter: createPgAdapter(DATABASE_URL),
   }))
 
 export type TestUser = {

@@ -29,7 +29,7 @@
     "admin:set": "dotenv -e .env -- tsx scripts/set-admin.ts"
   },
   "dependencies": {
-    "@prisma/adapter-better-sqlite3": "^7.10.1",
+    "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/react-devtools": "latest",
@@ -81,8 +81,7 @@
       "esbuild",
       "lightningcss",
       "@prisma/engines",
-      "prisma",
-      "better-sqlite3"
+      "prisma"
     ]
   },
   "intent": {
