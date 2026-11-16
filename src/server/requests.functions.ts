@@ -98,8 +98,8 @@ export const listQueue = createServerFn({ method: 'GET' })
           : { status: { in: ['REQUESTED', 'ACCEPTED', 'DONE'] } }),
         ...(data.mine ? { operatorId: context.user.id } : {}),
       },
-      // Jobs with a deadline first, then oldest request first.
-      orderBy: [{ neededBy: 'asc' }, { createdAt: 'asc' }],
+      // Oldest request first: first come, first strung.
+      orderBy: { createdAt: 'asc' },
       include: requestInclude,
     })
   })
@@ -388,7 +388,7 @@ export const collectRequest = createServerFn({ method: 'POST' })
 
 export const cancelRequest = createServerFn({ method: 'POST' })
   .middleware([memberMiddleware])
-  .validator(idSchema.extend({ reason: z.string().trim().max(300).optional() }))
+  .validator(idSchema)
   .handler(async ({ context, data }) => {
     const request = await prisma.stringingRequest.findUnique({
       where: { id: data.id },
@@ -405,7 +405,6 @@ export const cancelRequest = createServerFn({ method: 'POST' })
       requestId: data.id,
       actorId: context.user.id,
       action: 'cancel',
-      note: data.reason ?? null,
     })
   })
 

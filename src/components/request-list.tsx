@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router'
 
 import { StatusBadge } from '#/components/status-badge'
-import { describeString, formatDate, formatTension } from '#/lib/labels'
+import { describeString, formatTension } from '#/lib/labels'
 import { m } from '#/paraglide/messages'
 import { cn } from '#/lib/utils'
 
@@ -12,7 +12,6 @@ export type RequestRow = {
   ownStringName: string | null
   tensionMain: number | null
   tensionCross: number | null
-  neededBy: Date | string | null
   tokenNumber?: number | null
   createdAt: Date | string
   racket: { label: string }
@@ -63,11 +62,6 @@ export function RequestList({
               {request.tokenNumber != null && (
                 <span className="text-[11px] font-medium text-muted-foreground">
                   {m.request_token_label({ token: request.tokenNumber })}
-                </span>
-              )}
-              {request.neededBy && (
-                <span className="text-[11px] font-medium text-primary-ink">
-                  {m.queue_needed_by({ date: formatDate(request.neededBy) })}
                 </span>
               )}
               <StatusBadge status={request.status} />

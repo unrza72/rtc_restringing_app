@@ -136,7 +136,6 @@ model StringingRequest {
   ownStringName String?  // free text when stringSource = MEMBER
   tensionMain   Float    // kg
   tensionCross  Float?   // kg, null = same as main
-  neededBy      DateTime?
   memberNotes   String?
 
   // operator side
@@ -244,8 +243,7 @@ REQUESTED --accept(operator)--> ACCEPTED --complete(operator)--> DONE --collect-
 - Only `REQUESTED` and `ACCEPTED` can be cancelled; the owner can cancel their own,
   admins can cancel any. **The admin half is server-side only** — no screen offers
   the button to anyone but the owner (§12).
-- Cancelling asks for confirmation in a dialog. The server accepts an optional reason
-  (stored as the event's `note`); the dialog does not ask for one yet (§12).
+- Cancelling asks for confirmation in a dialog. No reason is asked for or stored.
 - `accept` claims the job for that operator; an operator can release back to `REQUESTED`.
   Release and complete are limited to the claiming operator — admins may act on any job.
 - `complete` requires the actually used string and main tension (both prefilled from the
@@ -458,6 +456,9 @@ worth remembering if this ever needs to change.
 | Payment         | A paid flag per job (controller), plus an append-only labour payout ledger per stringer — no real settlement           |
 | Light theme     | Committed light-only palette; no dark mode or user toggle                                                              |
 | Racket handover | Not tracked in the app                                                                                                 |
+| Due date        | None — the queue is first come, first strung (oldest request first); the `neededBy` column was dropped                 |
+| Cancel reason   | Not asked for; cancelling is one confirmation                                                                          |
+| Other string    | The stringer corrects the used string on completion; the member is not asked first and sees it on the job page         |
 | Signup access   | Invite-link only, single-use, expiry configurable (default 24h) — custom, not better-auth's `organization` invitations |
 
 ## 11. What is built
@@ -565,15 +566,6 @@ the sentence from the spec.
 
 ### Not built yet
 
-- **"Needed by" date on new requests.** Taken off the request form for launch; members
-  can't set it. The `neededBy` column, the server schema, and the displays (request
-  detail, request list, the queue's "Benötigt bis" column and its default sort) are all
-  still in place, so adding the field back to `requests/new.tsx` is all it takes.
-- **Cancel reason.** The server stores an optional reason on the cancel event; the
-  dialog does not ask for one.
-- **Substitute-string consent.** An operator who uses a different string just
-  overwrites `usedStringName`; the member finds out on the detail page rather than
-  being asked first.
 - **Invite revocation still uses the browser's native `confirm()`** (`invites.tsx`),
   unlike cancel, which moved to a localized Radix dialog.
 - **Dashboard panels for controllers and coaches.** Operators and admins get a panel;

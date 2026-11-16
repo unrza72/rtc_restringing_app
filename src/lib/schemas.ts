@@ -98,7 +98,6 @@ export const requestInputSchema = z
     stringSource: z.enum(STRING_SOURCES),
     clubStringId: z.string().nullable().default(null),
     ownStringName: optionalText(120),
-    neededBy: z.coerce.date().nullable().default(null),
     memberNotes: optionalText(500),
     // The carabiner number. Required only while RACKET_TOKENS_ENABLED is on —
     // which the schema can't know, so createRequest enforces that part.

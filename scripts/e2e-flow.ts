@@ -386,7 +386,6 @@ const tokenRequest = (
     ownStringName: null,
     tensionMain: 24,
     tensionCross: null,
-    neededBy: null,
     memberNotes: null,
     tokenNumber,
   })
@@ -477,7 +476,6 @@ console.log('\n— request without a racket —')
       ownStringName: null,
       tensionMain: 24,
       tensionCross: null,
-      neededBy: null,
       memberNotes: null,
       tokenNumber: await nextToken(),
     })
@@ -516,7 +514,6 @@ console.log('\n— request without a racket —')
     ownStringName: null,
     tensionMain: 24,
     tensionCross: null,
-    neededBy: null,
     memberNotes: null,
     tokenNumber: await nextToken(),
   })
@@ -537,7 +534,6 @@ const req = await member.call(REQUESTS, 'createRequest', {
   ownStringName: null,
   tensionMain: 24,
   tensionCross: 23,
-  neededBy: null,
   memberNotes: 'Slight top-spin setup',
   tokenNumber: await nextToken(),
 })
@@ -551,7 +547,6 @@ const badTension = await member.call(REQUESTS, 'createRequest', {
   ownStringName: null,
   tensionMain: 99,
   tensionCross: null,
-  neededBy: null,
   memberNotes: null,
   tokenNumber: await nextToken(),
 })
@@ -564,7 +559,6 @@ const noStringNamed = await member.call(REQUESTS, 'createRequest', {
   ownStringName: null,
   tensionMain: 24,
   tensionCross: null,
-  neededBy: null,
   memberNotes: null,
   tokenNumber: await nextToken(),
 })
@@ -708,7 +702,6 @@ console.log('\n— racket archive and delete —')
     // Left to the stringer: tension is optional.
     tensionMain: null,
     tensionCross: null,
-    neededBy: null,
     memberNotes: null,
     tokenNumber: await nextToken(),
   })
@@ -826,7 +819,6 @@ check('a freshly completed job starts unpaid', priced?.paidAt == null, priced)
     ownStringName: 'Luxilon ALU Power 1.25',
     tensionMain: null,
     tensionCross: null,
-    neededBy: null,
     memberNotes: null,
     tokenNumber: await nextToken(),
   })

@@ -20,7 +20,6 @@ export type RequestDetailData = {
   ownStringName: string | null
   tensionMain: number | null
   tensionCross: number | null
-  neededBy: Date | string | null
   memberNotes: string | null
   tokenNumber: number | null
   createdAt: Date | string
@@ -95,12 +94,6 @@ export function RequestSummary({
           <Row label={m.request_label_created()}>
             {formatDate(request.createdAt)}
           </Row>
-
-          {request.neededBy && (
-            <Row label={m.request_needed_by()}>
-              {formatDate(request.neededBy)}
-            </Row>
-          )}
 
           <Row label={m.request_stringer()}>
             {request.operator?.name ?? m.request_unassigned()}

@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { listQueue } from '#/server/requests.functions'
 import { REQUEST_STATUSES } from '#/lib/status'
 import type { RequestStatus } from '#/lib/status'
-import { describeString, formatDate, formatTension } from '#/lib/labels'
+import { describeString, formatTension } from '#/lib/labels'
 import { m } from '#/paraglide/messages'
 import { Card, CardContent } from '#/components/ui/card'
 import { Input } from '#/components/ui/input'
@@ -38,8 +38,7 @@ export const Route = createFileRoute('/_authed/queue/')({
   component: QueuePage,
 })
 
-type SortKey =
-  'token' | 'racket' | 'requester' | 'stringer' | 'neededBy' | 'status'
+type SortKey = 'token' | 'racket' | 'requester' | 'stringer' | 'status'
 
 // Pipeline order, not alphabetical — REQUESTED before ACCEPTED before DONE
 // is what "sorted by status" should mean when the open view mixes all three.
@@ -51,7 +50,7 @@ function QueuePage() {
   const { requests } = Route.useLoaderData()
   const search = Route.useSearch()
   const [query, setQuery] = useState('')
-  const { sortKey, sortDir, toggleSort } = useTableSort<SortKey>('neededBy')
+  const { sortKey, sortDir, toggleSort } = useTableSort<SortKey>(null)
 
   // Shown whenever a listed job carries a carabiner — which also keeps old
   // numbers visible if the feature is switched off later.
@@ -86,7 +85,7 @@ function QueuePage() {
             dir * (a.operator?.name ?? '').localeCompare(b.operator?.name ?? '')
           )
         case 'token': {
-          // No carabiner sorts last either way, like a missing due date.
+          // No carabiner sorts last either way.
           if (a.tokenNumber == null && b.tokenNumber == null) return 0
           if (a.tokenNumber == null) return 1
           if (b.tokenNumber == null) return -1
@@ -98,17 +97,6 @@ function QueuePage() {
             (STATUS_ORDER[a.status as RequestStatus] -
               STATUS_ORDER[b.status as RequestStatus])
           )
-        case 'neededBy': {
-          // No deadline sorts last regardless of direction — "soonest first"
-          // and "latest first" should both put "whenever" at the bottom.
-          if (!a.neededBy && !b.neededBy) return 0
-          if (!a.neededBy) return 1
-          if (!b.neededBy) return -1
-          return (
-            dir *
-            (new Date(a.neededBy).getTime() - new Date(b.neededBy).getTime())
-          )
-        }
       }
     })
   }, [requests, query, sortKey, sortDir])
@@ -215,13 +203,6 @@ function QueuePage() {
                       onSort={toggleSort}
                     />
                     <SortableHead
-                      label={m.request_needed_by()}
-                      sortKey="neededBy"
-                      active={sortKey === 'neededBy'}
-                      dir={sortDir}
-                      onSort={toggleSort}
-                    />
-                    <SortableHead
                       label={m.queue_col_status()}
                       sortKey="status"
                       active={sortKey === 'status'}
@@ -257,13 +238,6 @@ function QueuePage() {
                       <TableCell>{request.requester.name}</TableCell>
                       <TableCell>
                         {request.operator?.name ?? m.request_unassigned()}
-                      </TableCell>
-                      <TableCell
-                        className={cn(request.neededBy && 'text-primary-ink')}
-                      >
-                        {request.neededBy
-                          ? formatDate(request.neededBy)
-                          : m.common_none()}
                       </TableCell>
                       <TableCell>
                         <StatusBadge status={request.status} />
@@ -313,11 +287,6 @@ function QueueCard({ request }: { request: QueueRequest }) {
       <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
         <span className="text-foreground">{request.requester.name}</span>
         <span>{request.operator?.name ?? m.request_unassigned()}</span>
-        {request.neededBy && (
-          <span className="text-primary-ink">
-            {m.request_needed_by()}: {formatDate(request.neededBy)}
-          </span>
-        )}
       </div>
     </Link>
   )
