@@ -11,13 +11,10 @@ import { getLocale, localizeUrl } from '#/paraglide/runtime'
 import { fetchSession } from '#/lib/session.functions'
 import { AppNav } from '#/components/app-nav'
 import { Breadcrumbs } from '#/components/breadcrumbs'
+import { SiteFooter } from '#/components/site-footer'
 
 import appCss from '../styles.css?url'
 import badgeUrl from '../../misc/rtc-racket-badge.svg?url'
-
-// Playfair Display for headings and the wordmark, Inter for UI text.
-const FONTS_URL =
-  'https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap'
 
 export const Route = createRootRoute({
   beforeLoad: async ({ location }) => {
@@ -49,13 +46,8 @@ export const Route = createRootRoute({
       { title: 'Royal Tennisclub Bezau' },
     ],
     links: [
-      { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
-      {
-        rel: 'preconnect',
-        href: 'https://fonts.gstatic.com',
-        crossOrigin: 'anonymous',
-      },
-      { rel: 'stylesheet', href: FONTS_URL },
+      // Fonts are bundled into this stylesheet (src/styles.css), not loaded
+      // from Google, so a visit sends nothing to a third party.
       { rel: 'stylesheet', href: appCss },
       { rel: 'icon', type: 'image/svg+xml', href: badgeUrl },
     ],
@@ -69,12 +61,13 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body className="min-h-screen bg-background text-foreground antialiased">
+      <body className="flex min-h-screen flex-col bg-background text-foreground antialiased">
         <AppNav />
-        <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 md:py-10">
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 md:py-10">
           <Breadcrumbs />
           {children}
         </main>
+        <SiteFooter />
         <TanStackDevtools
           config={{ position: 'bottom-right' }}
           plugins={[

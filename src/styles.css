@@ -1,8 +1,22 @@
+/* Fonts served by the app itself, not Google: loading them from Google's
+   servers hands every visitor's IP address to Google (see /privacy). Imports
+   have to come first, or browsers drop them. No italics: the UI uses none. */
+@import '@fontsource-variable/inter/opsz.css';
+@import '@fontsource-variable/playfair-display/wght.css';
 @import 'tailwindcss';
 @import 'tw-animate-css';
 /* The club's own palette, scales and fonts — kept as delivered in misc/, so a
    new version from the club is a drop-in replacement. */
 @import '../misc/rtc-theme.css';
+
+/* The self-hosted variable fonts register as "… Variable"; the club theme
+   names the plain families. */
+@theme {
+  --font-display:
+    'Playfair Display Variable', 'Playfair Display', Georgia, 'Times New Roman',
+    serif;
+  --font-sans: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
 
 /*
  * Royal Tennisclub Bezau, following misc/BRAND.md: cream page, sand cards,

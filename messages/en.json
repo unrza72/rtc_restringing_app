@@ -525,5 +525,13 @@
   "help_admin_strings_title": "String catalogue",
   "help_admin_strings_body": "Under Strings you keep what the club offers: name, gauge, price and order on the form. Deactivate a string to take it off the request form; it is then hidden here too, until you choose “Show deactivated”. Deleting removes it for good — old jobs still name what was strung — but not while an open request waits for it.",
   "help_admin_tokens_title": "Carabiners",
-  "help_admin_tokens_body": "On the same page you set how many numbered carabiners there are. The count can't go below the highest number currently in use."
+  "help_admin_tokens_body": "On the same page you set how many numbered carabiners there are. The count can't go below the highest number currently in use.",
+  "footer_label": "Legal",
+  "footer_imprint": "Imprint",
+  "footer_privacy": "Privacy",
+  "legal_imprint_title": "Imprint",
+  "legal_privacy_title": "Privacy notice",
+  "legal_missing": "missing: {what}",
+  "admin_build_commit": "Version",
+  "admin_build_time": "built {time}"
 }

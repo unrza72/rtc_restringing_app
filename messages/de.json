@@ -525,5 +525,13 @@
   "help_admin_strings_title": "Saitenkatalog",
   "help_admin_strings_body": "Unter Saiten pflegst du, was der Verein anbietet: Name, Stärke, Preis und Reihenfolge im Formular. Deaktivierst du eine Saite, verschwindet sie aus dem Auftragsformular und auch hier, bis du „Deaktivierte anzeigen“ wählst. Löschen entfernt sie endgültig — alte Aufträge nennen weiter, was besaitet wurde —, aber nicht, solange ein offener Auftrag auf sie wartet.",
   "help_admin_tokens_title": "Karabiner",
-  "help_admin_tokens_body": "Auf derselben Seite legst du fest, wie viele nummerierte Karabiner es gibt. Unter die höchste gerade benutzte Nummer lässt sich die Zahl nicht senken."
+  "help_admin_tokens_body": "Auf derselben Seite legst du fest, wie viele nummerierte Karabiner es gibt. Unter die höchste gerade benutzte Nummer lässt sich die Zahl nicht senken.",
+  "footer_label": "Rechtliches",
+  "footer_imprint": "Impressum",
+  "footer_privacy": "Datenschutz",
+  "legal_imprint_title": "Impressum",
+  "legal_privacy_title": "Datenschutzerklärung",
+  "legal_missing": "fehlt: {what}",
+  "admin_build_commit": "Version",
+  "admin_build_time": "gebaut {time}"
 }

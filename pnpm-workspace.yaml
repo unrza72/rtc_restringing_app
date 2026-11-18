@@ -4,3 +4,6 @@ allowBuilds:
   '@prisma/engines': true
   prisma: true
   unrs-resolver: true
+  # Pulled in by nitro (db0) and prisma as an optional SQLite driver; the app
+  # runs on PostgreSQL, so skip compiling it. Listed so installs don't fail.
+  better-sqlite3: false

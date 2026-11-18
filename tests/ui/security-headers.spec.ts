@@ -21,6 +21,8 @@ const PAGES = [
   '/training/people',
   '/training/plans',
   '/help',
+  '/imprint',
+  '/privacy',
 ]
 
 test('every page sends the security headers and runs without breaking its CSP', async ({

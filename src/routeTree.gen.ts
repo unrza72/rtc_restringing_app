@@ -11,8 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthedRouteImport } from './routes/_authed'
+import { Route as ImprintRouteImport } from './routes/imprint'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as PendingRouteImport } from './routes/pending'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as AuthedAdminRouteImport } from './routes/_authed/admin'
 import { Route as AuthedBillingRouteImport } from './routes/_authed/billing'
@@ -50,6 +52,11 @@ const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ImprintRoute = ImprintRouteImport.update({
+  id: '/imprint',
+  path: '/imprint',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -58,6 +65,11 @@ const LoginRoute = LoginRouteImport.update({
 const PendingRoute = PendingRouteImport.update({
   id: '/pending',
   path: '/pending',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignupRoute = SignupRouteImport.update({
@@ -200,8 +212,10 @@ const AuthedTrainingPlansIdRoute = AuthedTrainingPlansIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/imprint': typeof ImprintRoute
   '/login': typeof LoginRoute
   '/pending': typeof PendingRoute
+  '/privacy': typeof PrivacyRoute
   '/signup': typeof SignupRoute
   '/admin': typeof AuthedAdminRouteWithChildren
   '/billing': typeof AuthedBillingRouteWithChildren
@@ -232,8 +246,10 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/imprint': typeof ImprintRoute
   '/login': typeof LoginRoute
   '/pending': typeof PendingRoute
+  '/privacy': typeof PrivacyRoute
   '/signup': typeof SignupRoute
   '/admin': typeof AuthedAdminRouteWithChildren
   '/dashboard': typeof AuthedDashboardRoute
@@ -263,8 +279,10 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authed': typeof AuthedRouteWithChildren
+  '/imprint': typeof ImprintRoute
   '/login': typeof LoginRoute
   '/pending': typeof PendingRoute
+  '/privacy': typeof PrivacyRoute
   '/signup': typeof SignupRoute
   '/_authed/admin': typeof AuthedAdminRouteWithChildren
   '/_authed/billing': typeof AuthedBillingRouteWithChildren
@@ -297,8 +315,10 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/imprint'
     | '/login'
     | '/pending'
+    | '/privacy'
     | '/signup'
     | '/admin'
     | '/billing'
@@ -329,8 +349,10 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/imprint'
     | '/login'
     | '/pending'
+    | '/privacy'
     | '/signup'
     | '/admin'
     | '/dashboard'
@@ -359,8 +381,10 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authed'
+    | '/imprint'
     | '/login'
     | '/pending'
+    | '/privacy'
     | '/signup'
     | '/_authed/admin'
     | '/_authed/billing'
@@ -393,8 +417,10 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthedRoute: typeof AuthedRouteWithChildren
+  ImprintRoute: typeof ImprintRoute
   LoginRoute: typeof LoginRoute
   PendingRoute: typeof PendingRoute
+  PrivacyRoute: typeof PrivacyRoute
   SignupRoute: typeof SignupRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
@@ -415,6 +441,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/imprint': {
+      id: '/imprint'
+      path: '/imprint'
+      fullPath: '/imprint'
+      preLoaderRoute: typeof ImprintRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -427,6 +460,13 @@ declare module '@tanstack/react-router' {
       path: '/pending'
       fullPath: '/pending'
       preLoaderRoute: typeof PendingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/signup': {
@@ -723,8 +763,10 @@ const AuthedRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthedRoute: AuthedRouteWithChildren,
+  ImprintRoute: ImprintRoute,
   LoginRoute: LoginRoute,
   PendingRoute: PendingRoute,
+  PrivacyRoute: PrivacyRoute,
   SignupRoute: SignupRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }

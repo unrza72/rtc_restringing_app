@@ -8,9 +8,6 @@
  * attributes, and toasts inject a `<style>` element, neither with a nonce.
  */
 
-const GOOGLE_FONTS_CSS = 'https://fonts.googleapis.com'
-const GOOGLE_FONTS_FILES = 'https://fonts.gstatic.com'
-
 export function contentSecurityPolicy(
   nonce: string,
   { https }: { https: boolean },
@@ -18,8 +15,8 @@ export function contentSecurityPolicy(
   return [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}'`,
-    `style-src 'self' 'unsafe-inline' ${GOOGLE_FONTS_CSS}`,
-    `font-src 'self' ${GOOGLE_FONTS_FILES}`,
+    "style-src 'self' 'unsafe-inline'",
+    "font-src 'self'",
     "img-src 'self' data:",
     "connect-src 'self'",
     "object-src 'none'",

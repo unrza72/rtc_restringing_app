@@ -285,27 +285,28 @@ own string:  total =               labour + rake
 
 ## 6. Routes
 
-| Route                                         | Access                    | Purpose                                                                                                    |
-| --------------------------------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `/`                                           | public                    | Landing → redirects to `/dashboard` when signed in                                                         |
-| `/login`                                      | public                    | email + password                                                                                           |
-| `/signup`                                     | public, needs `?token=`   | invite-gated — see §9                                                                                      |
-| `/pending`                                    | authed, PENDING           | "waiting for approval"                                                                                     |
-| `/dashboard`                                  | member                    | my open requests + quick "new request"; operator (jobs waiting) and admin (pending members) panels         |
-| `/rackets`, `/rackets/new`, `/rackets/$id`    | member                    | manage own rackets                                                                                         |
-| `/requests`, `/requests/new`, `/requests/$id` | member                    | own requests + detail/timeline                                                                             |
-| `/queue`                                      | operator                  | open + own claimed jobs, filter by status, sortable/searchable table                                       |
-| `/queue/$id`                                  | operator                  | accept / complete / collect                                                                                |
-| `/billing`                                    | operator OR controller    | every restrung racket: string/labour/rake/total price, paid state, sortable/searchable table               |
-| `/billing/payouts`                            | controller                | labour earned/reimbursed/outstanding per stringer, reimbursement ledger                                    |
-| `/invites`                                    | operator (admin inherits) | create/list/revoke invite links — see §9                                                                   |
-| `/training`                                   | coach                     | redirects to the roster                                                                                    |
-| `/training/people`, `/training/people/$id`    | coach                     | trainee/trainer roster + weekly availability                                                               |
-| `/training/plans`, `/training/plans/$id`      | coach                     | solver knobs, saved runs, groups and who was left out                                                      |
-| `/admin/members`                              | admin                     | approve, reject, set roles                                                                                 |
-| `/admin/strings`                              | admin                     | club string catalogue: add, edit price, deactivate, delete; labour and club rake (§5a); bank account (§16) |
-| `/help`                                       | member                    | every feature explained, filtered to the reader's roles; restarts the tour                                 |
-| `/api/auth/$`                                 | public                    | better-auth handler (exists)                                                                               |
+| Route                                         | Access                    | Purpose                                                                                                       |
+| --------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `/`                                           | public                    | Landing → redirects to `/dashboard` when signed in                                                            |
+| `/login`                                      | public                    | email + password                                                                                              |
+| `/signup`                                     | public, needs `?token=`   | invite-gated — see §9                                                                                         |
+| `/pending`                                    | authed, PENDING           | "waiting for approval"                                                                                        |
+| `/imprint`, `/privacy`                        | public                    | Impressum (§ 5 ECG, § 25 MedienG) and privacy notice (Art. 13 GDPR), linked in the footer of every page — §17 |
+| `/dashboard`                                  | member                    | my open requests + quick "new request"; operator (jobs waiting) and admin (pending members) panels            |
+| `/rackets`, `/rackets/new`, `/rackets/$id`    | member                    | manage own rackets                                                                                            |
+| `/requests`, `/requests/new`, `/requests/$id` | member                    | own requests + detail/timeline                                                                                |
+| `/queue`                                      | operator                  | open + own claimed jobs, filter by status, sortable/searchable table                                          |
+| `/queue/$id`                                  | operator                  | accept / complete / collect                                                                                   |
+| `/billing`                                    | operator OR controller    | every restrung racket: string/labour/rake/total price, paid state, sortable/searchable table                  |
+| `/billing/payouts`                            | controller                | labour earned/reimbursed/outstanding per stringer, reimbursement ledger                                       |
+| `/invites`                                    | operator (admin inherits) | create/list/revoke invite links — see §9                                                                      |
+| `/training`                                   | coach                     | redirects to the roster                                                                                       |
+| `/training/people`, `/training/people/$id`    | coach                     | trainee/trainer roster + weekly availability                                                                  |
+| `/training/plans`, `/training/plans/$id`      | coach                     | solver knobs, saved runs, groups and who was left out                                                         |
+| `/admin/members`                              | admin                     | approve, reject, set roles                                                                                    |
+| `/admin/strings`                              | admin                     | club string catalogue: add, edit price, deactivate, delete; labour and club rake (§5a); bank account (§16)    |
+| `/help`                                       | member                    | every feature explained, filtered to the reader's roles; restarts the tour                                    |
+| `/api/auth/$`                                 | public                    | better-auth handler (exists)                                                                                  |
 
 Guards live in one place: `beforeLoad` on a `_authed` pathless layout route that loads
 the session, checks `status === APPROVED`, and a `requireRole()` helper for
@@ -745,9 +746,11 @@ The app wears the Royal Tennisclub Bezau brand. `misc/BRAND.md` is the source of
   one accent and crown red for destructive actions. No gradients, no emoji.
 - **Type.** Headings and card titles are Playfair Display 600, uppercase, letter-spaced
   — set once in the base layer, so a heading needs no weight or tracking utilities. UI text
-  is Inter. Small labels are uppercase with 0.16em tracking. Both fonts load from Google
-  Fonts through `<link>`s in `__root.tsx`; an `@import` inside the theme file would sit
-  behind Tailwind's own rules and be dropped.
+  is Inter. Small labels are uppercase with 0.16em tracking. Both fonts are served by the
+  app itself (`@fontsource-variable/*`, imported at the top of `src/styles.css`), never
+  from Google: Google Fonts would hand every visitor's IP address to Google, which
+  Austrian courts and the DSB treat as a GDPR breach without consent. The CSP allows
+  fonts and styles from `'self'` only.
 - **Logo.** `src/components/club-logo.tsx`: the badge (`misc/rtc-racket-badge.svg`, the
   Restringing service mark) left of "ROYAL TENNISCLUB BEZAU" in terracotta Playfair;
   stacked and centred on the sign-in screens. The same SVG is the favicon. Swap the one
@@ -962,3 +965,24 @@ cost, labour and rake, and pays labour back to the stringer through the payout l
 3. **No "I've paid" button.** The bank statement is the source of truth either way.
 4. **Only after the job is done**, because the price isn't fixed until completion
    (§5a).
+
+## 17. Imprint, privacy notice, build version
+
+The site is public, so it needs an Impressum and a privacy notice. Both are public
+routes (`/imprint`, `/privacy`), linked from a footer on every page, signed in or not.
+
+- **One source of facts.** `src/lib/legal.ts` holds the club's details (address, ZVR
+  number, representative, contact, purpose, hosting provider, access-log retention).
+  A field that is still `null` renders as a red "fehlt: …" marker instead of a gap,
+  so an incomplete page can't go unnoticed.
+- **Text.** Written out in `src/components/legal.tsx` rather than as message keys:
+  legal prose is reviewed as a whole. German is binding; the English page says it is
+  a courtesy translation.
+- **What the notice claims** is what the app does: one strictly necessary session
+  cookie, sessions with IP and user agent, in-memory sign-in rate limiting, the
+  audit log, training data entered by coaches, no third parties at runtime
+  (fonts are self-hosted, §14). Change the notice whenever any of that changes, and
+  bump `privacyUpdated`.
+- **Build version.** `vite.config.ts` bakes the commit hash (`git rev-parse HEAD`,
+  `-dirty` with uncommitted changes, or `BUILD_COMMIT` outside a checkout) and the
+  build time into the bundle. `/admin/strings` shows the short hash at the bottom.

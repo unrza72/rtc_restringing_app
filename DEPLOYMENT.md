@@ -150,6 +150,20 @@ pm2 startup           # prints a command to run once, so pm2 starts at boot
 Open `BETTER_AUTH_URL` in a browser and sign in as the admin. There is no open
 signup: new members join through invite links created at `/invites`.
 
+### Before the site goes public: imprint and privacy notice
+
+`/imprint` and `/privacy` are built from [src/lib/legal.ts](src/lib/legal.ts).
+Every detail still missing there shows up on those pages as a red "fehlt: …"
+marker. Fill in the club's street address, ZVR number, representative, contact
+email and purpose (from the statutes or the
+[Vereinsregister extract](https://citizen.bmi.gv.at/at.gv.bmi.fnsweb-p/zvn/public/Registerauszug)),
+the hosting provider, and `accessLogDays`: how long the reverse proxy keeps
+access logs with IP addresses (`0` if it keeps none; Caddy keeps none unless a
+`log` directive is set). Commit, then deploy.
+
+The admin page `/admin/strings` shows the commit the running build was made
+from, at the bottom. After `deploy.sh`, it should match `git rev-parse --short HEAD`.
+
 ### Moving from the SQLite version
 
 Until November 2026 the app stored its data in a SQLite file. The PostgreSQL

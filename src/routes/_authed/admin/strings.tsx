@@ -32,7 +32,8 @@ import {
   tokenCountSchema,
 } from '#/lib/schemas'
 import { formatTokenRanges } from '#/lib/tokens'
-import { formatPrice } from '#/lib/labels'
+import { formatDateTime, formatPrice } from '#/lib/labels'
+import { BUILD_COMMIT, BUILD_TIME, shortCommit } from '#/lib/build-info'
 import { m } from '#/paraglide/messages'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
@@ -252,6 +253,20 @@ function StringsPage() {
       </Card>
 
       <NewStringCard onCreated={() => router.invalidate()} />
+
+      {/* Which build runs — the first thing to check when something looks
+          different from what was just merged. */}
+      <p className="text-xs wrap-break-word text-muted-foreground">
+        {m.admin_build_commit()}{' '}
+        <code
+          className="font-mono text-foreground select-all"
+          title={BUILD_COMMIT}
+        >
+          {shortCommit(BUILD_COMMIT)}
+        </code>
+        {BUILD_TIME &&
+          ` · ${m.admin_build_time({ time: formatDateTime(BUILD_TIME) })}`}
+      </p>
 
       <DeleteStringDialog
         clubString={deleting}
